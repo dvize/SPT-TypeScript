@@ -41,8 +41,8 @@ class Mod {
                 switch (config.maximum_helmet_deafness) {
                     case "High":
                         {
-                            item._props.DeafStrength = "Low";
-                            logger.info(`EerieSilence: Setting Low DeafStrength for ${itemname}`);
+                            item._props.DeafStrength = "High";
+                            logger.info(`EerieSilence: Setting High DeafStrength for ${itemname}`);
                             break;
                         }
                     case "Low":
