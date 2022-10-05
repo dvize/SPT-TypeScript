@@ -35,26 +35,32 @@ class Mod {
                     item._props.AmbientVolume = item._props.AmbientVolume * config.ambient_noise_reduction_multiplier;
                     logger.info(`EerieSilence: Setting custom Distortion and AmbientVolume for ${itemname}`);
                 }
-                //also if they item has DeafStrength Property
-                if (item._props.DeafStrength) {
-                    switch (config.maximum_helmet_deafness) {
-                        case "Low":
-                            {
-                                item._props.DeafStrength = "Low";
-                                logger.info(`EerieSilence: Setting Low DeafStrength for ${itemname}`);
-                                break;
-                            }
-                        case "None":
-                            {
-                                item._props.DeafStrength = "None";
-                                logger.info(`EerieSilence: Setting None DeafStrength for ${itemname}`);
-                                break;
-                            }
-                        default:
-                            {
-                                break;
-                            }
-                    }
+            }
+            //also if they item has DeafStrength Property
+            if (item._props.DeafStrength && item._parent == "5a341c4086f77401f2541505") {
+                switch (config.maximum_helmet_deafness) {
+                    case "High":
+                        {
+                            item._props.DeafStrength = "Low";
+                            logger.info(`EerieSilence: Setting Low DeafStrength for ${itemname}`);
+                            break;
+                        }
+                    case "Low":
+                        {
+                            item._props.DeafStrength = "Low";
+                            logger.info(`EerieSilence: Setting Low DeafStrength for ${itemname}`);
+                            break;
+                        }
+                    case "None":
+                        {
+                            item._props.DeafStrength = "None";
+                            logger.info(`EerieSilence: Setting None DeafStrength for ${itemname}`);
+                            break;
+                        }
+                    default:
+                        {
+                            break;
+                        }
                 }
             }
         }
