@@ -27,11 +27,6 @@ class ModInRaid implements IPostDBLoadMod
 			//if undefined tool moddable, made it tool moddable.
 			items[id]._props.ToolModdable = true;
 			
-			//if it has slots make sure they are all set no requirements
-			for (let slot in items[id]._props.Slots)
-			{
-				items[id]._props.Slots[slot]._required = false;
-			}
 		}
 	}
 	
