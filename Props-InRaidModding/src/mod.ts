@@ -1,55 +1,48 @@
 
 import { DependencyContainer } from "tsyringe";
+import { IPreAkiLoadMod } from "@spt-aki/models/external/IPreAkiLoadMod";
 import { IPostDBLoadMod } from "@spt-aki/models/external/IPostDBLoadMod";
 import { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
 import { ILogger } from "@spt-aki/models/spt/utils/ILogger";
-import { StaticRouterModService } from "@spt-aki/services/mod/staticRouter/StaticRouterModService";
 import { Item } from "@spt-aki/models/eft/common/tables/IItem";
-import { VFS } from "@spt-aki/utils/VFS";
+import { ItemHelper } from "@spt-aki/helpers/ItemHelper";
+import { Mods, ModsChances } from "@spt-aki/models/eft/common/tables/IBotType";
 import { BotGeneratorHelper } from "@spt-aki/helpers/BotGeneratorHelper";
 import { BotWeaponGenerator} from "@spt-aki/generators/BotWeaponGenerator";
 import { ConfigServer } from "@spt-aki/servers/ConfigServer";
 import { ConfigTypes } from "@spt-aki/models/enums/ConfigTypes";
+import { BaseClasses } from "@spt-aki/models/enums/BaseClasses";
+import { ITemplateItem, Slot } from "@spt-aki/models/eft/common/tables/ITemplateItem";
 import { IBotConfig } from "@spt-aki/models/spt/config/IBotConfig";
-import { Config } from "@spt-aki/models/eft/common/IGlobals";
-
+import { ProfileHelper } from "@spt-aki/helpers/ProfileHelper";
+import { BotEquipmentFilterService } from "@spt-aki/services/BotEquipmentFilterService";
 
 var databaseServer;
 var database;
 var logger;
 var items;
-var JsonUtil;
-var RandomUtil;
-var HashUtil;
 var BotGeneratorHelp;
-var BotWeaponGeneratorHelp;
-var BotConfig:IBotConfig;
+var botEquipmentFilterService;
+var botConfig:IBotConfig;
 var configserver:ConfigServer;
+var itemHelper;
+var profileHelper;
 
-class ModInRaid implements IPostDBLoadMod
+class ModInRaid implements IPostDBLoadMod, IPreAkiLoadMod
 {
-	postDBLoad(container: DependencyContainer): void {
+	preAkiLoad(container: DependencyContainer): void {
 		logger = container.resolve<ILogger>("WinstonLogger");
-		databaseServer = container.resolve<DatabaseServer>("DatabaseServer");
-		database = databaseServer.getTables();
-		items = database.templates.items;
 		BotGeneratorHelp = container.resolve<BotGeneratorHelper>("BotGeneratorHelper");
-		BotWeaponGeneratorHelp = container.resolve<BotWeaponGenerator>("BotWeaponGenerator");
-
-		JsonUtil = container.resolve("JsonUtil");
-		RandomUtil = container.resolve("RandomUtil");
-		HashUtil = container.resolve("HashUtil");
+		profileHelper = container.resolve<ProfileHelper>("ProfileHelper");
+		botEquipmentFilterService = container.resolve<BotEquipmentFilterService>("BotEquipmentFilterService");
+		itemHelper = container.resolve<ItemHelper>("ItemHelper");
 		configserver = container.resolve<ConfigServer>("ConfigServer");
+		botConfig = configserver.getConfig<IBotConfig>(ConfigTypes.BOT);
 		
-		BotConfig = configserver.getConfig<IBotConfig>(ConfigTypes.BOT);
-		
-		const staticRouterModService = container.resolve<StaticRouterModService>("StaticRouterModService");
-
-		
-		//generateModsForItem
+		//generateModsForWeapon
 		container.afterResolution("BotGeneratorHelper", (_t, result: BotGeneratorHelper) => 
 		{
-			result.generateModsForEquipment = ModInRaid.generateModsForItem
+			result.generateModsForWeapon = ModInRaid.generateModsForWeapon;
 		}, {frequency: "Always"});
 		
 		//isWeaponValid
@@ -58,14 +51,20 @@ class ModInRaid implements IPostDBLoadMod
 			result.isWeaponValid = ModInRaid.isWeaponValid
 		}, {frequency: "Always"});
 
+	}
+
+	postDBLoad(container: DependencyContainer): void {
+		
+		databaseServer = container.resolve<DatabaseServer>("DatabaseServer");
+		database = databaseServer.getTables();
+		items = database.templates.items;
 		ModInRaid.SetAllModdableProps();
-		logger.info("ModInRaid: Registered static routers");
 	}
 
 
 	static SetAllModdableProps() 
 	{
-
+		logger.info(`ModInRaid: Setting all mods to RaidModdable True and Slots.required to false`)
 		for (let id in items)
 		{
 			//if undefined raid moddable, make it moddable.
@@ -77,32 +76,39 @@ class ModInRaid implements IPostDBLoadMod
 
 			for (let slot in items[id]._props.Slots)
 			{
-				items[id]._props.Slots[slot]._required_old = items[id]._props.Slots[slot]._required;
-				items[id]._props.Slots[slot]._required = false;
+				if(items[id]._props.Slots[slot]._required != undefined)
+				{
+					items[id]._props.Slots[slot]._required_old = items[id]._props.Slots[slot]._required;
+					items[id]._props.Slots[slot]._required = false;
+				}
 			}
 			
 
 		}
 	}
-	
+
+
 	static checkRequired(slot)
 	{
-		if (slot._Required_old != undefined)
+		if (slot._required_old != undefined)
 		{
-			if (slot._Required_old == true)
+			if (slot._required_old == true)
 				return true
 		}
 		else
-			if (slot._required_old == true)
+			if (slot._required == true)
 				return true
 		return false
+
 	}
 
 	static isWeaponValid(itemList: Item[]): boolean
     {
+		logger.info(`ModInRaid: Check isWeaponValid`);
+
         for (const item of itemList)
         {
-            const template = databaseServer.getTables().templates.items[item._tpl];
+            const template = itemHelper.getItem(item._tpl)[1];;
             if (!template._props.Slots || !template._props.Slots.length)
             {
                 continue;
@@ -115,10 +121,18 @@ class ModInRaid implements IPostDBLoadMod
                     continue;
                 }
 
+				const allowedTpls = slot._props.filters[0].Filter;
                 const slotItem = itemList.find(i => i.parentId === item._id && i.slotId === slot._name);
+
                 if (!slotItem)
                 {
-                    logger.error(`Required slot '${slot._name}' on ${template._id} was empty`);
+                    //logger.error(`Required slot '${slot._name}' on ${template._id} was empty`);
+                    return false;
+                }
+
+				if (!allowedTpls.includes(slotItem._tpl))
+                {
+                    //logger.error(`Required slot '${slot._name}' on ${template._name} has an invalid item: ${slotItem._tpl}`);
                     return false;
                 }
             }
@@ -127,200 +141,110 @@ class ModInRaid implements IPostDBLoadMod
         return true;
     }
 
-	static generateModsForItem(items, modPool, parentId, parentTemplate, modSpawnChances, isPmc = false): Item[]
+	static generateModsForWeapon(sessionId: string, weapon: Item[], modPool: Mods, weaponParentId: string, parentWeaponTemplate: ITemplateItem, modSpawnChances: ModsChances, ammoTpl: string, botRole: string): Item[]
 	{
-		// Important bit
-		////////////////////////////////
-		const itemModPool = modPool[parentTemplate._id] ? modPool[parentTemplate._id] : {};
-		let missingRequiredMods = parentTemplate._props.Slots.find(i =>	ModInRaid.checkRequired(i) == true && !itemModPool[i._name])
+		//logger.info(`ModInRaid: generating mods for weapons`);
+
+		const compatibleModsPool = modPool[parentWeaponTemplate._id];
+		let missingRequiredMods = parentWeaponTemplate._props.Slots.find(i =>	ModInRaid.checkRequired(i) == true && !compatibleModsPool[i._id]);
 		
 		while (missingRequiredMods)
 		{
-			itemModPool[missingRequiredMods._name] = []
-			missingRequiredMods = parentTemplate._props.Slots.find(i =>	ModInRaid.checkRequired(i) == true && !itemModPool[i._name])
+			compatibleModsPool[missingRequiredMods._id] = [];
+			missingRequiredMods = parentWeaponTemplate._props.Slots.find(i =>	ModInRaid.checkRequired(i) == true && !compatibleModsPool[i._id]);
 		}
 	
-		if ((!parentTemplate._props.Slots || !parentTemplate._props.Slots.length)
-			&& (!parentTemplate._props.Cartridges || !parentTemplate._props.Cartridges.length)
-			&& (!parentTemplate._props.Chambers || !parentTemplate._props.Chambers.length))
-		{
-			logger.error(`Item ${parentTemplate._id} had mods defined, but no slots to support them`);
-			return items;
-		}
+		const pmcProfile = profileHelper.getPmcProfile(sessionId);
+        const botEquipmentRole = (["usec", "bear"].includes(botRole)) ? "pmc" : botRole
+        const modLimits = BotGeneratorHelp.initModLimits(botEquipmentRole);
+        const botEquipConfig = botConfig.equipment[botEquipmentRole];
+        const botEquipBlacklist = botEquipmentFilterService.getBotEquipmentBlacklist(botEquipmentRole, pmcProfile.Info.Level);
 
-		for (const modSlot in itemModPool)
-		{
-			// console.log(modSlot)
-			let itemSlot;
-			switch (modSlot)
-			{
-				case "patron_in_weapon":
-				case "patron_in_weapon_000":
-				case "patron_in_weapon_001":
-					itemSlot = parentTemplate._props.Chambers.find(c => c._name.includes(modSlot));
-					break;
-				case "cartridges":
-					itemSlot = parentTemplate._props.Cartridges.find(c => c._name === modSlot);
-					break;
-				default:
-					itemSlot = parentTemplate._props.Slots.find(s => s._name === modSlot);
-					break;
-			}
+        if (!parentWeaponTemplate._props.Slots.length
+            && !parentWeaponTemplate._props.Cartridges.length
+            && !parentWeaponTemplate._props.Chambers.length)
+        {
+            //logger.error(`Unable to add mods to weapon ${parentWeaponTemplate._name} ${parentWeaponTemplate._id} but lacks slots/cartridges/chambers`);
+            return weapon;
+        }       
 
-			if (!itemSlot)
-			{
-				logger.error(`Slot '${modSlot}' does not exist for item ${parentTemplate._id}`);
-				continue;
-			}
+        // Iterate over mod pool and choose mods to add to item
+        for (const modSlot in compatibleModsPool)
+        {
+            const modsParent = BotGeneratorHelp.getModItemSlot(modSlot, parentWeaponTemplate);
+            if (!modsParent)
+            {
+                //logger.error(`'${modSlot}' does not exist for weapon ${parentWeaponTemplate._id} ${parentWeaponTemplate._name}`);
+                continue;
+            }
 
-			const ammoContainers = ["mod_magazine", "patron_in_weapon", "patron_in_weapon_000", "patron_in_weapon_001", "cartridges"];
-			const modSpawnChance = ModInRaid.checkRequired(itemSlot) || ammoContainers.includes(modSlot)
-				? 100
-				: modSpawnChances[modSlot];
-			if (RandomUtil.getIntEx(100) > modSpawnChance)
-			{
-				continue;
-			}
+            if (!BotGeneratorHelp.shouldModBeSpawned(modsParent, modSlot, modSpawnChances))
+            {
+                continue;
+            }
 
-			// Filter blacklisted cartridges
-			if (isPmc && ammoContainers.includes(modSlot))
-			{
-				// Array includes mod_magazine which isnt a cartridge, but we need to filter the other 4 items
-				const cartridgeBlacklist = BotConfig.pmc.dynamicLoot.blacklist;
-				itemModPool[modSlot] = itemModPool[modSlot].filter(x => !cartridgeBlacklist.includes(x));
-			}
+            const isRandomisableSlot = botEquipConfig.randomisedWeaponModSlots && botEquipConfig.randomisedWeaponModSlots.includes(modSlot);
+            const modToAdd = BotGeneratorHelp.chooseModToPutIntoSlot(modSlot, isRandomisableSlot, modsParent, botEquipBlacklist, compatibleModsPool, weapon, ammoTpl, parentWeaponTemplate);
+            const modToAddTemplate = modToAdd[1];
 
-			const exhaustableModPool = new ExhaustableArray(itemModPool[modSlot]);
+            if (!BotGeneratorHelp.isModValidForSlot(modToAdd, modsParent, modSlot, parentWeaponTemplate))
+            {
+                continue;
+            }
 
-			let modTpl;
-			let found = false;
-			while (exhaustableModPool.hasValues())
-			{
-				modTpl = exhaustableModPool.getRandomValue();
-				if (!BotGeneratorHelp.isItemIncompatibleWithCurrentItems(items, modTpl, modSlot))
-				{
-					found = true;
-					break;
-				}
-			}
-			const parentSlot = parentTemplate._props.Slots.find(i => i._name === modSlot);
+            if (BotGeneratorHelp.modHasReachedItemLimit(botEquipmentRole, modToAddTemplate, modLimits))
+            {
+                continue;
+            }
 
-			// Find a mod to attach from items db for required slots if none found above
-			if (!found && parentSlot !== undefined && ModInRaid.checkRequired(parentSlot) == true)
-			{
-				// console.log(parentSlot._props.filters[0].Filter)
-				modTpl = BotGeneratorHelp.getModTplFromItemDb(modTpl, parentSlot, modSlot, items);
-				found = !!modTpl;
-			}
+            // if mod_scope/mod_mount is randomly generated, check and add any sub mod_scope objects into the pool of mods
+            // This helps fix empty mounts appearing on weapons
+            if (isRandomisableSlot && ["mod_scope", "mod_mount"].includes(modSlot.toLowerCase()))
+            {
+                // mod_mount was picked to be added to weapon, force scope chance to ensure its filled
+                if (modToAddTemplate._parent == BaseClasses.MOUNT)
+                {
+                    modSpawnChances.mod_scope = 100;
+                    modSpawnChances["mod_scope_000"] = 100;
+                    modSpawnChances["mod_scope_001"] = 100;
+                    modSpawnChances["mod_scope_002"] = 100;
+                }
 
-			if (!found || !modTpl)
-			{
-				if (ModInRaid.checkRequired(itemSlot))
-				{
-					logger.error(`Could not locate any compatible items to fill '${modSlot}' for ${parentTemplate._id}`);
-				}
-				continue;
-			}
+                BotGeneratorHelp.addCompatibleModsForProvidedMod("mod_scope", modToAddTemplate, modPool, botEquipBlacklist);
+            }
 
-			if (!itemSlot._props.filters[0].Filter.includes(modTpl))
-			{
-				logger.error(`Mod ${modTpl} is not compatible with slot '${modSlot}' for item ${parentTemplate._id}`);
-				continue;
-			}
+            // If front/rear sight are to be added, set opposite to 100% chance
+            if (["mod_sight_front", "mod_sight_rear"].includes(modSlot))
+            {
+                modSpawnChances.mod_sight_front = 100;
+                modSpawnChances.mod_sight_rear = 100;
+            }
 
-			const modTemplate = database.templates.items[modTpl];
-			if (!modTemplate)
-			{
-				logger.error(`Could not find mod item template with tpl ${modTpl}`);
-				logger.info(`Item -> ${parentTemplate._id}; Slot -> ${modSlot}`);
-				continue;
-			}
+            const modId = BotGeneratorHelp.hashUtil.generate();
+            weapon.push(BotGeneratorHelp.createModItem(modId, modToAddTemplate._id, weaponParentId, modSlot, modToAddTemplate));
+            
+            // I first thought we could use the recursive generateModsForItems as previously for cylinder magazines.
+            // However, the recurse doesnt go over the slots of the parent mod but over the modPool which is given by the bot config
+            // where we decided to keep cartridges instead of camoras. And since a CylinderMagazine only has one cartridge entry and
+            // this entry is not to be filled, we need a special handling for the CylinderMagazine
+            const modParentItem = BotGeneratorHelp.databaseServer.getTables().templates.items[modToAddTemplate._parent];
+            if (BotGeneratorHelp.botWeaponGeneratorHelper.magazineIsCylinderRelated(modParentItem._name))
+            {
+                // we don't have child mods, we need to create the camoras for the magazines instead
+                BotGeneratorHelp.fillCamora(weapon, modPool, modId, modToAddTemplate);
+            }
+            else
+            {
+                if (Object.keys(modPool).includes(modToAddTemplate._id) || (modToAddTemplate._props.Slots && modToAddTemplate._props.Slots.find(i => ModInRaid.checkRequired(i) == true)))
+                {
+                    // Call self recursivly to add mods to this mod
+                    this.generateModsForWeapon(sessionId, weapon, modPool, modId, modToAddTemplate, modSpawnChances, ammoTpl, botRole);
+                }
+            }
+        }
 
-			// TODO: check if weapon already has sight
-			// 'sight' 550aa4154bdc2dd8348b456b 2x parents down
-			const parentItem = database.templates.items[modTemplate._parent];
-			if (modTemplate._parent === "550aa4154bdc2dd8348b456b" || parentItem._parent === "550aa4154bdc2dd8348b456b")
-			{
-				// todo, check if another sight is already on gun AND isnt a side-mounted sight
-				// if weapon has sight already, skip
-			}
-
-			const modId = HashUtil.generate();
-			items.push({
-				"_id": modId,
-				"_tpl": modTpl,
-				"parentId": parentId,
-				"slotId": modSlot,
-				...BotGeneratorHelp.generateExtraPropertiesForItem(modTemplate)
-			});
-
-			// I first thought we could use the recursive generateModsForItems as previously for cylinder magazines.
-			// However, the recurse doesnt go over the slots of the parent mod but over the modPool which is given by the bot config
-			// where we decided to keep cartridges instead of camoras. And since a CylinderMagazine only has one cartridge entry and
-			// this entry is not to be filled, we need a special handling for the CylinderMagazine
-			if (parentItem._name === "CylinderMagazine")
-			{
-				// we don't have child mods, we need to create the camoras for the magazines instead
-				BotGeneratorHelp.fillCamora(items, modPool, modId, modTemplate);
-			}
-			else
-			{
-
-				if (Object.keys(modPool).includes(modTpl) || (modTemplate._props.Slots && modTemplate._props.Slots.find(i => ModInRaid.checkRequired(i) == true)))
-				{
-					ModInRaid.generateModsForItem(items, modPool, modId, modTemplate, modSpawnChances, isPmc);
-				}
-			}
-		}
-		return items;
+        return weapon;
 	}
-	
-}
-
-class ExhaustableArray
-{
-	pool: any;
-
-    constructor(itemPool)
-    {
-        this.pool = JsonUtil.clone(itemPool);
-    }
-
-    getRandomValue()
-    {
-        if (!this.pool || !this.pool.length)
-        {
-            return null;
-        }
-
-        const index = RandomUtil.getInt(0, this.pool.length - 1);
-        const toReturn = JsonUtil.clone(this.pool[index]);
-        this.pool.splice(index, 1);
-        return toReturn;
-    }
-	
-	getFirstValue()
-    {
-        if (!this.pool || !this.pool.length)
-        {
-            return null;
-        }
-
-        const index = 0;
-        const toReturn = JsonUtil.clone(this.pool[index]);
-        this.pool.splice(index, 1);
-        return toReturn;
-    }
-
-    hasValues()
-    {
-        if (this.pool && this.pool.length)
-        {
-            return true;
-        }
-
-        return false;
-    }
 
 }
 
