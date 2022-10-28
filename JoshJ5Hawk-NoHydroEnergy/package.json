@@ -1,11 +1,11 @@
 {
-    "name": "Props In-Raid Modding",
+    "name": "NoHydroEnergy",
+    "author": "JoshJ5Hawk",
     "version": "1.2.0",
+    "license": "NCSA",
     "main": "src/mod.js",
-    "license": "See License file",
-    "author": "Props",
-    "akiVersion": "3.2.*",
-    "scripts": {
+	"akiVersion": "3.2.*",
+	"scripts": {
         "setup:environment": "npm i",
         "build:unzipped": "copyfiles -e \"./node_modules/**/*.*\" -e \"./dist/**/*.*\" -e \"./package-lock.json\" -e \"./tsconfig.json\" -e \"./README.txt\" -e \"./mod.code-workspace\" \"./**/*.*\" ./dist",
         "zip:files": "cd dist/ && bestzip ../mod.zip *",
