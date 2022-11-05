@@ -1,0 +1,63 @@
+{
+    "Explanation": {
+        "############## It is HIGHLY recommended that you use Notepad++ to view this file. When using Notepad++, you can collapse entire categories at once, and it will make this file much easier to navigate. ##############": "//",
+        "############## This config file is for granular control of SPTarkov's bot loadouts. At the moment, this file only affects bot weapons, but in the future it may be expanded to other pieces of equipment. ##############": "//",
+        "": "",
+        "############## HOW TO USE THIS FILE": "//",
+        "1.) Enter the names of the bot types you want to modify into the bot_types_to_modify entry.": "//",
+        "2.) Set enabled to true": "//",
+        "3.) Save the file.": "//",
+        "4.) Run the game. You need to get at least as far as the main menu.": "//",
+        "5.) Close the game, and re-open this file.": "//",
+        "6.) The bot_weapon_settings entry will now be populated with a list of weapons for every bot whose name you entered into bot_types_to_modify. Change the values for the weapons you're interested in.": "//",
+        "7.) Save the file.": "//",
+        "8.) Run AKI again. All your changes should now be applied.": "//",
+        "##############": "//",
+		"": "",
+        "############## default_weapon_values are the default values that will be applied to weapons when the bot_weapon_settings entry is populated. These values are also re-applied (As in, they will overwrite any other changes you've made) if re_apply_default_values is set to true. ##############": "//",
+        "############## spawn_chance_weight is the relative chance that that type of bot will spawn with that weapon. A weapon with a value of 3 is 3 times as likely to spawn as a weapon with a value of 1. A weapon with a value of 10 is 2 times as likely to spawn as a weapon with a value of 5. Note: I'm not entirely certain that this system is perfect. It's possible there are other factors that weight weapon selection one way or another, but my testing indicates that this does significantly influence it.##############": "//",
+        "############## specific_mods_to_allow does not guarantee that this mod will spawn on a given weapon. All it does is ensure that mod will be present in the list of mod options that type of bot can use with that weapon.##############": "//",
+		"": "",
+        "Bot Names": "Scav = assault, Raider = pmcBot, Cultist leader = sectantPriest, Cultist = sectantWarrior, PMC = assaultgroup, Reshala = bossBully, Gluhar = bossGluhar, Killa = bossKilla, Shturman = bossKojaniy, Sanitar = bossSanitar, Boss minions = followerBully, followerGluharAssault, followerGluharScout, followerGluharSecurity, followerGluharSnipe, followerKojaniy, followerSanitar, Sniper = marksman",
+        "Map Names": "Customs = bigmap, Woods = woods, Reserve = rezervbase, Shoreline = shoreline, Factory (day) = factory4_day, Factory (night) = factory4_night, Interchange = interchange, Labs = laboratory"
+    },
+    "enabled": false,
+    "re_apply_default_values": false,
+    "bot_types_to_modify": [
+        "bot",
+        "names",
+        "go",
+        "here"
+    ],
+    "default_weapon_values": {
+        "semi": {
+            "spawn_chance_weight": 1,
+            "specific_mods_to_allow": [],
+            "specific_mods_to_disallow": [],
+            "mod_rarity_neg_one_means_default": -1,
+            "do_not_spawn_on_maps": []
+        },
+        "auto": {
+            "spawn_chance_weight": 1,
+            "specific_mods_to_allow": [],
+            "specific_mods_to_disallow": [],
+            "mod_rarity_neg_one_means_default": -1,
+            "do_not_spawn_on_maps": []
+        },
+        "pump": {
+            "spawn_chance_weight": 1,
+            "specific_mods_to_allow": [],
+            "specific_mods_to_disallow": [],
+            "mod_rarity_neg_one_means_default": -1,
+            "do_not_spawn_on_maps": []
+        },
+        "bolt": {
+            "spawn_chance_weight": 1,
+            "specific_mods_to_allow": [],
+            "specific_mods_to_disallow": [],
+            "mod_rarity_neg_one_means_default": -1,
+            "do_not_spawn_on_maps": []
+        }
+    },
+    "bot_weapon_settings": {}
+}

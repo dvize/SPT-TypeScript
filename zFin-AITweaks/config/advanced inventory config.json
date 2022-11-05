@@ -1,0 +1,206 @@
+{
+    "Explanation": {
+        "############## It is HIGHLY recommended that you use Notepad++ to view this file. When using Notepad++, you can collapse entire categories at once, and it will make this file much easier to navigate. ##############": "//",
+		
+		"Bot Names":"Scav = assault, Raider = pmcbot, Cultist leader = sectantPriest, Cultist = sectantWarrior, PMC = assaultgroup, Reshala = bossBully, Gluhar = bossGluhar, Killa = bossKilla, Shturman = bossKojaniy, Sanitar = bossSanitar, Boss minions = followerBully, followerGluharAssault, followerGluharScout, followerGluharSecurity, followerGluharSnipe, followerKojaniy, followerSanitar, Sniper = marksman"
+    },
+	"botCategories": {
+			"lowLevelAIs": ["assault"],
+			"midLevelAIs": ["pmcbot", "followergluharassault", "followergluharscout", "followergluharsecurity", "followergluharsnipe", "followerkojaniy", "followersanitar", "followerbully"],
+			"highLevelAIs": ["assaultgroup"]
+		},
+		
+	"note": "This advanced config is enabled by default because it's low-impact in its default state. You can disable it if you want, however",
+	"enabled": true,
+	
+	"medical_inventory_changes_enabled": true,
+	
+	"note": "If you're unsure of what all these numbers actually mean, enabling the below option provides a printout in your server upon startup that APPROXIMATES the odds of getting a given medical item for a given bot type",
+	"print_out_medical_odds_on_startup": false,
+	
+	"medicalInventory": {
+	
+		"note": "The valuesAbsoluteMin_MinMax_MaxMax entry is slightly confusing. Taking 'medkits' as an example, we'll call the first number in the 'medkits' entry A, the second B, and the third C. The mod will pick a random value between B and C (We'll call this D). The mod then picks another random value between A and D, and the bot will then be given medical gear worth that value. So if A is 0, B is 100, and C is 500, then the mod picks a random number between 100 and 500 (449), and then picks a random number between 0 and 449 (250). If a cheese is set to a value of 100 and a car medit is 220, it will then be given one car medkit. Think of this process as assigning the AI a 'budget' for a given class of medical items",
+		
+		"note": "Enable print_out_medical_odds_on_startup if this is confusing and you need assitance tweaking values around, it will display the percentage chance that a bot will be given an item of a given value or better",
+		
+		"lowLevelAIs":{
+			"medical_changes_enabled": true,
+			"valuesAbsoluteMin_MinMax_MaxMax": {
+				"medkits": 		[0, 100, 500],
+				"painkillers": 	[0, 400, 500],
+				"bandages": 	[0, 100, 500],
+				"splints":		[0, 100, 500],
+				"surgicals":	[815, 900, 900],
+				"tourniquets": 	[0, 100, 850]
+				}
+			},
+		"midLevelAIs":{
+			"medical_changes_enabled": true,
+			"valuesAbsoluteMin_MinMax_MaxMax": {
+				"medkits": 		[100, 400, 1000],
+				"painkillers": 	[0, 400, 1075],
+				"bandages": 	[0, 400, 600],
+				"splints":		[0, 200, 1000],
+				"surgicals":	[0, 0, 1150],
+				"tourniquets": 	[0, 200, 1000]
+				}
+			},
+		"highLevelAIs":{
+			"medical_changes_enabled": true,
+			"valuesAbsoluteMin_MinMax_MaxMax": {
+				"medkits": 		[400, 1000, 1800],
+				"painkillers": 	[400, 1000, 1200],
+				"bandages": 	[200, 600, 600],
+				"splints":		[400, 1000, 1000],
+				"surgicals":	[0, 0, 1275],
+				"tourniquets": 	[800, 1000, 1000]
+				}
+			}
+		},
+	"medicalValues": {
+		"hemostat": 800,
+		"tourniquet": 200,
+		"tourniquetPMC": 200,
+		"cheese": 100,
+		"carMedkit": 220,
+		"grizzlyMedkit": 1500,
+		"salewa": 400,
+		"ifak": 500,
+		"afak": 800,
+		"painkillers": 400,
+		"ibuprofin": 1000,
+		"vaseline": 800,
+		"balm": 1000,
+		"morphine": 800,
+		"bandage": 100,
+		"bandageM": 300,
+		"splint": 200,
+		"splintAluminum": 800,
+		"CMS": 900,
+		"surv12": 1100
+	},
+	"note": "This section is for if you want to add a medical item to bot loadouts that is not already present in the medicalValues list. You MUST pick a category that already exists in the valuesAbsoluteMin_MinMax_MaxMax entries. The numerical value at the end will be its medicalValues entry",
+	"customMedicalItems": {
+		"custom name goes here": ["id goes here", "category goes here", 10000],
+		"custom name goes here": ["id goes here", "category goes here", 10000]
+	},
+	
+	"general_inventory_changes_enabled": true,
+	"generalInventory": {
+		
+		"note": "These are the percentage chance values that a bot will have *anything* in the given slot",
+		"note": "A negative number means the bot will retain its default value",
+		
+		"chance_values": {
+			"lowLevelAIs":{
+				"equipment": {
+					"Headwear": -1,
+					"Earpiece": -1,
+					"FaceCover": -1,
+					"ArmorVest": -1,
+					"Eyewear": -1,
+					"ArmBand": -1,
+					"TacticalVest": -1,
+					"Backpack": -1,
+					"FirstPrimaryWeapon": -1,
+					"SecondPrimaryWeapon": -1,
+					"Holster": -1,
+					"Scabbard": -1
+				},
+				"mods":{
+					"enter mod  categories here": -1,
+					"enter mod  categories here": -1
+				}
+			},
+			"midLevelAIs":{
+				"equipment": {
+					"Headwear": -1,
+					"Earpiece": -1,
+					"FaceCover": -1,
+					"ArmorVest": -1,
+					"Eyewear": -1,
+					"ArmBand": -1,
+					"TacticalVest": -1,
+					"Backpack": -1,
+					"FirstPrimaryWeapon": -1,
+					"SecondPrimaryWeapon": -1,
+					"Holster": -1,
+					"Scabbard": -1
+				},
+				"mods":{
+					"enter mod  categories here": -1,
+					"enter mod  categories here": -1
+				}
+			},
+			"highLevelAIs":{
+				"equipment": {
+					"Headwear": -1,
+					"Earpiece": -1,
+					"FaceCover": -1,
+					"ArmorVest": -1,
+					"Eyewear": -1,
+					"ArmBand": -1,
+					"TacticalVest": -1,
+					"Backpack": -1,
+					"FirstPrimaryWeapon": -1,
+					"SecondPrimaryWeapon": -1,
+					"Holster": -1,
+					"Scabbard": -1
+				},
+				"mods":{
+					"enter mod  categories here": -1,
+					"enter mod  categories here": -1
+				}
+			}
+		}
+	},
+
+	"note": "You can add new bot names under preset_weapons_for_bots, just make sure they follow the same formatting / structure of the existing entries. All names should be fully lowercase",
+	"note": "If 'chance' is set to 0, this section will be ignored for the given bot type, and they will behave as if they aren't in the preset_weapons_for_bots entry. IE: They will use the main config to determine if they use a preset weapon or not",
+
+	"preset_weapons": {
+		"preset_weapons_for_bots": {
+			"assault": {
+				"chance": 0,
+				"presets_available": [
+					"preset name here",
+					"preset name here",
+					"preset name here"
+				]
+			},
+			"pmcbot": {
+				"chance": 0,
+				"presets_available": [
+					"preset name here",
+					"preset name here",
+					"preset name here"
+				]
+			},
+			"bear": {
+				"chance": 0,
+				"presets_available": [
+					"preset name here",
+					"preset name here",
+					"preset name here"
+				]
+			},
+			"usec": {
+				"chance": 0,
+				"presets_available": [
+					"preset name here",
+					"preset name here",
+					"preset name here"
+				]
+			}
+		}
+	},
+	
+	"note": "Enter explanation here",
+	"miscellaneous_items_to_add_to_bot_inventories": [
+		{"enter_bot_name_here": {"items": {"item_id": "", "slots": ["TacticalVest","Pockets","Backpack"], "weight": 1}}},
+		{"enter_bot_name_here": {"items": {"item_id": "", "slots": ["TacticalVest","Pockets","Backpack"], "weight": 1}}},
+		{"enter_bot_name_here": {"equipment": {"item_id": "", "slots": ["enter slot name"], "weight": 1}}},
+		{"enter_bot_name_here": {"equipment": {"item_id": "", "slots": ["enter slot name"], "weight": 1}}}
+	]
+}

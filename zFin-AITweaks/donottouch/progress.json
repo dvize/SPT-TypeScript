@@ -1,0 +1,26 @@
+{
+    "82246b7f1c9a9aeafa5f80ec": {
+        "diffMod": 2.414213562373095,
+        "raids": 0,
+        "deaths": 0,
+        "survives": 0,
+        "winStreak": 2,
+        "deathStreak": 0
+    },
+    "1e041da1b2a4c77f0939bb6c": {
+        "diffMod": 1,
+        "raids": 0,
+        "deaths": 0,
+        "survives": 0,
+        "winStreak": 1,
+        "deathStreak": 0
+    },
+    "be382ceb176cc00744878419": {
+        "diffMod": -1.7071067811865475,
+        "raids": 0,
+        "deaths": 0,
+        "survives": 0,
+        "winStreak": 0,
+        "deathStreak": 2
+    }
+}
