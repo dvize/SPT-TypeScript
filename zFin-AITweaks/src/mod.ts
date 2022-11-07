@@ -10,7 +10,7 @@ import { ConfigTypes } from "@spt-aki/models/enums/ConfigTypes";
 import { BaseClasses } from "@spt-aki/models/enums/BaseClasses";
 import { IBotConfig } from "@spt-aki/models/spt/config/IBotConfig";
 import { IInRaidConfig  } from "@spt-aki/models/spt/config/IInraidConfig";
-
+import { JsonUtil } from "@spt-aki/utils/JsonUtil";
 import { BotGenerator } from "@spt-aki/generators/BotGenerator";
 import { BotHelper } from "@spt-aki/helpers/BotHelper";
 import { WeightedRandomHelper } from "@spt-aki/helpers/WeightedRandomHelper";
@@ -28,10 +28,10 @@ let botGenerator
 let BotInventoryGenerator
 let profileHelper
 let botHelper
-
-let JsonUtil
+let httpResponse
+let jsonUtil
 let VFS
-
+let botController
 let Logger
 let BotConfig
 let properCaps 
@@ -128,13 +128,13 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		RandomUtil = container.resolve("RandomUtil")
 		botGenerator = container.resolve("BotGenerator")
 		BotInventoryGenerator = container.resolve("BotInventoryGenerator")
-		
+		botController = container.resolve("BotController")
 		weightedRandomHelper = container.resolve("WeightedRandomHelper")
-
+		httpResponse = container.resolve("HttpResponseUtil")
 		profileHelper = container.resolve("ProfileHelper")
 		botHelper = container.resolve("BotHelper")
 
-		JsonUtil = container.resolve("JsonUtil")
+		jsonUtil = container.resolve("JsonUtil")
 
 		//Use to find mods. ModLoader.getModPath('modname')
 		//ModLoader.getImportedModsNames() to get all mod names
@@ -145,7 +145,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		configServer = container.resolve("ConfigServer");
 		BotConfig = configServer.getConfig<IBotConfig>(ConfigTypes.BOT);
 		InRaidConfig = configServer.getConfig<IInRaidConfig>(ConfigTypes.IN_RAID);
-
+		
 
 		//Bot names can be made lowercase easily. This allows for the reverse, when necessary
 		properCaps = {
@@ -337,8 +337,6 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 				botCat[type] = value[0] * multiplier
 			else
 				botCat[type] = value[0]
-			if (debug)
-				console.log(`${type} = ${botCat[type]}`)
 			return
 		}
 			
@@ -368,23 +366,6 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 			}
 			let numValues = value.length - 1 //This should allow for variations in the size of the difficulty setting arrays.
 			
-			if (debug)
-			{
-				console.log(value[0])
-				console.log(value[Math.round(value.length * 0.1)])
-				console.log(value[Math.round(value.length * 0.2)])
-				console.log(value[Math.round(value.length * 0.3)])
-				console.log(value[Math.round(value.length * 0.4)])
-				console.log(value[Math.round(value.length * 0.5)])
-				console.log(value[Math.round(value.length * 0.6)])
-				console.log(value[Math.round(value.length * 0.7)])
-				console.log(value[Math.round(value.length * 0.8)])
-				console.log(value[Math.round(value.length * 0.9)])
-				console.log(value[Math.round(value.length * 1) - 1])
-				console.log(`
-			difficulty: ${difficulty}
-			numValues: ${numValues}`)
-			}
 			//Should allow for a smooth transition into difficulties greater than the standard 0-5 range
 			if (difficulty > numValues)
 			{
@@ -428,8 +409,6 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 			setValue = value[difficulty]
 		}
 		botCat[type] = setValue * multiplier
-		if (debug)
-			console.log(`${type} = ${setValue}`)
 	}
 
 	static noTalking(botList, easy, normal, hard, impossible)
@@ -521,7 +500,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 	dumpFAITAIFiles()
 	{
 		let excludedSettings = ["WARN_BOT_TYPES","ENEMY_BOT_TYPES","FRIENDLY_BOT_TYPES","REVENGE_BOT_TYPES","REVENGE_FOR_SAVAGE_PLAYERS","DEFAULT_ENEMY_USEC","DEFAULT_SAVAGE_BEHAVIOUR","DEFAULT_BEAR_BEHAVIOUR","DEFAULT_USEC_BEHAVIOUR"]
-		let testAI = JsonUtil.clone(botTypes.pmcbot.difficulty.normal)
+		let testAI = jsonUtil.clone(botTypes.pmcbot.difficulty.normal)
 		let diffFile = {}
 		for (let i = 0; i < 20; i++)
 		{
@@ -1343,7 +1322,6 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 	//This is a whole mess at the moment, but this function swaps out easy, hard and impossible difficulties, while leaving normal as the default
 	static replaceDifficulties(botName, aiLevel?)
 	{
-		Logger.info('FINs AI TWEAKS: replaceDifficulties')
 		botName = botName.toLowerCase()
 		if (botTypes[botName])
 		{
@@ -1367,10 +1345,9 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 	//Original function is from Aki_Data\Server\eft-bots\src\callback.js
 	static generateBots(url, info, sessionId, printWep, printArm, printBot, output)
 	{
-		//output = HttpResponse.getBody(botController.generate(sessionId, info));
-		let a = JsonUtil.deserialize(output)
+		let a = jsonUtil.deserialize(output)
 		a.data = AITweaks.pmcScavAlliance(a.data, sessionId)
-		output = JsonUtil.serialize(a)
+		output = jsonUtil.serialize(a)
 
 		return output
 	}
@@ -1504,13 +1481,9 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 			let botNum = botIndex
 			let bot = bots[botIndex]
 			//Trying this out for compatiblilty
+			//Logger.info(`bot.Info.Settings.origRole: ${bot.Info.Settings.Role}`)
 			bot.Info.Settings.origRole = bot.Info.Settings.Role
-			if (bot.Inventory.items.find(i => i.slotId == "Dogtag"))
-				bot.Info.Settings.isPmc = true
-			if ([botHelper.getBotTemplate("Usec")].includes(bot.Info.Settings.Role))
-				bot.Info.Settings.Role = BotConfig.pmc.usecType
-			else if ([botHelper.getBotTemplate("Bear")].includes(bot.Info.Settings.Role))
-				bot.Info.Settings.Role = BotConfig.pmc.bearType
+
 			//The big list of "Things that bots ought to have". I want to delete this, but one person had a problem so now a whole new thing is needed. >:/
 			//I don't think this eats up *too* much processing time, at least.
 			if (!bot.Inventory
@@ -1521,13 +1494,6 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 			|| !bot.Info.Settings.BotDifficulty
 			|| !bot.Info.Settings.Experience)
 			{
-				if (debug)
-				{
-					if (!config.count)
-						config.count = 0
-					config.count++
-					console.log(`Bot generated without vital settings`)
-				}
 				if (!bot.Info
 				|| !bot.Info.Settings
 				|| !bot.Info.Settings.Role
@@ -1538,180 +1504,148 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 				bot.Info.Settings.Role = bot.Info.Settings.origRole
 			}
 			
-			if (true)
-			{
-				let pmcSide = ""
-				
-				let isPmc = false
-				
-				//use of all-lowercase exusec as the USEC PMC type makes this a problem
-				// if (properCaps[bot.Info.Settings.Role.toLowerCase()])
-					// bot.Info.Settings.Role = properCaps[bot.Info.Settings.Role.toLowerCase()]
-				let origRole = bot.Info.Settings.Role
-				
-				let role = origRole
-				//Negative values will skip tactical / optics limiting functions
-				let maxTacticalDevices = -1
-				let maxPrimaryOptics = -1
-				//Default to 0 to preserve bosses etc.
-				let replaceWithPresetPCT = 0
-				if (scavBots.includes(role.toLowerCase()))
-				{
-					maxTacticalDevices = config.AIgearChanges.scavs.maxTacticalDevices
-					maxPrimaryOptics = config.AIgearChanges.scavs.maxPrimaryOptics
-					replaceWithPresetPCT = config.AIgearChanges.scavs.chanceToUseWeaponFromPlayerPresets0_100
-				}
-				else if (raiderBots.includes(role.toLowerCase()))
-				{
-					maxTacticalDevices = config.AIgearChanges.raiders.maxTacticalDevices
-					maxPrimaryOptics = config.AIgearChanges.raiders.maxPrimaryOptics
-					replaceWithPresetPCT = config.AIgearChanges.raiders.chanceToUseWeaponFromPlayerPresets0_100
-				}
-				else if (pmcBots.includes(role.toLowerCase()))
-				{
-					maxTacticalDevices = config.AIgearChanges.PMCs.maxTacticalDevices
-					maxPrimaryOptics = config.AIgearChanges.PMCs.maxPrimaryOptics
-					replaceWithPresetPCT = config.AIgearChanges.PMCs.chanceToUseWeaponFromPlayerPresets0_100
-				}
-				//Disable the use of presets if progressive gear is enabled
-				//...Because obviously.
-				if (config.miscChanges.enableProgressiveGear)
-					replaceWithPresetPCT = 0
-				if (config.disableAllSpawnChanges)
-				{
-					// isPmc = (pmcSide == "Bear" || pmcSide == "Usec");
-					// isPmc = (role in BotConfig.pmc.types && RandomUtil.getInt(0, 99) < BotConfig.pmc.types[role]);
-					isPmc = ([BotConfig.pmc.usecType, BotConfig.pmc.bearType].includes(role) && bot.Info.Settings.isPmc == true)
-					if (isPmc)
-					{
-						pmcSide = (RandomUtil.getInt(0, 99) < BotConfig.pmc.isUsec) ? "Usec" : "Bear";
-						role = AKIPMC
-						// bot.Info.Settings.Role = AKIPMC
-					}
-				}
-				else
-				{
-					if (origRole == AKIPMC)
-						isPmc = true
-					isPmc? role = PMCSwap : null
-				}
-
-				// role = role.toLowerCase()
-				if (pmcSide == "Bear" && isPmc)
-					bot.Info.Side = bearAlliance ? "Savage" : pmcSide
-				else if (pmcSide == "Usec" && isPmc)
-					bot.Info.Side = usecAlliance ? "Savage" : pmcSide
-				else
-				{
-					bot.Info.Side = (isPmc) ? pmcSide : "Savage"
-				}
-				
-				let AICategory = "midLevelAIs"
-				let AIGearCategory = "skip"
-				if (isPmc)
-					bot = AITweaks.regenBot(bot, true, isPmc ? pmcSide : false, sessionId)
-				
-				//Difficulty swaps. These are useless, at the moment, save for IDing bots with botmon.
-				if (lowerCaseLLAIs.includes(role.toLowerCase())) //Low level AIs are set to "Easy"
-				{
-					bot.Info.Settings.BotDifficulty = "easy"
-					AICategory = "lowLevelAIs"
-				}
-				else if (lowerCaseMLAIs.includes(role.toLowerCase())) //Mid level AIs are set to "Hard"
-				{
-					bot.Info.Settings.BotDifficulty = "hard"
-					AICategory = "midLevelAIs"
-				}
-				else if (lowerCaseHLAIs.includes(role.toLowerCase())) //High level AIs are set to "Impossible"
-				{
-					bot.Info.Settings.BotDifficulty = "impossible"
-					AICategory = "highLevelAIs"
-				}
-				//Anything not on the AI lists should be set to 'normal', and anything on them should be something else.
-				else
-					bot.Info.Settings.BotDifficulty = "normal"
-				
-				if (lowerCaseScavGearAIs.includes(role.toLowerCase()))
-					AIGearCategory = "scavs"
-				else if (lowerCaseRaiderGearAIs.includes(role.toLowerCase()))
-					AIGearCategory = "raiders"
-				else if (lowerCasePMCGearAIs.includes(role.toLowerCase()))
-					AIGearCategory = "PMCs"
-								
-				// console.log(`${role} ${bot.Info.Settings.Role} ${bot.Info.Side} ${AICategory} ${AIGearCategory}`)
-				
-				//This is where behaviour changes happen. This comes after inventory changes that depend on role.
-				if (switchBoard && switchBoard[role]) //If Switchboard is enabled, and the bot is elligible
-				{
-					//Role swaps
-					if (switchChances[role].length > 0)
-					{
-						let switchRole = switchChances[role][RandomUtil.getInt(0, switchChances[role].length - 1)] //Randomly pick a role from the list
-						if (switchRole != "none")
-							bot.Info.Settings.Role = switchRole //Switch role
-					}
-				}
-				//If switching is enabled but the bot isn't elligible, and isn't a boss
-				else if (switchBoard && !switchBoard[role] && (!botHelper.isBotBoss(role) && role.toLowerCase().includes("sectant")))
-				{
-					
-				}
-				else //Even if switchboard isn't enabled, do not allow PMCs to default to cursed behaviour.
-				{
-					if (role == bot.Info.Settings.Role.toLowerCase() //If the original role matches the current role
-					&& bot.Info.Settings.Role.toLowerCase() == AKIPMC.toLowerCase() //If the current role is the AKIPMC default role
-					&& AKIPMC.toLowerCase() == "cursedassault") //If the AKIPMC default role is cursedassault
-					//if (bot.Info.Settings.Role == AKIPMC && AKIPMC == "cursedassault")
-					{
-						// bot.Info.Settings.Role = database.globals.config.FinsBotSwitching.HLB//"pmcBot"
-						bot.Info.Settings.Role = PMCSwap
-						bot.Info.Settings.BotDifficulty = "normal"
-					}
-				}
-				//Make sure their skills match their new role if they're on the list
-				if (["followertagilla"].includes(bot.Info.Settings.Role.toLowerCase()))
-					bot.Skills = botGenerator.generateSkills(botTypes[bot.Info.Settings.Role.toLowerCase()].skills)
-				if (debug)
-				{
-					debugText.push(`${botNum + 1}: ${origRole} -> ${bot.Info.Settings.Role} Side: ${bot.Info.Side} Difficulty: ${bot.Info.Settings.BotDifficulty}`)
-					if (!config.stats)
-						config.stats = {}
-					if (!config.stats[origRole])
-						config.stats[origRole] = {"number": 0,
-							"Headwear":{"armored": 0,"unarmored": 0,"none": 0},
-							"ArmorVest":{"armored": 0,"unarmored": 0,"none": 0},
-							"TacticalVest":{"armored": 0,"unarmored": 0,"none": 0},
-						}
-					//Tracking armor stuff
-					config.stats[origRole].number++
-					for (let slot in config.stats[origRole])
-					{
-						if (slot == "number")
-							continue
-						let item = bot.Inventory.items.find(i => i.slotId == slot)
-						if (item && item._tpl)
-							item = itemdb[item._tpl]
-						if (item && item._props)
-						{
-							if (item._props.armorClass && item._props.armorClass > 0)
-								config.stats[origRole][slot].armored++
-							else
-								config.stats[origRole][slot].unarmored++
-						}
-						else
-							config.stats[origRole][slot].none++
-					}
-					//console.log(`${role} ${bot.Info.Settings.Role} ${bot.Info.Side} ${isPmc} ${armBand ? armBand._tpl : "None"} ${AICategory} ${AIGearCategory}`)
-				}
-				//Inelegant. Inefficient. But it'll do for now, I think.
-				bot.Inventory.items = bot.Inventory.items.filter(i => i._tpl != undefined && !blacklistFile.includes(i._tpl) && itemdb[i._tpl] != undefined && itemdb[i._tpl]?._props?.FinAllowed != false)
-				// console.log(`${bot.Info.Settings.origRole} -> gear from: ${role} role: ${bot.Info.Settings.Role} Side:  ${bot.Info.Side} PMC: ${isPmc} ${AICategory} ${AIGearCategory}`)
 			
+			let pmcSide = ""
+			
+			let isPmc = false
+
+			if(bot.Inventory.items.find(i => i.slotId == "Dogtag"))
+				bot.Info.Settings.isPmc = true
+			
+			
+			//use of all-lowercase exusec as the USEC PMC type makes this a problem
+			// if (properCaps[bot.Info.Settings.Role.toLowerCase()])
+				// bot.Info.Settings.Role = properCaps[bot.Info.Settings.Role.toLowerCase()]
+			let origRole = bot.Info.Settings.Role
+			
+			let role = origRole
+			//Negative values will skip tactical / optics limiting functions
+			let maxTacticalDevices = -1
+			let maxPrimaryOptics = -1
+			//Default to 0 to preserve bosses etc.
+			let replaceWithPresetPCT = 0
+			if (scavBots.includes(role.toLowerCase()))
+			{
+				maxTacticalDevices = config.AIgearChanges.scavs.maxTacticalDevices
+				maxPrimaryOptics = config.AIgearChanges.scavs.maxPrimaryOptics
+				replaceWithPresetPCT = config.AIgearChanges.scavs.chanceToUseWeaponFromPlayerPresets0_100
 			}
-			// console.timeEnd('bot');
+			else if (raiderBots.includes(role.toLowerCase()))
+			{
+				maxTacticalDevices = config.AIgearChanges.raiders.maxTacticalDevices
+				maxPrimaryOptics = config.AIgearChanges.raiders.maxPrimaryOptics
+				replaceWithPresetPCT = config.AIgearChanges.raiders.chanceToUseWeaponFromPlayerPresets0_100
+			}
+			else if (pmcBots.includes(role.toLowerCase()))
+			{
+				maxTacticalDevices = config.AIgearChanges.PMCs.maxTacticalDevices
+				maxPrimaryOptics = config.AIgearChanges.PMCs.maxPrimaryOptics
+				replaceWithPresetPCT = config.AIgearChanges.PMCs.chanceToUseWeaponFromPlayerPresets0_100
+			}
+			//Disable the use of presets if progressive gear is enabled
+			//...Because obviously.
+			if (config.miscChanges.enableProgressiveGear)
+				replaceWithPresetPCT = 0
+			
+			// isPmc = (pmcSide == "Bear" || pmcSide == "Usec");
+			// isPmc = (role in BotConfig.pmc.types && RandomUtil.getInt(0, 99) < BotConfig.pmc.types[role]);
+			
+
+			isPmc = bot.Info.Settings.isPmc;
+
+			//Logger.info(`bot.Info.Settings.isPmc: ${bot.Info.Settings.isPmc}`)
+			if (isPmc)
+			{
+				pmcSide = (RandomUtil.getInt(0, 99) < BotConfig.pmc.isUsec) ? "Usec" : "Bear";
+				//Logger.info(`pmcSide: ${pmcSide}`)
+				role = AKIPMC
+				// bot.Info.Settings.Role = AKIPMC
+			}
+			
+			
+
+			// role = role.toLowerCase()
+			if (pmcSide == "Bear" && isPmc)
+				bot.Info.Side = bearAlliance ? "Savage" : pmcSide
+			else if (pmcSide == "Usec" && isPmc)
+				bot.Info.Side = usecAlliance ? "Savage" : pmcSide
+			else
+			{
+				bot.Info.Side = (isPmc) ? pmcSide : "Savage"
+			}
+			
+			let AICategory = "midLevelAIs"
+			let AIGearCategory = "skip"
+			if (isPmc)
+				bot = AITweaks.regenBot(bot, true, isPmc ? pmcSide : false, sessionId)
+			
+			//Difficulty swaps. These are useless, at the moment, save for IDing bots with botmon.
+			if (lowerCaseLLAIs.includes(role.toLowerCase())) //Low level AIs are set to "Easy"
+			{
+				bot.Info.Settings.BotDifficulty = "easy"
+				AICategory = "lowLevelAIs"
+			}
+			else if (lowerCaseMLAIs.includes(role.toLowerCase())) //Mid level AIs are set to "Hard"
+			{
+				bot.Info.Settings.BotDifficulty = "hard"
+				AICategory = "midLevelAIs"
+			}
+			else if (lowerCaseHLAIs.includes(role.toLowerCase())) //High level AIs are set to "Impossible"
+			{
+				bot.Info.Settings.BotDifficulty = "impossible"
+				AICategory = "highLevelAIs"
+			}
+			//Anything not on the AI lists should be set to 'normal', and anything on them should be something else.
+			else
+				bot.Info.Settings.BotDifficulty = "normal"
+			
+			if (lowerCaseScavGearAIs.includes(role.toLowerCase()))
+				AIGearCategory = "scavs"
+			else if (lowerCaseRaiderGearAIs.includes(role.toLowerCase()))
+				AIGearCategory = "raiders"
+			else if (lowerCasePMCGearAIs.includes(role.toLowerCase()))
+				AIGearCategory = "PMCs"
+							
+			// console.log(`${role} ${bot.Info.Settings.Role} ${bot.Info.Side} ${AICategory} ${AIGearCategory}`)
+			
+			//This is where behaviour changes happen. This comes after inventory changes that depend on role.
+			if (switchBoard && switchBoard[role]) //If Switchboard is enabled, and the bot is elligible
+			{
+				//Role swaps
+				if (switchChances[role].length > 0)
+				{
+					let switchRole = switchChances[role][RandomUtil.getInt(0, switchChances[role].length - 1)] //Randomly pick a role from the list
+					if (switchRole != "none")
+						bot.Info.Settings.Role = switchRole //Switch role
+				}
+			}
+			//If switching is enabled but the bot isn't elligible, and isn't a boss
+			else if (switchBoard && !switchBoard[role] && (!botHelper.isBotBoss(role) && role.toLowerCase().includes("sectant")))
+			{
+				
+			}
+			else //Even if switchboard isn't enabled, do not allow PMCs to default to cursed behaviour.
+			{
+				if (role == bot.Info.Settings.Role.toLowerCase() //If the original role matches the current role
+				&& bot.Info.Settings.Role.toLowerCase() == AKIPMC.toLowerCase() //If the current role is the AKIPMC default role
+				&& AKIPMC.toLowerCase() == "cursedassault") //If the AKIPMC default role is cursedassault
+				//if (bot.Info.Settings.Role == AKIPMC && AKIPMC == "cursedassault")
+				{
+					// bot.Info.Settings.Role = database.globals.config.FinsBotSwitching.HLB//"pmcBot"
+					bot.Info.Settings.Role = PMCSwap
+					bot.Info.Settings.BotDifficulty = "normal"
+				}
+			}
+			//Make sure their skills match their new role if they're on the list
+			if (["followertagilla"].includes(bot.Info.Settings.Role.toLowerCase()))
+				bot.Skills = botGenerator.generateSkills(botTypes[bot.Info.Settings.Role.toLowerCase()].skills)
+
+			//Inelegant. Inefficient. But it'll do for now, I think.
+			bot.Inventory.items = bot.Inventory.items.filter(i => i._tpl != undefined && !blacklistFile.includes(i._tpl) && itemdb[i._tpl] != undefined && itemdb[i._tpl]?._props?.FinAllowed != false)
+			// console.log(`${bot.Info.Settings.origRole} -> gear from: ${role} role: ${bot.Info.Settings.Role} Side:  ${bot.Info.Side} PMC: ${isPmc} ${AICategory} ${AIGearCategory}`)
+			
 		}
 		
-
 		return bots;
 	}
 	
