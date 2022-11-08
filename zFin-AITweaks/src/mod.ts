@@ -12,10 +12,11 @@ import { IBotConfig } from "@spt-aki/models/spt/config/IBotConfig";
 import { IInRaidConfig  } from "@spt-aki/models/spt/config/IInraidConfig";
 import { JsonUtil } from "@spt-aki/utils/JsonUtil";
 import { BotGenerator } from "@spt-aki/generators/BotGenerator";
+import { BotInventoryGenerator } from "@spt-aki/generators/BotInventoryGenerator";
 import { BotHelper } from "@spt-aki/helpers/BotHelper";
 import { WeightedRandomHelper } from "@spt-aki/helpers/WeightedRandomHelper";
 import { ProfileHelper } from "@spt-aki/helpers/ProfileHelper";
-
+import { BotEquipmentFilterService } from "@spt-aki/services/BotEquipmentFilterService";
 import { HttpResponseUtil } from "@spt-aki/utils/HttpResponseUtil";
 import { BotController} from "@spt-aki/controllers/BotController";
 
@@ -25,7 +26,7 @@ let RandomUtil
 let weightedRandomHelper 
 let configServer : ConfigServer;
 let botGenerator
-let BotInventoryGenerator
+let botInventoryGenerator
 let profileHelper
 let botHelper
 let httpResponse
@@ -52,7 +53,7 @@ let config
 let advAIConfig
 let InRaidConfig 
 let progDiff 
-
+let botEquipmentFilterService
 
 const modName = "Fin-AITweaks"
 const AKIPMC = "assaultGroup" //Easily change which bot is designated to be turned into PMCs
@@ -127,13 +128,13 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		Logger.info('FINs AI TWEAKS: SetupInitialValues')
 		RandomUtil = container.resolve("RandomUtil")
 		botGenerator = container.resolve("BotGenerator")
-		BotInventoryGenerator = container.resolve("BotInventoryGenerator")
+		botInventoryGenerator = container.resolve("BotInventoryGenerator")
 		botController = container.resolve("BotController")
 		weightedRandomHelper = container.resolve("WeightedRandomHelper")
 		httpResponse = container.resolve("HttpResponseUtil")
 		profileHelper = container.resolve("ProfileHelper")
 		botHelper = container.resolve("BotHelper")
-
+		botEquipmentFilterService = container.resolve("BotEquipmentFilterService")
 		jsonUtil = container.resolve("JsonUtil")
 
 		//Use to find mods. ModLoader.getModPath('modname')
@@ -1486,7 +1487,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 
 			//The big list of "Things that bots ought to have". I want to delete this, but one person had a problem so now a whole new thing is needed. >:/
 			//I don't think this eats up *too* much processing time, at least.
-			if (!bot.Inventory
+			/* if (!bot.Inventory
 			|| !bot.Inventory.items
 			|| !bot.Info
 			|| !bot.Info.Settings
@@ -1499,10 +1500,11 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 				|| !bot.Info.Settings.Role
 				|| !botTypes[bot.Info.Settings.Role.toLowerCase()])
 					bot.Info.Settings.Role = "Assault"
+
 				bot = AITweaks.regenBot(bot, true, false, sessionId)
 				//Compatiblity
 				bot.Info.Settings.Role = bot.Info.Settings.origRole
-			}
+			} */
 			
 			
 			let pmcSide = ""
@@ -1556,26 +1558,20 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 			//Logger.info(`bot.Info.Settings.isPmc: ${bot.Info.Settings.isPmc}`)
 			if (isPmc)
 			{
-				pmcSide = (RandomUtil.getInt(0, 99) < BotConfig.pmc.isUsec) ? "Usec" : "Bear";
+				pmcSide = botGenerator.getRandomisedPmcSide();
 				//Logger.info(`pmcSide: ${pmcSide}`)
-				role = AKIPMC
+
 				// bot.Info.Settings.Role = AKIPMC
 			}
 			
+			bot.Info.Settings.Role = role;
+			bot.Info.Side = (isPmc) ? pmcSide : "Savage";
+			
 			
 
-			// role = role.toLowerCase()
-			if (pmcSide == "Bear" && isPmc)
-				bot.Info.Side = bearAlliance ? "Savage" : pmcSide
-			else if (pmcSide == "Usec" && isPmc)
-				bot.Info.Side = usecAlliance ? "Savage" : pmcSide
-			else
-			{
-				bot.Info.Side = (isPmc) ? pmcSide : "Savage"
-			}
-			
 			let AICategory = "midLevelAIs"
 			let AIGearCategory = "skip"
+
 			if (isPmc)
 				bot = AITweaks.regenBot(bot, true, isPmc ? pmcSide : false, sessionId)
 			
@@ -1640,8 +1636,9 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 			if (["followertagilla"].includes(bot.Info.Settings.Role.toLowerCase()))
 				bot.Skills = botGenerator.generateSkills(botTypes[bot.Info.Settings.Role.toLowerCase()].skills)
 
-			//Inelegant. Inefficient. But it'll do for now, I think.
-			bot.Inventory.items = bot.Inventory.items.filter(i => i._tpl != undefined && !blacklistFile.includes(i._tpl) && itemdb[i._tpl] != undefined && itemdb[i._tpl]?._props?.FinAllowed != false)
+			
+
+			//bot.Inventory.items = bot.Inventory.items.filter(i => i._tpl != undefined && !blacklistFile.includes(i._tpl) && itemdb[i._tpl] != undefined && itemdb[i._tpl]?._props?.FinAllowed != false)
 			// console.log(`${bot.Info.Settings.origRole} -> gear from: ${role} role: ${bot.Info.Settings.Role} Side:  ${bot.Info.Side} PMC: ${isPmc} ${AICategory} ${AIGearCategory}`)
 			
 		}
@@ -1668,11 +1665,12 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 				role = botNameSwaps[pmcSide.toLowerCase()]
 			else
 				role = pmcSide.toLowerCase()
-		const node = database.bots.types[role.toLowerCase()];
 
-
-		const levelResult = botGenerator.generateRandomLevel(node.experience.level.min, node.experience.level.max);
-
+		
+		const node = database.bots.types[role.toLowerCase()]; 
+		
+		const levelResult = botGenerator.generateRandomLevel(role, node.experience.level.min, node.experience.level.max);
+		
 		bot.Info.Nickname = `${RandomUtil.getArrayValue(node.firstName)} ${RandomUtil.getArrayValue(node.lastName) || ""}`;
 		bot.Info.Experience = levelResult.exp;
 		bot.Info.Level = levelResult.level;
@@ -1687,15 +1685,21 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		bot.Customization.Hands = RandomUtil.getArrayValue(node.appearance.hands);
 		if (regenInventory)
 		{
-			bot.Inventory = BotInventoryGenerator.generateInventory(sessionId, node.inventory, node.chances, node.generation, role, (pmcSide) ? true: false);
+			bot.Inventory = botInventoryGenerator.generateInventory(sessionId, node.inventory, node.chances, node.generation, role, (pmcSide) ? true: false);
+			const playerLevel = profileHelper.getPmcProfile(sessionId).Info.Level;
+			botEquipmentFilterService.filterBotEquipment(node, playerLevel, (pmcSide) ? true: false, role);
+
+			//let backpack = bot.Inventory.items.find(i => i.slotId == "Backpack")
 			
-			let backpack = bot.Inventory.items.find(i => i.slotId == "Backpack")
-			
-			let whileCount = 0
+			/* let whileCount = 0
 			while (!bot.Inventory.items.find(i => ["FirstPrimaryWeapon", "SecondPrimaryWeapon", "Holster"].includes(i.slotId)))
 				{
-					whileCount++
-					bot.Inventory = BotInventoryGenerator.generateInventory(node.inventory, node.chances, node.generation, role, (pmcSide) ? true: false);
+					whileCount++ 
+
+					bot.Inventory = botInventoryGenerator.generateInventory(sessionId, node.inventory, node.chances, node.generation, role, (pmcSide) ? true: false);
+					
+					
+
 					if (whileCount > 3)
 					{
 						if (false)
@@ -1705,12 +1709,14 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 						}
 						break
 					}
-				}
-			if (role.toLowerCase() == botNameSwaps.usec || role.toLowerCase() == botNameSwaps.bear)
-			{
-				bot = botGenerator.generateDogtag(bot);
-			}
+				} */
+
+		if (botHelper.isBotPmc(role))
+        {
+            bot = botGenerator.generateDogtag(bot);
+        }
 		}
+
 		return bot
 	}
 	
@@ -1949,7 +1955,8 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		if (!config.disableAllAIChanges)
 			AITweaks.scrambleBots()
 		//It's so nice and compact now!
-		if (!config.disableAllAIChanges && !config.AIbehaviourChanges.enabled)
+
+		/* if (!config.disableAllAIChanges && !config.AIbehaviourChanges.enabled)
 		{
 			for (let aiTypes in config.aiChanges.changeBots)
 				for (let botIndex in config.aiChanges.changeBots[aiTypes])
@@ -1965,11 +1972,12 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 			if (PMCSwap.toLowerCase() != "followerTagilla".toLowerCase())
 				botTypes["followertagilla"].difficulty = AITweaks.clone(database.globals.config.FinsDifficultyLevels.lowLevelAIs)
 			Logger.info("Fin's AI Tweaks: AI difficulty changes complete.")
-		}
+		} */
+		
 		//Do this after all the AI changes, to make sure this one sticks
 		if (!config.disableAllAIChanges)
 		{
-			// AITweaks.setPMCHostility()
+			//AITweaks.setPMCHostility()
 			AITweaks.checkTalking()
 
 			if (advAIConfig.Enabled == true)
@@ -2008,7 +2016,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 					}
 	}
 	
-	static swapBearUsecConfig(bearSwap, usecSwap)
+	/* static swapBearUsecConfig(bearSwap, usecSwap)
 	{
 		bearSwap = bearSwap.toLowerCase()
 		usecSwap = usecSwap.toLowerCase()
@@ -2054,14 +2062,12 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 			botTypes[usecSwap] = AITweaks.clone(botTypes[BotConfig.pmc.usecType])
 			// botTypes[BotConfig.pmc.usecType.toLowerCase()] = AITweaks.clone(botTypes[BotConfig.pmc.usecType])
 		}
-	}
-	
-
+	} */
 	
 	main()
 	{
 		AITweaks.fillEmptyDifficultySlots()
-		AITweaks.swapBearUsecConfig(botNameSwaps.bear, botNameSwaps.usec)
+		// AITweaks.swapBearUsecConfig(botNameSwaps.bear, botNameSwaps.usec)
 		
 		//Change the core AI values. Check if any bots are set to be quiet
 		AITweaks.changeCoreAI()
