@@ -8,7 +8,7 @@
     "disableAllSpawnChanges": false,
     "disableAllGearChanges": false,
     "disableAllAIChanges": false,
-    "silenceWeaponGenErrors": true,
+    "silenceWeaponGenErrors": false,
     "aiChanges": {
         "changeBots": {
             "lowLevelAIs": [
@@ -26,10 +26,8 @@
             ],
             "highLevelAIs": [
                 "assaultgroup",
-                "bear_ai",
-                "usec_ai",
-                "test",
-                "bosstest"
+                "bear",
+                "usec"
             ]
         },
         "overallAIDifficultyMod": -0.5,
@@ -117,11 +115,9 @@
             "followergluharsnipe"
         ],
         "pmcBots": [
-            "bear_ai",
-            "usec_ai",
-            "assaultgroup",
-            "test",
-            "bosstest"
+            "bear",
+            "usec",
+            "assaultgroup"
         ],
         "scavs": {
             "changeGear": true,
@@ -414,8 +410,8 @@
                 0.8,
                 1,
                 1,
-                1.2,
-                1.2,
+                1,
+                1,
                 1,
                 1,
                 0.6,
@@ -425,24 +421,24 @@
             "maxBotsAlive": 40
         },
         "extraWaves": {
-            "scavWaves": 4,
+            "scavWaves": 0,
             "scavWaveSizeMin": 1,
             "scavWaveSizeMax": 2,
             "PMCWaves": 3,
             "PMCWaveSizeMin": 1,
             "PMCWaveSizeMax": 3,
-            "raiderWaves": 4,
+            "raiderWaves": 0,
             "raiderWaveSizeMin": 1,
             "raiderWaveSizeMax": 2,
             "rogueWaves": 0,
             "rogueWaveSizeMin": 2,
             "rogueWaveSizeMax": 2,
-            "gluharRaiderWaves": 1,
+            "gluharRaiderWaves": 0,
             "gluharRaiderWaveSizeMin": 2,
             "gluharRaiderWaveSizeMax": 2,
             "OnlyWorksProperlyWhenTaggedAndCursedIsEnabled": {
                 "waveSpawnChancePCT0_100": 50,
-                "cultistWaves": 2,
+                "cultistWaves": 0,
                 "cultistWaveSizeMin": 5,
                 "cultistWaveSizeMax": 5
             }

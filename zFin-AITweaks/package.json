@@ -1,6 +1,6 @@
 {
     "name": "Fin's AI Tweaks",
-    "version": "1.2.1",
+    "version": "1.2.3",
     "main": "src/mod.js",
     "license": "See License file",
     "author": "Fin",

@@ -77,13 +77,15 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		
 				
 		this.main()
-		
-		// this.dumpFAITAIFiles()
-		//Debugging options:
-		
-		//Performs the functions FAIT normally does only after the game has begun. You should enable this if you're doing any debugging.
-		false ? AITweaks.runOnGameStart() : null
 
+		AITweaks.runOnGameStart()
+
+		if (config.allowHealthTweaks.enabled){
+			this.adjustHealthValues(config.allowHealthTweaks.multipliers.PMCHealthMult, config.allowHealthTweaks.multipliers.scavHealthMult, 
+				config.allowHealthTweaks.multipliers.raiderHealthMult, config.allowHealthTweaks.multipliers.bossHealthMult, 
+				config.allowHealthTweaks.multipliers.cultistHealthMult)	
+		}
+		
 		if (!database.globals.config.genVals)
 			AITweaks.establishBotGenValues()
 			
@@ -107,6 +109,8 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		staticRouterModService.registerStaticRouter(`StaticAkiRaidSave${modName}`,[{url: "/raid/profile/save",
 			action: (url, info, sessionId, output) =>{
 				AITweaks.onRaidSave(url, info, sessionId, output);
+				if (!database.globals.config.genVals)
+					AITweaks.establishBotGenValues()
 				return output
 			}}],"aki");
 		//Game start
@@ -206,7 +210,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		for (let index = 0; index < dirArray.length - 4; index++)
 			directory += (dirArray[index] + "/")
 		directory = directory.slice(0,-1)
-		orig.bots = AITweaks.readFolder(`${directory}/Aki_Data/Server/database/bots/types`)
+		
 		profFolder = AITweaks.readFolder(`${directory}/user/profiles`)
 		baseAI = AITweaks.clone(botTypes.pmcbot.difficulty.hard)
 
@@ -216,7 +220,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		advAIConfig = require("../config/advanced AI config.json")
 		progDiff = require("../donottouch/progress.json")
 
-		
+
 	}
 	
 	static weightedRandom(items: string | any[], weights: string | any[]): { item: any; index: number; }
@@ -286,7 +290,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 	static onRaidSave(url, info, sessionId, output)
 	{
 		Logger.info('FINs AI TWEAKS: onRaidSave')
-		if (config.overallDifficultyMultipliers.enableAutomaticDifficulty)
+		if (config.enableAutomaticDifficulty)
 			AITweaks.recordWinLoss(url, info, sessionId)
 		delete database.globals.config.genVals
 		return output
@@ -326,14 +330,10 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 	//value is an array of all possible values
 	static changeStat(type, value, difficulty, botCat, multiplier?)
 	{
-		if (config.printDifficultyInfo)
-		{
-			database.globals.config.FAITDiff[type] = value
-		}
 		if (multiplier == undefined)
 			multiplier = 1
 		let setValue
-		let debug = undefined
+
 		if (value.length == 1)
 		{
 			if (typeof(value[0]) == "number")
@@ -498,51 +498,6 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		path.DIST_NOT_TO_GROUP = 15
 		//Automatically square it, because math is hard.
 		path.DIST_NOT_TO_GROUP_SQR = path.DIST_NOT_TO_GROUP * path.DIST_NOT_TO_GROUP
-	}
-	
-	dumpFAITAIFiles()
-	{
-		let excludedSettings = ["WARN_BOT_TYPES","ENEMY_BOT_TYPES","FRIENDLY_BOT_TYPES","REVENGE_BOT_TYPES","REVENGE_FOR_SAVAGE_PLAYERS","DEFAULT_ENEMY_USEC","DEFAULT_SAVAGE_BEHAVIOUR","DEFAULT_BEAR_BEHAVIOUR","DEFAULT_USEC_BEHAVIOUR"]
-		let testAI = jsonUtil.clone(botTypes.pmcbot.difficulty.normal)
-		let diffFile = {}
-		for (let i = 0; i < 20; i++)
-		{
-			AITweaks.changeAI(null, testAI, i, null, "nope")
-			for (let cat in testAI)
-			{
-				diffFile[cat] == undefined ? diffFile[cat] = {} : null
-				for (let setting in testAI[cat])
-					diffFile[cat][setting] == undefined ? diffFile[cat][setting] = [testAI[cat][setting]] : diffFile[cat][setting].push(testAI[cat][setting])
-			}
-		}
-		for (let cat in diffFile)
-			for (let setting in diffFile[cat])
-			{
-				while(this.compareRightHandSettingRatios(diffFile[cat][setting]) && diffFile[cat][setting].length > 2)
-					diffFile[cat][setting].splice(diffFile[cat][setting].length - 1, 1)
-				if (diffFile[cat][setting].length == 2 && diffFile[cat][setting][0] == diffFile[cat][setting][1])
-					diffFile[cat][setting].splice(1,1)
-			}
-		for (let cat in diffFile)
-		{
-			// console.log(diffFile["Aiming"]["SHOOT_TO_CHANGE_PRIORITY"])
-		// console.log(testAI["Aiming"]["SHOOT_TO_CHANGE_PRIORITY"])
-		// console.log(botTypes.pmcbot.difficulty.normal["Aiming"]["SHOOT_TO_CHANGE_PRIORITY"])
-			for (let setting in diffFile[cat])
-			{
-				for (let value in diffFile[cat][setting])
-					diffFile[cat][setting][value] = AITweaks.roundNumber(diffFile[cat][setting][value])
-				if (excludedSettings.includes(setting))
-					delete diffFile[cat][setting]
-				else if (diffFile[cat][setting].length == 1 && diffFile[cat][setting][0] == botTypes.pmcbot.difficulty.normal[cat][setting])
-				{
-					// console.log(setting)
-					delete diffFile[cat][setting]
-				}
-			}
-		}
-		
-		AITweaks.saveToFile(diffFile, `doNotTouch/~~FAIL_Difficulty_Settings.json`)
 	}
 	
 	static roundNumber(stat) //Actually truncates
@@ -1357,39 +1312,10 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 	
 	static establishBotGenValues()
 	{
-		// console.log(`BotConfig settings:`)
-		// console.log(BotConfig)
-		//Unless I want to think of a cleverer way of putting this function in here, just grab whatever values you need straight from the config. No fancy passing parameters to this function, oh no.
-		let allBEARs = config.spawnChanges.controlOptions.allPMCsareBEARs
-		let allUSECs = config.spawnChanges.controlOptions.allPMCsareUSECs
-		//If both are true, randomly pick a side
-		if (allBEARs && allUSECs)
-			if (RandomUtil.getInt(0,1) == 1)
-			{
-				allBEARs = true
-				allUSECs = false
-			}
-			else
-			{
-				allBEARs = false
-				allUSECs = true
-			}
-		
-		let bearAlliance = !config.aiChanges.IfYouDisableTheseThePMCSWontCountForQuestKills.scavsFightBEARBots
-		let usecAlliance = !config.aiChanges.IfYouDisableTheseThePMCSWontCountForQuestKills.scavsFightUSECBots
-		if (config.disableAllAIChanges)
-			[allBEARs, allUSECs, bearAlliance, usecAlliance] = [false, false, false, false]
-		
 		let hasPMCs = []
 		for (let i in config.aiChanges.changeBots)
 			if (config.aiChanges.changeBots[i].includes(botNameSwaps.bear) || config.aiChanges.changeBots[i].includes(botNameSwaps.usec))
 				hasPMCs.push[i]
-		let pmcBehaviourChanged = false
-		if (config.AIbehaviourChanges.enabled && !config.disableAllAIChanges)
-			for (let i in hasPMCs)
-				for (let behaviour in config.AIbehaviourChanges[hasPMCs[i]])
-					if (behaviour != "default" && config.AIbehaviourChanges[hasPMCs[i]] > 0)
-						pmcBehaviourChanged = true
 		
 		let output = [];
 		
@@ -1399,12 +1325,6 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		let raiderBots = []
 		let pmcBots = []
 		
-		for (let i in config.AIgearChanges.scavBots)
-			scavBots.push(config.AIgearChanges.scavBots[i].toLowerCase())
-		for (let i in config.AIgearChanges.raiderBots)
-			raiderBots.push(config.AIgearChanges.raiderBots[i].toLowerCase())
-		for (let i in config.AIgearChanges.pmcBots)
-			pmcBots.push(config.AIgearChanges.pmcBots[i].toLowerCase())
 		
 		//Difficulty switcheroo
 		//database.globals.config.FinsDifficultyLevels
@@ -1424,20 +1344,11 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		let lowerCaseScavGearAIs = [] //Low level AIs
 		let lowerCaseRaiderGearAIs = [] //Mid level AIs
 		let lowerCasePMCGearAIs = [] //High level AIs
-		//These aren't used until a little further down
-			for (let name in config.AIgearChanges.scavBots)
-				lowerCaseScavGearAIs.push(config.AIgearChanges.scavBots[name].toLowerCase())
-			for (let name in config.AIgearChanges.raiderBots)
-				lowerCaseRaiderGearAIs.push(config.AIgearChanges.raiderBots[name].toLowerCase())
-			for (let name in config.AIgearChanges.pmcBots)
-				lowerCasePMCGearAIs.push(config.AIgearChanges.pmcBots[name].toLowerCase())
+		
 		if (config.AIbehaviourChanges.enabled && !config.disableAllAIChanges)
 			[switchBoard, switchChances] = AITweaks.createSwitchBoard()
 		database.globals.config.genVals = {
-			"usecAlliance": usecAlliance,
-			"bearAlliance": bearAlliance,
-			"allUSECs": allUSECs,
-			"allBEARs": allBEARs,
+
 			"scavBots": scavBots,
 			"raiderBots": raiderBots,
 			"pmcBots": pmcBots,
@@ -1449,34 +1360,23 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 			"lowerCasePMCGearAIs": lowerCasePMCGearAIs,
 			"switchBoard": switchBoard,
 			"switchChances": switchChances,
-			"pmcBehaviourChanged": pmcBehaviourChanged
 			}
 	}
 	
 	static pmcScavAlliance(bots, sessionId)
 	{
-		let debug = database.globals.config.debugFAITSpawns ? true : false
 		
 		/* if (!database.globals.config.genVals)
 			AITweaks.establishBotGenValues() */
 
-		let usecAlliance = database.globals.config.genVals.usecAlliance
-		let bearAlliance = database.globals.config.genVals.bearAlliance
-		let allUSECs = database.globals.config.genVals.allUSECs
-		let allBEARs = database.globals.config.genVals.allBEARs
 		let scavBots = database.globals.config.genVals.scavBots
 		let raiderBots = database.globals.config.genVals.raiderBots
 		let pmcBots = database.globals.config.genVals.pmcBots
 		let lowerCaseLLAIs = database.globals.config.genVals.lowerCaseLLAIs
 		let lowerCaseMLAIs = database.globals.config.genVals.lowerCaseMLAIs
 		let lowerCaseHLAIs = database.globals.config.genVals.lowerCaseHLAIs
-		let lowerCaseScavGearAIs = database.globals.config.genVals.lowerCaseScavGearAIs
-		let lowerCaseRaiderGearAIs = database.globals.config.genVals.lowerCaseRaiderGearAIs
-		let lowerCasePMCGearAIs = database.globals.config.genVals.lowerCasePMCGearAIs
 		let switchBoard = database.globals.config.genVals.switchBoard
 		let switchChances = database.globals.config.genVals.switchChances
-		let pmcBehaviourChanged = database.globals.config.genVals.pmcBehaviourChanged
-		let debugText = []
 
 		for (let botIndex in bots)
 		{
@@ -1491,7 +1391,6 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 			let isPmc = botHelper.shouldBotBePmc(role);
 			let pmcSide;
 			let AICategory = "midLevelAIs"
-			let AIGearCategory = "skip"
 
 			if (isPmc)
 			{
@@ -1533,7 +1432,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 					let switchRole = switchChances[role][RandomUtil.getInt(0, switchChances[role].length - 1)] //Randomly pick a role from the list
 					if (switchRole != "none"){
 						bot.Info.Settings.Role = switchRole //Switch role
-						Logger.info(`switch bot from ${bot.Info.Settings.origRole} to ${switchRole}`)
+						//Logger.info(`switch bot from ${bot.Info.Settings.origRole} to ${switchRole}`)
 					}
 						
 
@@ -1553,7 +1452,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 					// bot.Info.Settings.Role = database.globals.config.FinsBotSwitching.HLB//"pmcBot"
 					bot.Info.Settings.Role = PMCSwap
 					bot.Info.Settings.BotDifficulty = "normal"
-					Logger.info(`switch bot from ${bot.Info.Settings.origRole} to ${PMCSwap}`)
+					//Logger.info(`switch bot from ${bot.Info.Settings.origRole} to ${PMCSwap}`)
 				}
 			}
 			//Make sure their skills match their new role if they're on the list
@@ -1579,76 +1478,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 			});
 	}
 	
-	//Re-generates a bot
-	/* static regenBot(bot, regenInventory, pmcSide, sessionId)
-	{
-		let role = bot.Info.Settings.Role.toLowerCase()
-		if (bot.Info.Settings.origRole)
-			role = bot.Info.Settings.origRole.toLowerCase()
-		if (pmcSide)
-			if (botNameSwaps[pmcSide.toLowerCase()])
-				role = botNameSwaps[pmcSide.toLowerCase()]
-			else
-				role = pmcSide.toLowerCase()
-
-		
-		const node = database.bots.types[role.toLowerCase()]; 
-		
-		const levelResult = botGenerator.generateRandomLevel(role, node.experience.level.min, node.experience.level.max);
-		
-		bot.Info.Nickname = `${RandomUtil.getArrayValue(node.firstName)} ${RandomUtil.getArrayValue(node.lastName) || ""}`;
-		bot.Info.Experience = levelResult.exp;
-		bot.Info.Level = levelResult.level;
-		bot.Info.Settings.Experience = RandomUtil.getInt(node.experience.reward.min, node.experience.reward.max);
-		bot.Info.Settings.StandingForKill = node.experience.standingForKill;
-		bot.Info.Voice = RandomUtil.getArrayValue(node.appearance.voice);
-		bot.Health = botGenerator.generateHealth(node.health);
-		bot.Skills = botGenerator.generateSkills(node.skills);
-		bot.Customization.Head = RandomUtil.getArrayValue(node.appearance.head);
-		bot.Customization.Body = RandomUtil.getArrayValue(node.appearance.body);
-		bot.Customization.Feet = RandomUtil.getArrayValue(node.appearance.feet);
-		bot.Customization.Hands = RandomUtil.getArrayValue(node.appearance.hands);
-
-		if (regenInventory)
-		{
-			const playerLevel = profileHelper.getPmcProfile(sessionId).Info.Level;
-			botEquipmentFilterService.filterBotEquipment(node, playerLevel, (pmcSide) ? true: false, role);
-			bot.Inventory = botInventoryGenerator.generateInventory(sessionId, node.inventory, node.chances, node.generation, role, (pmcSide) ? true: false);
-			
-
-
-			//let backpack = bot.Inventory.items.find(i => i.slotId == "Backpack")
-			
-			 let whileCount = 0
-			while (!bot.Inventory.items.find(i => ["FirstPrimaryWeapon", "SecondPrimaryWeapon", "Holster"].includes(i.slotId)))
-				{
-					whileCount++ 
-
-					bot.Inventory = botInventoryGenerator.generateInventory(sessionId, node.inventory, node.chances, node.generation, role, (pmcSide) ? true: false);
-					
-					
-
-					if (whileCount > 3)
-					{
-						if (false)
-						{
-							console.log(`Bot with node of ${role} and role of ${bot.Info.Settings.Role} spawned without a valid weapon`)
-							console.log(`Length of FP, SP, H node slots = ${Object.keys(node.inventory.equipment.FirstPrimaryWeapon).length}, ${Object.keys(node.inventory.equipment.SecondPrimaryWeapon).length}, ${Object.keys(node.inventory.equipment.Holster).length}`)
-						}
-						break
-					}
-				} 
-
-		if (botHelper.isBotPmc(role))
-        {
-            bot = botGenerator.generateDogtag(bot);
-        }
-		}
-
-		return bot
-	} */
 	
-	//This has gotten messy as hell, and should probably be made a little more flexible, but at this point, given what I've learned about bot difficulties, I'm not sure it's worth the trouble.
 	static createSwitchBoard()
 	{
 		if (!database.globals.config.FinsBotSwitching)
@@ -1783,6 +1613,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 			fs.writeFile(modFolder + "donottouch/progress.json", JSON.stringify(progDiff, null, 4), function (err) {
 			if (err) throw err;
 		});
+		Logger.info(`Fins AI Tweaks:  Difficulty adjusted by ${progDiff[sessionId].diffMod}`)
 		AITweaks.adjustDifficulty(url, info, sessionId)
 		return AITweaks.nullResponse()
 	}
@@ -1827,7 +1658,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		for (let i in database.globals.bot_presets)
 			database.globals.bot_presets[i].UseThis = false
 		//Autmatic difficulty adjustments. THESE ONLY ADJUST WHEN THE SERVER RESTARTS
-		if (config.overallDifficultyMultipliers.enableAutomaticDifficulty && sessionId)
+		if (config.enableAutomaticDifficulty && sessionId)
 		{
 			AITweaks.adjustDifficulty(url, info, sessionId)
 		}
@@ -1882,9 +1713,8 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		AITweaks.generateDifficultyLevels(scavDiffMod, PMCDiffMod, raiderDiffMod, gluharRaiderDiffMod, minionDiffMod)
 		if (!config.disableAllAIChanges)
 			AITweaks.scrambleBots()
-		//It's so nice and compact now!
-
-		/* if (!config.disableAllAIChanges && !config.AIbehaviourChanges.enabled)
+		
+		if (!config.disableAllAIChanges && !config.AIbehaviourChanges.enabled)
 		{
 			for (let aiTypes in config.aiChanges.changeBots)
 				for (let botIndex in config.aiChanges.changeBots[aiTypes])
@@ -1900,7 +1730,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 			if (PMCSwap.toLowerCase() != "followerTagilla".toLowerCase())
 				botTypes["followertagilla"].difficulty = AITweaks.clone(database.globals.config.FinsDifficultyLevels.lowLevelAIs)
 			Logger.info("Fin's AI Tweaks: AI difficulty changes complete.")
-		} */
+		}
 		
 		//Do this after all the AI changes, to make sure this one sticks
 		if (!config.disableAllAIChanges)
@@ -1943,54 +1773,6 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 						return
 					}
 	}
-	
-	/* static swapBearUsecConfig(bearSwap, usecSwap)
-	{
-		bearSwap = bearSwap.toLowerCase()
-		usecSwap = usecSwap.toLowerCase()
-		for (let aiCategory in config.aiChanges.changeBots)
-		{
-			if (config.aiChanges.changeBots[aiCategory].includes("bear"))
-			{
-				let index = config.aiChanges.changeBots[aiCategory].findIndex(i => i == "bear")
-				config.aiChanges.changeBots[aiCategory][index] = bearSwap
-				// config.aiChanges.changeBots[aiCategory].push(BotConfig.pmc.bearType)
-			}
-			if (config.aiChanges.changeBots[aiCategory].includes("usec"))
-			{
-				let index = config.aiChanges.changeBots[aiCategory].findIndex(i => i == "usec")
-				config.aiChanges.changeBots[aiCategory][index] = usecSwap
-				// config.aiChanges.changeBots[aiCategory].push(BotConfig.pmc.usecType)
-			}
-		}
-		for (let aiCategory in config.AIgearChanges)
-		{
-			if (!aiCategory.includes("Bots"))
-				continue
-			if (config.AIgearChanges[aiCategory].includes("bear"))
-			{
-				let index = config.AIgearChanges[aiCategory].findIndex(i => i == "bear")
-				config.AIgearChanges[aiCategory][index] = bearSwap
-				// config.AIgearChanges[aiCategory].push(BotConfig.pmc.bearType)
-			}
-			if (config.AIgearChanges[aiCategory].includes("usec"))
-			{
-				let index = config.AIgearChanges[aiCategory].findIndex(i => i == "usec")
-				config.AIgearChanges[aiCategory][index] = usecSwap
-				// config.AIgearChanges[aiCategory].push(BotConfig.pmc.usecType)
-			}
-		}
-		if (!botTypes[bearSwap])
-		{
-			botTypes[bearSwap] = AITweaks.clone(botTypes[BotConfig.pmc.bearType])
-			// botTypes[BotConfig.pmc.bearType.toLowerCase()] = AITweaks.clone(botTypes[BotConfig.pmc.bearType])
-		}
-		if (!botTypes[usecSwap])
-		{
-			botTypes[usecSwap] = AITweaks.clone(botTypes[BotConfig.pmc.usecType])
-			// botTypes[BotConfig.pmc.usecType.toLowerCase()] = AITweaks.clone(botTypes[BotConfig.pmc.usecType])
-		}
-	} */
 	
 	main()
 	{
@@ -2051,6 +1833,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 
 	changeHealth(bot, botName, mult)
 	{
+		Logger.info(`Fins AI Tweaks: Setting Health of ${botName}`)
 		if (config.overallDifficultyMultipliers.setTheseBotsToDefaultPlayerHPBeforeMultsAreUsed.includes(botName))
 			bot.health.BodyParts = [{"Head": {"min": 35,"max": 35},"Chest": {"min": 85,"max": 85},"Stomach": {"min": 70,"max": 70},"LeftArm": {"min": 60,"max": 60},"RightArm": {"min": 60,"max": 60},"LeftLeg": {"min": 65,"max": 65},"RightLeg": {"min": 65,"max": 65}}]
 		for (let variants in bot.health.BodyParts)
