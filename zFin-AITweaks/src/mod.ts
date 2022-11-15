@@ -7,283 +7,104 @@ import {DynamicRouterModService} from "@spt-aki/services/mod/dynamicRouter/Dynam
 import {StaticRouterModService} from "@spt-aki/services/mod/staticRouter/StaticRouterModService";
 import { ConfigServer } from "@spt-aki/servers/ConfigServer";
 import { ConfigTypes } from "@spt-aki/models/enums/ConfigTypes";
-import { BaseClasses } from "@spt-aki/models/enums/BaseClasses";
 import { IBotConfig } from "@spt-aki/models/spt/config/IBotConfig";
 import { IInRaidConfig  } from "@spt-aki/models/spt/config/IInraidConfig";
-import { JsonUtil } from "@spt-aki/utils/JsonUtil";
-import { BotGenerator } from "@spt-aki/generators/BotGenerator";
-import { BotInventoryGenerator } from "@spt-aki/generators/BotInventoryGenerator";
 import { BotHelper } from "@spt-aki/helpers/BotHelper";
-import { WeightedRandomHelper } from "@spt-aki/helpers/WeightedRandomHelper";
 import { ProfileHelper } from "@spt-aki/helpers/ProfileHelper";
-import { BotEquipmentFilterService } from "@spt-aki/services/BotEquipmentFilterService";
-import { HttpResponseUtil } from "@spt-aki/utils/HttpResponseUtil";
-import { BotController} from "@spt-aki/controllers/BotController";
-
-let RandomUtil
 
 
-let weightedRandomHelper 
 let configServer : ConfigServer;
-let botGenerator
-let botInventoryGenerator
-let profileHelper
-let botHelper
-let httpResponse
-let jsonUtil
-let VFS
-let botController
-let Logger
-let BotConfig
-let properCaps 
-let blacklistFile 
+let profileHelper;
+let botHelper;
+let Logger;
+let BotConfig;
+let database;
+let databaseServer;
+let locations;
+let botTypes;
+let modFolder;
 
-let database
-let itemdb
-let locations
-let botTypes
-let modFolder
-let genFolder
-let cfgFolder
-let profFolder
-let orig
-let baseAI 
+let baseAI;
+let config;
+let advAIConfig;
+let InRaidConfig;
+let progDiff;
 
-let config 
-let advAIConfig
-let InRaidConfig 
-let progDiff 
-let botEquipmentFilterService
+const modName = "Fin-AITweaks";
 
-const modName = "Fin-AITweaks"
-const AKIPMC = "assaultGroup" //Easily change which bot is designated to be turned into PMCs
-let PMCSwap = "assaultGroup" //Which bot behaviour PMCs will be assigned by default
-const botNameSwaps = {
-	"bear": "bear",
-	"usec": "usec"
-}
-
-const locationNames = ["interchange", "bigmap", "rezervbase", "woods", "shoreline", "laboratory", "lighthouse", "factory4_day", "factory4_night"]
-const locationNamesVerbose = ["interchange", "customs", "reserve", "woods", "shoreline", "labs", "lighthouse", "factory", "factory"]
+const locationNames = ["interchange", "bigmap", "rezervbase", "woods", "shoreline", "laboratory", "lighthouse", "factory4_day", "factory4_night"];
+const locationNamesVerbose = ["interchange", "customs", "reserve", "woods", "shoreline", "labs", "lighthouse", "factory", "factory"];
 
 class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 {
-	
-	postAkiLoad(container: DependencyContainer): void
-	{
-		AITweaks.setupInitialValues(container);
-		
-		Logger.info(`Loading: ${modName}`);
-		
-				
-		this.main()
-
-		AITweaks.runOnGameStart()
-
-		if (config.allowHealthTweaks.enabled){
-			this.adjustHealthValues(config.allowHealthTweaks.multipliers.PMCHealthMult, config.allowHealthTweaks.multipliers.scavHealthMult, 
-				config.allowHealthTweaks.multipliers.raiderHealthMult, config.allowHealthTweaks.multipliers.bossHealthMult, 
-				config.allowHealthTweaks.multipliers.cultistHealthMult)	
-		}
-		
-		if (!database.globals.config.genVals)
-			AITweaks.establishBotGenValues()
-			
-		Logger.info("Fin's AI Tweaks: Finished")
-	}
-	
 	preAkiLoad(container: DependencyContainer): void
 	{
 		Logger = container.resolve("WinstonLogger")
 		
 		const dynamicRouterModService = container.resolve<DynamicRouterModService>("DynamicRouterModService");
 		const staticRouterModService = container.resolve<StaticRouterModService>("StaticRouterModService");
-		
-		//Bot generation
-		staticRouterModService.registerStaticRouter(`StaticAkiBotGen${modName}`,[{url: "/client/game/bot/generate",
-			action: (url, info, sessionId, output) =>{
-				output = AITweaks.onBotGen(url, info, sessionId, output);
-				return output
-			}}],"aki");
+
 		//Raid Saving (End of raid)
 		staticRouterModService.registerStaticRouter(`StaticAkiRaidSave${modName}`,[{url: "/raid/profile/save",
 			action: (url, info, sessionId, output) =>{
 				AITweaks.onRaidSave(url, info, sessionId, output);
-				if (!database.globals.config.genVals)
-					AITweaks.establishBotGenValues()
 				return output
 			}}],"aki");
+
 		//Game start
 		staticRouterModService.registerStaticRouter(`StaticAkiGameStart${modName}`,[{url: "/client/game/start",
 			action: (url, info, sessionId, output) =>{
 				AITweaks.runOnGameStart(url, info, sessionId, output);
 				return output
 		}}],"aki");
-		//weightedRandom
-			container.afterResolution("WeightedRandomHelper", (_t, result: WeightedRandomHelper) => 
-			{
-				result.weightedRandom = AITweaks.weightedRandom
-			}, {frequency: "Always"});
+	}
+
+	postAkiLoad(container: DependencyContainer): void
+	{
+		AITweaks.setupInitialValues(container);
+		Logger.info(`Loading: ${modName}`);
+
+		AITweaks.difficultyFunctions();
+		AITweaks.runOnGameStart();
+		AITweaks.setRogueNeutral();
+
+		if (config.allowHealthTweaks.enabled)
+		{
+			this.adjustHealthValues(config.allowHealthTweaks.multipliers.PMCHealthMult, config.allowHealthTweaks.multipliers.scavHealthMult, 
+				config.allowHealthTweaks.multipliers.raiderHealthMult, config.allowHealthTweaks.multipliers.bossHealthMult, 
+				config.allowHealthTweaks.multipliers.cultistHealthMult)	
+		}
+			
+		Logger.info("Fin's AI Tweaks: Finished")
 	}
 
 	static setupInitialValues(container)
 	{
-		//var fs = require('fs');
-		//var files = fs.readdirSync('../');
-		//console.log(files)
-		Logger.info('FINs AI TWEAKS: SetupInitialValues')
-		RandomUtil = container.resolve("RandomUtil")
-		botGenerator = container.resolve("BotGenerator")
-		botInventoryGenerator = container.resolve("BotInventoryGenerator")
-		botController = container.resolve("BotController")
-		weightedRandomHelper = container.resolve("WeightedRandomHelper")
-		httpResponse = container.resolve("HttpResponseUtil")
-		profileHelper = container.resolve("ProfileHelper")
-		botHelper = container.resolve("BotHelper")
-		botEquipmentFilterService = container.resolve("BotEquipmentFilterService")
-		jsonUtil = container.resolve("JsonUtil")
-
-		//Use to find mods. ModLoader.getModPath('modname')
-		//ModLoader.getImportedModsNames() to get all mod names
-		//Doesn't work anymore, figure out why!!!
-		// ModLoader = container.resolve("InitialModLoader");
-		VFS = container.resolve("VFS")
-		
+		Logger.info('FINs AI TWEAKS: SetupInitialValues');
+		profileHelper = container.resolve("ProfileHelper");
+		botHelper = container.resolve("BotHelper");
 		configServer = container.resolve("ConfigServer");
-		BotConfig = configServer.getConfig<IBotConfig>(ConfigTypes.BOT);
-		InRaidConfig = configServer.getConfig<IInRaidConfig>(ConfigTypes.IN_RAID);
+		databaseServer = container.resolve("DatabaseServer");
+		configServer = container.resolve("ConfigServer");
+		database = databaseServer.getTables();
+
+		locations = database.locations;
+		botTypes = database.bots.types;
+
 		
-
-		//Bot names can be made lowercase easily. This allows for the reverse, when necessary
-		properCaps = {
-		"assault": "assault",
-		"exusec": "exUsec",
-		"marksman": "marksman",
-		"pmcbot": "pmcBot",
-		"sectantpriest": "sectantPriest",
-		"sectantwarrior": "sectantWarrior",
-		"assaultgroup": "assaultGroup",
-		"bossbully": "bossBully",
-		"bosstagilla": "bossTagilla",
-		"bossgluhar": "bossGluhar",
-		"bosskilla": "bossKilla",
-		"bosskojaniy": "bossKojaniy",
-		"bosssanitar": "bossSanitar",
-		"followerbully": "followerBully",
-		"followergluharassault": "followerGluharAssault",
-		"followergluharscout": "followerGluharScout",
-		"followergluharsecurity": "followerGluharSecurity",
-		"followergluharsnipe": "followerGluharSnipe",
-		"followerkojaniy": "followerKojaniy",
-		"followersanitar": "followerSanitar",
-		"followertagilla": "followerTagilla",
-		"cursedassault": "cursedAssault",
-		"usec": "usec",
-		"bear": "bear",
-		"bosstest": "bossTest",
-		"followertest": "followerTest",
-		"gifter": "gifter",
-		"bossknight": "bossKnight",
-		"followerbigpipe": "followerBigPipe",
-		"followerbirdeye": "followerBirdEye",
-		"test": "test"
-		}
-		// properCaps[BotConfig.pmc.usecType] = BotConfig.pmc.usecType.toLowerCase()
-		// properCaps[BotConfig.pmc.bearType] = BotConfig.pmc.bearType.toLowerCase()
-		blacklistFile = []
-
-		database = container.resolve("DatabaseServer")
-		configServer = container.resolve("ConfigServer")
-		database = database.getTables()
-		itemdb = database.templates.items
-		locations = database.locations
-		botTypes = database.bots.types
-		const fs = require('fs');
 		let dir = __dirname;
 		let dirArray = dir.split("\\");
 		modFolder = (`${dirArray[dirArray.length - 4]}/${dirArray[dirArray.length - 3]}/${dirArray[dirArray.length - 2]}/`);
-		genFolder = ((`${dirArray[dirArray.length - 6]}/${dirArray[dirArray.length - 5]}`))
-		//To grab configs before mods alter them
-		cfgFolder = ((`${dirArray[dirArray.length - 6]}/${dirArray[dirArray.length - 5]}/Aki_Data/Server/configs`))
-		orig = {}
-		let directory = ""
-		for (let index = 0; index < dirArray.length - 4; index++)
-			directory += (dirArray[index] + "/")
-		directory = directory.slice(0,-1)
 		
-		profFolder = AITweaks.readFolder(`${directory}/user/profiles`)
-		baseAI = AITweaks.clone(botTypes.pmcbot.difficulty.hard)
+		// Setup Base AI Difficulty
+		baseAI = AITweaks.clone(botTypes.pmcbot.difficulty.hard);
 
-		config = require("../config/config.json")
-		
-		
-		advAIConfig = require("../config/advanced AI config.json")
-		progDiff = require("../donottouch/progress.json")
-
-
-	}
-	
-	static weightedRandom(items: string | any[], weights: string | any[]): { item: any; index: number; }
-    {
-        if (items.length !== weights.length)
-        {
-            throw new Error("Items and weights must be of the same size");
-        }
-
-        if (!items.length)
-        {
-            throw new Error("Items must not be empty");
-        }
-
-        // Preparing the cumulative weights array.
-        // For example:
-        // - weights = [1, 4, 3]
-        // - cumulativeWeights = [1, 5, 8]
-        const cumulativeWeights = [];
-        for (let i = 0; i < weights.length; i += 1)
-        {
-            cumulativeWeights[i] = (weights[i] * 1) + (cumulativeWeights[i - 1] || 0);
-        }
-
-        // Getting the random number in a range of [0...sum(weights)]
-        // For example:
-        // - weights = [1, 4, 3]
-        // - maxCumulativeWeight = 8
-        // - range for the random number is [0...8]
-        const maxCumulativeWeight = cumulativeWeights[cumulativeWeights.length - 1];
-        const randomNumber = maxCumulativeWeight * Math.random();
-		
-        // Picking the random item based on its weight.
-        // The items with higher weight will be picked more often.
-        for (let itemIndex = 0; itemIndex < items.length; itemIndex += 1)
-        {
-            if (cumulativeWeights[itemIndex] >= randomNumber)
-            {
-                return {
-                    item: items[itemIndex],
-                    index: itemIndex
-                };
-            }
-        }
-    }
-	
-	static readFolder(path)
-	{
-		let output = {}
-		var fs = require('fs')
-		let files = fs.readdirSync(path)
-		for (let each of files)
-			if (each.includes(".json"))
-			{
-				output[each.slice(0,-5)] = JSON.parse(fs.readFileSync(`${path}/${each}`, 'utf8', (err, data) => {if (err) {console.log(err);return;};return data;}))
-			}
-			else if (each.includes("."))
-				output[each] = [null]
-			else
-			{
-				output[each] = AITweaks.readFolder(`${path}/${each}`)
-			}
-		return output
+		//Load Config Files
+		BotConfig = configServer.getConfig<IBotConfig>(ConfigTypes.BOT);
+		InRaidConfig = configServer.getConfig<IInRaidConfig>(ConfigTypes.IN_RAID);
+		config = require("../config/config.json");
+		advAIConfig = require("../config/advanced AI config.json");
+		progDiff = require("../donottouch/progress.json");
 	}
 	
 	//All functions that need to be run when the route "/raid/profile/save" is used should go in here, as config-reliant conditionals can't be used on the initial load function
@@ -295,138 +116,19 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		delete database.globals.config.genVals
 		return output
 	}
-	
-	
-	//All functions that need to be run when the route "/client/game/bot/generate" is used should go in here, as config-reliant conditionals can't be used on the initial load function
-	static onBotGen(url, info, sessionId, output)
-	{
-		output = AITweaks.generateBots(url, info, sessionId, false, false, false, output);
-		return output
-	}
-	
-	static clone(data) {
-
-	return JSON.parse(JSON.stringify(data));
-	}
-	
-	//Rounds bot stats.
-	static roundAllBotStats()
-	{
-		for (let bot in botTypes)
-			for (let diff in botTypes[bot].difficulty)
-				for (let cat in botTypes[bot].difficulty[diff])
-					for (let statName in botTypes[bot].difficulty[diff][cat])
-					{
-						let stat = botTypes[bot].difficulty[diff][cat][statName]
-						let origStat = stat
-						if (typeof(stat) == "number")
-						{
-							stat == AITweaks.roundNumber(stat)
-						}
-					}
-	}
-
-	//This function is used when the value will vary by bot difficulty. Values can theoretically be infinitely low or infinitely high
-	//value is an array of all possible values
-	static changeStat(type, value, difficulty, botCat, multiplier?)
-	{
-		if (multiplier == undefined)
-			multiplier = 1
-		let setValue
-
-		if (value.length == 1)
-		{
-			if (typeof(value[0]) == "number")
-				botCat[type] = value[0] * multiplier
-			else
-				botCat[type] = value[0]
-			return
-		}
-			
-		let exceptions = ["VisibleDistance", "PART_PERCENT_TO_HEAL", "HearingSense", "AIMING_TYPE"] //Distance is on here because there's a config value to modify that on its own, same with hearing
-		if (!exceptions.includes(type) && typeof(value[0]) == "number")//Some values don't work with this system. Things with unusual caps, like visible angle.
-		{
-			//These values must be whole numbers
-			let decimalExceptions = ["BAD_SHOOTS_MIN", "BAD_SHOOTS_MAX", "MIN_SHOOTS_TIME", "MAX_SHOOTS_TIME"]
-			
-			let divisor = 100
-			
-			if (Math.trunc(difficulty) != difficulty && !decimalExceptions.includes(type)) //If it's not a whole number.. ..Oh boy. We're getting into a rabbit hole now, aren't we?
-			{
-				let newValues = [value[0]] //An array with the lowest possible value as its starting point
-				for (let val = 0; val < value.length - 1; val++)
-				{
-					let difference = value[val + 1] - value[val]
-					for (let i = 0; i < divisor; i++)
-						newValues.push(newValues[(val * divisor) + i] + (difference / divisor))
-				}
-				value = newValues
-				difficulty = Math.round(difficulty * divisor)
-			}
-			else if (Math.trunc(difficulty) != difficulty && decimalExceptions.includes(type))
-			{
-				difficulty = Math.round(difficulty)
-			}
-			let numValues = value.length - 1 //This should allow for variations in the size of the difficulty setting arrays.
-			
-			//Should allow for a smooth transition into difficulties greater than the standard 0-5 range
-			if (difficulty > numValues)
-			{
-				if (value[(numValues - 1)] - value[numValues] < 0) //going up
-					{setValue = value[numValues] + ((value[numValues] - value[(numValues - 1)]) * (difficulty - numValues))
-					if(setValue > 100 && type.slice(-4) == "_100")
-						setValue = 100}
-				else if (value[numValues] == 0)
-					setValue = 0
-				else
-					setValue = value[numValues] * Math.pow((value[numValues] / value[(numValues - 1)]) , difficulty - numValues)
-			}
-			else if (difficulty < 0)
-			{
-				if (value[1] - value[0] < 0) //going up
-					setValue = value[0] + ((value[0] - value[1]) * (difficulty * -1))
-				else if (value[0] <= 0)
-					setValue = 0
-				else
-				{
-					setValue = value[0] * Math.pow((value[0] / value[(1)]) , difficulty * -1)
-				}
-			}
-			else
-				setValue = value[difficulty]
-			if (Math.round(value[numValues]) == value[numValues]) //If all values are integers, keep it that way
-				if (value.find(i => Math.round[value[i]] == value[i]))
-				{
-					//console.log(value)
-					setValue = Math.round(setValue)
-				}
-		}
-		else
-		{
-			let numValues = value.length - 1
-			difficulty = Math.round(difficulty)
-			if (difficulty > numValues)
-				difficulty = numValues
-			if (difficulty < 0)
-				difficulty = 0
-			setValue = value[difficulty]
-		}
-		botCat[type] = setValue * multiplier
-	}
 
 	static noTalking(botList, easy, normal, hard, impossible)
 	{
 		for (let i in botList)
 		{
 			let botName = botList[i].toLowerCase()
-			//Verify each bot exists. This should probably be changed so that this type of check occurs once on first loading.
-			//Someday
-			//Check the .toLowerCase() for now. If there's ever a bot file with a name that isn't all lowercase this will need adjusting
+
 			if (!botTypes[botName] || !botTypes[botName].difficulty || !botTypes[botName].difficulty.easy || !botTypes[botName].difficulty.normal || !botTypes[botName].difficulty.hard || !botTypes[botName].difficulty.impossible)
 			{
 				if (botName.length > 0)
-					Logger.error(`Bot with name ${botName} does not exist, or is missing at least one difficulty entry.
-	This error must be fixed, or you'll likely experience errors. Check your AI category entries in the config and make sure they're all valid bot types.`)
+					Logger.error(`Bot with name ${botName} does not exist, or is missing at least one difficulty entry. 
+					This error must be fixed, or you'll likely experience errors. Check your AI category entries in the config and 
+					make sure they're all valid bot types.`)
 				continue
 			}
 			!easy ? botTypes[botName].difficulty.easy.Mind.CAN_TALK = false : botTypes[botName].difficulty.easy.Mind.CAN_TALK = true
@@ -448,6 +150,394 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 	}
 
 	//Changes the AI values in the 'core' file common to all AIs
+	
+	static changeOverallDifficulty(accuracyCoef, scatteringCoef, gainSightCoef, marksmanCoef, visibleDistCoef)
+	{
+		for (let mapName in locations)
+		{
+			if (mapName != "base")
+			{
+				let map = locations[mapName]
+				
+				//Maybe round this afterwards. Might cause problems if it's not rounded?
+				map.base.BotLocationModifier.AccuracySpeed = 1 / Math.sqrt(accuracyCoef)
+				
+				map.base.BotLocationModifier.Scattering = scatteringCoef
+				map.base.BotLocationModifier.GainSight = gainSightCoef
+				//-Trying something new, since Reserve seems a little out of whack if they're just set directly. Multiplying the maps's base value by the config modifier. For most maps this should be the exact same, but it may improve Reserve.
+				// map.base.BotLocationModifier.AccuracySpeed = map.base.BotLocationModifier.AccuracySpeed * accuracyCoef
+				// map.base.BotLocationModifier.Scattering = map.base.BotLocationModifier.Scattering * scatteringCoef
+				// map.base.BotLocationModifier.GainSight = map.base.BotLocationModifier.GainSight * 
+				map.base.BotLocationModifier.MarksmanAccuratyCoef = map.base.BotLocationModifier.MarksmanAccuratyCoef * marksmanCoef
+				map.base.BotLocationModifier.VisibleDistance = visibleDistCoef
+				//Not all maps have this value. Is it even used?
+				map.base.BotLocationModifier.MagnetPower = 100
+				map.base.BotLocationModifier.DistToPersueAxemanCoef = 0.7
+				map.base.BotLocationModifier.DistToSleep = 350
+				map.base.BotLocationModifier.DistToActivate = 330
+				//Weird stuff going on with reserve. Variables need extra tweaking?
+				if (["rezervbase"].includes(mapName))
+				{
+					//map.base.BotLocationModifier.AccuracySpeed = map.base.BotLocationModifier.AccuracySpeed * (1/0.6)
+					map.base.BotLocationModifier.AccuracySpeed = map.base.BotLocationModifier.AccuracySpeed * 1.45
+					map.base.BotLocationModifier.Scattering = map.base.BotLocationModifier.Scattering * 1.075
+					//map.base.BotLocationModifier.GainSight = map.base.BotLocationModifier.GainSight * (1/1.3)
+					
+				}
+				if (["interchange"].includes(mapName))
+				{
+					map.base.BotLocationModifier.Scattering /= 0.8
+					//map.base.BotLocationModifier.GainSight = map.base.BotLocationModifier.GainSight * (1/1.3)
+					
+				}
+				//This should probably be done for Woods as well.
+				if (["woods"].includes(mapName))
+				{
+					map.base.BotLocationModifier.AccuracySpeed = map.base.BotLocationModifier.AccuracySpeed * 1.45
+					//map.base.BotLocationModifier.AccuracySpeed = map.base.BotLocationModifier.AccuracySpeed * 1.4
+					map.base.BotLocationModifier.Scattering = map.base.BotLocationModifier.Scattering * 1.1
+					//map.base.BotLocationModifier.Scattering = map.base.BotLocationModifier.Scattering * 1.2
+				}
+				map.base.BotLocationModifier.AccuracySpeed *= 0.45
+				map.base.BotLocationModifier.Scattering *= 0.5
+			//	console.log(mapName)
+			//	console.log(map.base.BotLocationModifier)
+			}
+		}
+	}
+	
+	//Do you like my hacked-together code?
+	//Does it make you angry?
+	//It probably should.
+
+	//diffVar should be an array (Or a list..? Dunno. Doesn't matter. Put it in square brackets either way) of four ints, one for each difficulty level
+	static changeForAllDifficulties(mainBot, diffVar, diffMod, botName)
+	{
+		for (let i in diffVar)
+			diffVar[i] = (diffVar[i] * 1) + diffMod + config.aiChanges.overallAIDifficultyMod
+		//Cycle through all four difficulties for the given bot type, and assign them their difficulty number
+		let botDiff = mainBot.difficulty.easy
+		AITweaks.changeAI(mainBot, botDiff, diffVar[0], "easy", botName)
+		botDiff = mainBot.difficulty.normal
+		AITweaks.changeAI(mainBot, botDiff, diffVar[1], "normal", botName)
+		botDiff = mainBot.difficulty.hard
+		AITweaks.changeAI(mainBot, botDiff, diffVar[2], "hard", botName)
+		botDiff = mainBot.difficulty.impossible
+		AITweaks.changeAI(mainBot, botDiff, diffVar[3], "impossible", botName)
+	}
+
+	//This is awful and I'll clean it up later
+	static setRogueNeutral()
+	{
+		//Rogues will only *ever* use exusec behaviour, so it's appropriate to flip the switch here. If they become a behaviour option, this will have to default to true if behaviour is enabled.
+		if (config.spawnChanges.controlOptions.roguesNeutralToUsecs)
+		{
+			botTypes.exusec.difficulty.easy.Mind.DEFAULT_ENEMY_USEC = true
+			botTypes.exusec.difficulty.normal.Mind.DEFAULT_ENEMY_USEC = false
+			botTypes.exusec.difficulty.hard.Mind.DEFAULT_ENEMY_USEC = true
+			botTypes.exusec.difficulty.impossible.Mind.DEFAULT_ENEMY_USEC = true
+		}
+	}
+	
+	//This is a whole mess at the moment, but this function swaps out easy, hard and impossible difficulties, while leaving normal as the default
+	static replaceDifficulties(botName, aiLevel?)
+	{
+		botName = botName.toLowerCase()
+		if (botTypes[botName])
+		{
+			if (aiLevel)
+				botTypes[botName].difficulty = AITweaks.clone(database.globals.config.FinsDifficultyLevels[aiLevel])
+			else
+			{
+				botTypes[botName].difficulty.easy = AITweaks.clone(database.globals.config.FinsDifficultyLevels.lowLevelAIs.easy)
+				botTypes[botName].difficulty.hard = AITweaks.clone(database.globals.config.FinsDifficultyLevels.midLevelAIs.hard)
+				///////////////////////////
+				botTypes[botName].difficulty.normal = AITweaks.clone(database.globals.config.FinsDifficultyLevels.midLevelAIs.hard)
+				///////////////////////////
+				botTypes[botName].difficulty.impossible = AITweaks.clone(database.globals.config.FinsDifficultyLevels.highLevelAIs.impossible)
+			}
+		}
+	}
+	
+
+	static saveToFile(data, filePath)
+	{
+		var fs = require('fs');
+				fs.writeFile(modFolder + filePath, JSON.stringify(data, null, 4), function (err) {
+				if (err) throw err;
+			});
+	}
+	
+	
+	static recordWinLoss(url, info, sessionId)
+	{
+		let PMC = profileHelper.getPmcProfile(sessionId)
+		let diffAdjust = 0.6
+		let diffRatio = 1
+		//Only allow for one adjustment per run
+		if (progDiff[sessionId] == true)
+			return AITweaks.nullResponse()
+		// PMC.Stats.OverallCounters.Items.find(i => i.Key[0] == "Sessions") ? progDiff[sessionId].raids = PMC.Stats.OverallCounters.Items.find(i => i.Key[0] == "Sessions").Value : progDiff[sessionId].raids = 0
+		// PMC.Stats.OverallCounters.Items.find(i => i.Key[1] == "Killed") ? progDiff[sessionId].deaths = PMC.Stats.OverallCounters.Items.find(i => i.Key[1] == "Killed").Value : progDiff[sessionId].deaths = 0
+		// PMC.Stats.OverallCounters.Items.find(i => i.Key[1] == "Survived") ? progDiff[sessionId].survives = PMC.Stats.OverallCounters.Items.find(i => i.Key[1] == "Survived").Value : progDiff[sessionId].survives = 0
+		// PMC.Stats.OverallCounters.Items.find(i => i.Key[0] == "CurrentWinStreak") ? progDiff[sessionId].winStreak = PMC.Stats.OverallCounters.Items.find(i => i.Key[0] == "CurrentWinStreak").Value : progDiff[sessionId].winStreak = 0
+		let upMult = diffRatio
+		let downMult = 1 / diffRatio
+		if (info.exit == "survived")//If they survived
+		{
+			progDiff[sessionId].winStreak += 1
+			progDiff[sessionId].deathStreak = 0
+			progDiff[sessionId].diffMod += (diffAdjust * Math.sqrt(progDiff[sessionId].winStreak)) * upMult
+		}
+		if (info.exit == "killed")//If they perished
+		{
+			progDiff[sessionId].winStreak = 0
+			progDiff[sessionId].deathStreak += 1
+			progDiff[sessionId].diffMod -= (diffAdjust / Math.sqrt(progDiff[sessionId].deathStreak)) * downMult
+		}
+		Logger.info(`Fins AI Tweaks:  Difficulty adjusted by ${progDiff[sessionId].diffMod}`)
+		AITweaks.adjustDifficulty(url, info, sessionId)
+		var fs = require('fs');
+			fs.writeFile(modFolder + "donottouch/progress.json", JSON.stringify(progDiff, null, 4), function (err) {
+			if (err) throw err;
+		});
+		
+		return AITweaks.nullResponse()
+	}
+	
+	static adjustDifficulty(url, info, sessionId)
+	{
+		let PMC = profileHelper.getPmcProfile(sessionId)
+		// console.log(PMC)
+		if (!progDiff[sessionId])
+		{
+			progDiff[sessionId] = {}
+			progDiff[sessionId].diffMod = 0
+			progDiff[sessionId].raids = 0
+			progDiff[sessionId].deaths = 0
+			progDiff[sessionId].survives = 0
+			progDiff[sessionId].winStreak = 0
+			progDiff[sessionId].deathStreak = 0
+			progDiff[sessionId].lock = false
+		}
+		
+		let LLD = config.aiChanges.lowLevelAIDifficultyMod_Neg3_3
+		let MLD = config.aiChanges.midLevelAIDifficultyMod_Neg3_3 - LLD
+		let HLD = config.aiChanges.highLevelAIDifficultyMod_Neg3_3 - LLD
+		LLD = progDiff[sessionId].diffMod
+		MLD += progDiff[sessionId].diffMod
+		HLD += progDiff[sessionId].diffMod
+		AITweaks.setDifficulty(LLD, HLD, MLD, MLD, MLD)
+	}
+	
+	
+	//This is for things that I want to run exactly once upon the game actually starting.
+	static runOnGameStart(url?, info?, sessionId?, output?)
+	{
+		InRaidConfig.raidMenuSettings.aiAmount = "AsOnline"
+		InRaidConfig.raidMenuSettings.aiDifficulty = "AsOnline"
+		config.playerId = sessionId //Make the player's ID accessible at any point
+		//Difficulty changes are now made HERE, rather than in the main function.
+		AITweaks.setDifficulty(config.aiChanges.lowLevelAIDifficultyMod_Neg3_3, config.aiChanges.highLevelAIDifficultyMod_Neg3_3, config.aiChanges.midLevelAIDifficultyMod_Neg3_3, config.aiChanges.midLevelAIDifficultyMod_Neg3_3, config.aiChanges.midLevelAIDifficultyMod_Neg3_3)
+		//Automatic enemy gear adjustments. Currently only applies to weapons
+		
+		
+		for (let i in database.globals.bot_presets)
+			database.globals.bot_presets[i].UseThis = false
+		//Autmatic difficulty adjustments. THESE ONLY ADJUST WHEN THE SERVER RESTARTS
+		if (config.enableAutomaticDifficulty && sessionId)
+		{
+			AITweaks.adjustDifficulty(url, info, sessionId)
+		}
+		
+		return output
+	}
+	
+	
+	static fillEmptyDifficultySlots()
+	{
+		//Doing this manually for now. Make it programatic later.
+		let problemBots = ["followergluharsnipe", "assaultgroup"]
+		for (let bot in botTypes)
+			if (!botTypes[bot].difficulty || !botTypes[bot].difficulty.easy || !botTypes[bot].difficulty.easy.Lay)
+				problemBots.push(bot)
+		let solutionBot = "pmcbot"
+		for (let bot in problemBots)
+				botTypes[problemBots[bot]] = AITweaks.clone(botTypes[solutionBot])
+		botTypes[BotConfig.pmc.bearType] = AITweaks.clone(botTypes.bear)
+		botTypes[BotConfig.pmc.usecType] = AITweaks.clone(botTypes.usec)
+		botTypes["followertagilla"] = AITweaks.clone(botTypes.assault)
+		botTypes["assaultgroup"].inventory.items = botTypes.bear.inventory.items
+	}
+	
+	
+	//All actual assignment of difficulty values has been moved into this function
+	static setDifficulty(scavDiffMod, PMCDiffMod, raiderDiffMod, gluharRaiderDiffMod, minionDiffMod)
+	{
+		
+		let diffSet;
+		let diffMod;
+		
+		if (!database.bots.types.assaultgroup)
+			database.bots.types.assaultgroup = AITweaks.clone(botTypes.pmcbot);
+
+		AITweaks.generateDifficultyLevels(scavDiffMod, PMCDiffMod, raiderDiffMod, gluharRaiderDiffMod, minionDiffMod)
+
+		if (!config.disableAllAIChanges)
+		{
+			for (let aiTypes in config.aiChanges.changeBots)
+				for (let botIndex in config.aiChanges.changeBots[aiTypes])
+				{
+					if (botTypes[config.aiChanges.changeBots[aiTypes][botIndex].toLowerCase()])
+					{
+						let botName = config.aiChanges.changeBots[aiTypes][botIndex].toLowerCase()
+						let bot = botTypes[botName]
+						bot.difficulty = database.globals.config.FinsDifficultyLevels[aiTypes]
+					}
+				}
+				
+			Logger.info("Fin's AI Tweaks: AI difficulty changes complete.")
+		}
+		
+		//Do this after all the AI changes, to make sure this one sticks
+		if (!config.disableAllAIChanges)
+		{
+			//AITweaks.setPMCHostility()
+			AITweaks.checkTalking()
+
+			if (advAIConfig.Enabled == true)
+				AITweaks.applyAdvancedAIConfig()
+		}
+		AITweaks.roundAllBotStats()
+		
+		AITweaks.applySkills()
+	}
+	
+	
+	static applyAdvancedAIConfig()
+	{
+		for (let settingCat in advAIConfig.AI_setting_categories)
+			for (let botGroup in advAIConfig.AI_setting_categories[settingCat].setting_multipliers)
+				for (let settingName of advAIConfig.AI_setting_categories[settingCat].setting_names)
+					for (let botName of advAIConfig.bot_Categories[botGroup])
+						AITweaks.changeSettingByName(botTypes[botName], settingName, advAIConfig.AI_setting_categories[settingCat].setting_multipliers[botGroup], true)
+	}
+	
+	static changeSettingByName(bot, settingName, value, mult)
+	{
+		if (settingName.substring(0,3) == "-1_")
+		{
+			settingName = settingName.substring(3)
+			value = 1 / value
+		}
+		for (let diff in bot.difficulty)
+			for (let cat in bot.difficulty[diff])
+				//Why am I doing it this way? This is weird and looks mega inefficient. Fix later, assuming this wasn't done for a good reason.
+				for (let set in bot.difficulty[diff][cat])
+					if (set == settingName) //This kinda assumes no setting names will be repeated, which isn't entirely true.
+					{
+						mult ? bot.difficulty[diff][cat][set] *= value : bot.difficulty[diff][cat][set] = value
+						return
+					}
+	}
+	
+	static difficultyFunctions()
+	{
+		AITweaks.fillEmptyDifficultySlots()
+		// AITweaks.swapBearUsecConfig(botNameSwaps.bear, botNameSwaps.usec)
+		
+		//Change the core AI values. Check if any bots are set to be quiet
+		AITweaks.changeCoreAI()
+		let accuracyCoef = 1//config.overallDifficultyMultipliers.aiAimSpeedMult
+		let scatteringCoef = 1//config.overallDifficultyMultipliers.aiShotSpreadMult
+		let gainSightCoef = 1//config.overallDifficultyMultipliers.aiVisionSpeedMult
+		let marksmanCoef = config.overallDifficultyMultipliers.sniperBotAccuracyMult
+		let visibleDistCoef = 1//config.overallDifficultyMultipliers.visibleDistanceMult
+		AITweaks.changeOverallDifficulty(accuracyCoef , scatteringCoef, gainSightCoef * 0.5, marksmanCoef, visibleDistCoef)
+		//This is now done on game start
+		AITweaks.setDifficulty(config.aiChanges.lowLevelAIDifficultyMod_Neg3_3, config.aiChanges.highLevelAIDifficultyMod_Neg3_3, config.aiChanges.midLevelAIDifficultyMod_Neg3_3, 
+			config.aiChanges.midLevelAIDifficultyMod_Neg3_3, config.aiChanges.midLevelAIDifficultyMod_Neg3_3); 
+	}
+	
+
+	
+	//This is where skills get added to certain bots. -This is probably going to get a little messy.
+	static applySkills()
+	{
+		Logger.info('FINs AI TWEAKS: applySkills')
+		//followertagilla likes to rush in and get killed. So he needs some buffs.
+		botTypes.followertagilla.skills.Common = {"Endurance":{"min":5100,"max":5100},"Strength":{"min":10000,"max":10000},"Vitality":{"min":5100,"max":5100},"Health":{"min":5100,"max":5100},"Metabolism":{"min":5100,"max":5100},"StressResistance":{"min":5100,"max":5100},"Immunity":{"min":5100,"max":5100},"CovertMovement":{"min":5100,"max":5100},"MagDrills":{"min":5100,"max":5100},"Intellect":{"min":5100,"max":5100},"BotSound":{"min":3600,"max":4400}}
+	}
+	
+	
+	static generateDifficultyLevels(scavDiffMod, PMCDiffMod, raiderDiffMod, gluharRaiderDiffMod, minionDiffMod)
+	{
+		let diffSet;
+		let diffMod;
+		database.globals.config.FinsDifficultyLevels = {}
+		for (let aiTypes in config.aiChanges.changeBots)
+		{
+			database.bots.types[aiTypes] = AITweaks.clone(botTypes.pmcbot)
+			let bot = database.bots.types[aiTypes]
+			let botName = aiTypes
+			if (aiTypes == "lowLevelAIs")
+			{diffSet = [3,3,3,3];diffMod = scavDiffMod}
+			else if (aiTypes == "midLevelAIs")
+			{diffSet = [4,4,4,4]; diffMod = raiderDiffMod}
+			else if (aiTypes == "highLevelAIs")
+			{diffSet = [5,5,5,5];diffMod = PMCDiffMod}
+			else if (aiTypes == "bossLevelAIs")
+			{diffSet = [6.5,6.5,6.5,6.5];diffMod = Math.max(PMCDiffMod, raiderDiffMod, scavDiffMod)}
+			else
+			console.log(`${aiTypes} is being overwritten for some reason?`) //Should never appear if things are working properly.
+			AITweaks.changeForAllDifficulties(bot, diffSet, diffMod, botName)
+			// database.bots.types[aiTypes] = AITweaks.clone(database.bots.types[aiTypes].difficulty)
+			database.globals.config.FinsDifficultyLevels[aiTypes] = AITweaks.clone(database.bots.types[aiTypes].difficulty)
+			delete database.bots.types[aiTypes]
+		}
+	}
+
+	changeHealth(bot, botName, mult)
+	{
+		Logger.info(`Fins AI Tweaks: Setting Health of ${botName}`)
+		if (config.overallDifficultyMultipliers.setTheseBotsToDefaultPlayerHPBeforeMultsAreUsed.includes(botName))
+			bot.health.BodyParts = [{"Head": {"min": 35,"max": 35},"Chest": {"min": 85,"max": 85},"Stomach": {"min": 70,"max": 70},"LeftArm": {"min": 60,"max": 60},"RightArm": {"min": 60,"max": 60},"LeftLeg": {"min": 65,"max": 65},"RightLeg": {"min": 65,"max": 65}}]
+		for (let variants in bot.health.BodyParts)
+			for (let limb in bot.health.BodyParts[variants])
+				if (limb.toLowerCase() != "head" || config.overallDifficultyMultipliers.changeHeadHPValues)
+					for (let maxMin in bot.health.BodyParts[variants][limb])
+						bot.health.BodyParts[variants][limb][maxMin] = Math.round(bot.health.BodyParts[variants][limb][maxMin] * mult)
+	}
+	
+	adjustHealthValues(PMC, scav, raider, boss, cultist)
+	{
+		for (let i in botTypes)
+		{
+			let bot = botTypes[i]
+			if (["assault", "marksman", "cursedassault"].includes(i))
+			{
+				this.changeHealth(bot, i, scav)
+			}
+			else if (["pmcbot","exusec"].includes(i))
+			{
+				this.changeHealth(bot, i, PMC)
+			}
+			else if (["followergluharassault","followergluharsnipe","followergluharscout","followergluharsecurity","followerbully","followerkojaniy",
+			"followersanitar", "followertagilla", "followerbirdeye", "followerbigpipe"].includes(i))
+			{
+				this.changeHealth(bot, i, raider)
+			}
+			else if (["sectantpriest", "sectantwarrior"].includes(i))
+			{
+				this.changeHealth(bot, i, cultist)
+			}
+			else if (["bossbully", "bossgluhar", "bosskilla", "bosskojaniy", "bosssanitar", "bosstagilla", "bossknight"].includes(i))
+			{
+				this.changeHealth(bot, i, boss)
+			}
+		}
+	}
+
 	static changeCoreAI()
 	{
 		let path = database.bots.core;
@@ -499,52 +589,24 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		//Automatically square it, because math is hard.
 		path.DIST_NOT_TO_GROUP_SQR = path.DIST_NOT_TO_GROUP * path.DIST_NOT_TO_GROUP
 	}
-	
-	static roundNumber(stat) //Actually truncates
+
+	//Rounds bot stats.
+	static roundAllBotStats()
 	{
-		if (typeof(stat) == "number")
-		{
-			let absoluteNum = Math.sqrt(stat * stat)
-			let decimal = absoluteNum < 1 ? true : false
-			let integer = decimal ? 0 : stat - (stat % 1)
-			if (integer == stat)
-				return stat
-			let negative = stat < 0 ? true : false
-			
-			let strStat = (stat * 1).toString().replace("-","").replace(".","") //Convert to string
-			// console.log(`${absoluteNum} ${decimal} ${integer} ${negative} ${strStat}`)
-			for (let i = 1; i < strStat.length; i++)//count the leading zeroes
-				if (strStat[i] == "0")
-					null//zeroes++
-				else
-					strStat = strStat.length < i + 3 ? strStat : strStat.slice(0, i + 3)
-			stat = +(integer.toString() + "." + strStat.slice(1)) * (negative ? -1 : 1)
-		}
-		return stat
+		for (let bot in botTypes)
+			for (let diff in botTypes[bot].difficulty)
+				for (let cat in botTypes[bot].difficulty[diff])
+					for (let statName in botTypes[bot].difficulty[diff][cat])
+					{
+						let stat = botTypes[bot].difficulty[diff][cat][statName]
+						let origStat = stat
+						if (typeof(stat) == "number")
+						{
+							stat == AITweaks.roundNumber(stat)
+						}
+					}
 	}
-	
-	compareRightHandSettingRatios(setting)
-	{
-		if (typeof(setting[0]) == "number")
-		{
-			if (setting[setting.length - 1] == setting[setting.length - 2])
-			{
-				if (setting[setting.length - 1] != setting[setting.length - 3])
-					return false
-				else
-					return true
-			}
-			let rightMostRatio = setting[setting.length - 1] / setting[setting.length - 2]
-			let nextRatio = setting[setting.length - 2] / setting[setting.length - 3]
-			if (rightMostRatio - nextRatio < rightMostRatio * 0.05)
-				return true
-		}
-		else
-			if (setting[setting.length - 1] == setting[setting.length - 2])
-				return true
-		return false
-	}
-	
+
 	static changeAI(mainBot, botDiff, difficulty, diffSetting, botName)
 	{
 		for (let category in botDiff)
@@ -558,7 +620,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 				if (botDiff[category])
 					for (let setting in aiTemplate[category])
 						if (botDiff[category][setting])
-							AITweaks.changeStat(setting, aiTemplate[category][setting].length == 2 && Array.isArray(aiTemplate[category][setting][0]) ? aiTemplate[category][setting][0] : aiTemplate[category][setting], difficulty, botDiff[category], aiTemplate[category][setting].length == 2 && Array.isArray(aiTemplate[category][setting][0]) ? aiTemplate[category][setting][1] : undefined)
+						AITweaks.changeStat(setting, aiTemplate[category][setting].length == 2 && Array.isArray(aiTemplate[category][setting][0]) ? aiTemplate[category][setting][0] : aiTemplate[category][setting], difficulty, botDiff[category], aiTemplate[category][setting].length == 2 && Array.isArray(aiTemplate[category][setting][0]) ? aiTemplate[category][setting][1] : undefined)
 		}
 		else
 		{
@@ -1083,27 +1145,6 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		//AITweaks.changeStat("RecoilYMax", [0.5,0.48,0.46,0.44,0.42,0.40], difficulty, botCat)
 		
 		//Boss-specific modifications. These should probably take the form of multipliers on existing stats.
-		
-		switch (botName){
-			case "bosskojaniy":
-				
-				break
-			case "bosssanitar":
-				
-				break
-			case "bosskilla":
-				
-				break
-			case "bossbully":
-				
-				break
-			case "bossgluhar":
-				
-				break
-			case "bosstagilla":
-				
-				break
-		}
 
 		}
 		
@@ -1121,754 +1162,6 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		botDiff.Grenade.ADD_GRENADE_AS_DANGER_SQR = botDiff.Grenade.ADD_GRENADE_AS_DANGER * botDiff.Grenade.ADD_GRENADE_AS_DANGER
 		botDiff.Mind.MAX_AGGRO_BOT_DIST_SQR = botDiff.Mind.MAX_AGGRO_BOT_DIST * botDiff.Mind.MAX_AGGRO_BOT_DIST
 		botDiff.Scattering.DIST_FROM_OLD_POINT_TO_NOT_AIM_SQRT = Math.sqrt(botDiff.Scattering.DIST_FROM_OLD_POINT_TO_NOT_AIM)
-	}
-	
-	static getRandomValueFromWeightedObject(object)
-	{
-		let range = 0
-		let array = []
-		for (let each in object)
-		{
-			array.push([range, range + object[each], each])
-			range += object[each]
-		}
-		let randFl = RandomUtil.getFloat(0, range)
-		return array[array.findIndex(i => randFl >= i[0] && randFl < i[1])][2]
-	}
-	
-	changeOverallDifficulty(accuracyCoef, scatteringCoef, gainSightCoef, marksmanCoef, visibleDistCoef)
-	{
-		for (let mapName in locations)
-		{
-			if (mapName != "base")
-			{
-				let map = locations[mapName]
-				
-				//Maybe round this afterwards. Might cause problems if it's not rounded?
-				map.base.BotLocationModifier.AccuracySpeed = 1 / Math.sqrt(accuracyCoef)
-				
-				map.base.BotLocationModifier.Scattering = scatteringCoef
-				map.base.BotLocationModifier.GainSight = gainSightCoef
-				//-Trying something new, since Reserve seems a little out of whack if they're just set directly. Multiplying the maps's base value by the config modifier. For most maps this should be the exact same, but it may improve Reserve.
-				// map.base.BotLocationModifier.AccuracySpeed = map.base.BotLocationModifier.AccuracySpeed * accuracyCoef
-				// map.base.BotLocationModifier.Scattering = map.base.BotLocationModifier.Scattering * scatteringCoef
-				// map.base.BotLocationModifier.GainSight = map.base.BotLocationModifier.GainSight * 
-				map.base.BotLocationModifier.MarksmanAccuratyCoef = map.base.BotLocationModifier.MarksmanAccuratyCoef * marksmanCoef
-				map.base.BotLocationModifier.VisibleDistance = visibleDistCoef
-				//Not all maps have this value. Is it even used?
-				map.base.BotLocationModifier.MagnetPower = 100
-				map.base.BotLocationModifier.DistToPersueAxemanCoef = 0.7
-				map.base.BotLocationModifier.DistToSleep = 350
-				map.base.BotLocationModifier.DistToActivate = 330
-				//Weird stuff going on with reserve. Variables need extra tweaking?
-				if (["rezervbase"].includes(mapName))
-				{
-					//map.base.BotLocationModifier.AccuracySpeed = map.base.BotLocationModifier.AccuracySpeed * (1/0.6)
-					map.base.BotLocationModifier.AccuracySpeed = map.base.BotLocationModifier.AccuracySpeed * 1.45
-					map.base.BotLocationModifier.Scattering = map.base.BotLocationModifier.Scattering * 1.075
-					//map.base.BotLocationModifier.GainSight = map.base.BotLocationModifier.GainSight * (1/1.3)
-					
-				}
-				if (["interchange"].includes(mapName))
-				{
-					map.base.BotLocationModifier.Scattering /= 0.8
-					//map.base.BotLocationModifier.GainSight = map.base.BotLocationModifier.GainSight * (1/1.3)
-					
-				}
-				//This should probably be done for Woods as well.
-				if (["woods"].includes(mapName))
-				{
-					map.base.BotLocationModifier.AccuracySpeed = map.base.BotLocationModifier.AccuracySpeed * 1.45
-					//map.base.BotLocationModifier.AccuracySpeed = map.base.BotLocationModifier.AccuracySpeed * 1.4
-					map.base.BotLocationModifier.Scattering = map.base.BotLocationModifier.Scattering * 1.1
-					//map.base.BotLocationModifier.Scattering = map.base.BotLocationModifier.Scattering * 1.2
-				}
-				map.base.BotLocationModifier.AccuracySpeed *= 0.45
-				map.base.BotLocationModifier.Scattering *= 0.5
-			//	console.log(mapName)
-			//	console.log(map.base.BotLocationModifier)
-			}
-		}
-	}
-	
-	
-	
-	//Do you like my hacked-together code?
-	//Does it make you angry?
-	//It probably should.
-
-	//diffVar should be an array (Or a list..? Dunno. Doesn't matter. Put it in square brackets either way) of four ints, one for each difficulty level
-	static changeForAllDifficulties(mainBot, diffVar, diffMod, botName)
-	{
-		for (let i in diffVar)
-			diffVar[i] = (diffVar[i] * 1) + diffMod + config.aiChanges.overallAIDifficultyMod
-		//Cycle through all four difficulties for the given bot type, and assign them their difficulty number
-		let botDiff = mainBot.difficulty.easy
-		AITweaks.changeAI(mainBot, botDiff, diffVar[0], "easy", botName)
-		botDiff = mainBot.difficulty.normal
-		AITweaks.changeAI(mainBot, botDiff, diffVar[1], "normal", botName)
-		botDiff = mainBot.difficulty.hard
-		AITweaks.changeAI(mainBot, botDiff, diffVar[2], "hard", botName)
-		botDiff = mainBot.difficulty.impossible
-		AITweaks.changeAI(mainBot, botDiff, diffVar[3], "impossible", botName)
-	}
-
-	
-	//This is awful and I'll clean it up later
-	static scrambleBots()
-	{
-		Logger.info('FINs AI TWEAKS: scrambleBots')
-		if (!database.globals.config.FinsBotSwitching)
-			database.globals.config.FinsBotSwitching = {}
-		let balancedBots = ["followerBully", "followerGluharSecurity", "followerGluharScout"]
-		let aggressiveBots = ["cursedAssault", "followerGluharAssault", "followerTagilla"]
-		let rangedBots = ["followerGluharSnipe", "followerSanitar"]
-		let rand
-		rand = RandomUtil.getInt(0, balancedBots.length - 1)
-		database.globals.config.FinsBotSwitching.LLB = balancedBots[rand]
-		rand++; rand + 1 > balancedBots.length ?
-		rand = 0 : null
-		database.globals.config.FinsBotSwitching.MLB = balancedBots[rand]
-		rand++; rand + 1 > balancedBots.length ? rand = 0 : null
-		database.globals.config.FinsBotSwitching.HLB = balancedBots[rand]
-		rand = RandomUtil.getInt(0, aggressiveBots.length - 1)
-		// database.globals.config.FinsBotSwitching.LLA = aggressiveBots[rand]
-		database.globals.config.FinsBotSwitching.LLA = aggressiveBots[2];
-		aggressiveBots.splice(2,1); rand++; rand + 1 >
-		aggressiveBots.length ? rand = 0 : null
-		database.globals.config.FinsBotSwitching.MLA = aggressiveBots[rand]
-		rand++; rand + 1 > aggressiveBots.length ?
-		rand = 0 : null
-		database.globals.config.FinsBotSwitching.HLA = aggressiveBots[rand]
-		rand = RandomUtil.getInt(0, rangedBots.length - 1)
-		database.globals.config.FinsBotSwitching.LLR = rangedBots[rand]
-		rand++; rand + 1 > rangedBots.length ? rand = 0 : null
-		database.globals.config.FinsBotSwitching.MLR = rangedBots[rand]
-		// rand++; rand + 1 > rangedBots.length ? rand = 0 : null
-		database.globals.config.FinsBotSwitching.HLR = rangedBots[rand]
-		let allSwappableBots = []
-		allSwappableBots.push(...balancedBots)
-		allSwappableBots.push(...aggressiveBots)
-		allSwappableBots.push(...rangedBots)
-		let configBotList = AITweaks.clone(config.aiChanges.changeBots)
-		for (let aiType in configBotList)
-			for (let bot in configBotList[aiType])
-				if (!allSwappableBots.includes(configBotList[aiType][bot]))
-					AITweaks.replaceDifficulties(configBotList[aiType][bot], aiType)
-		let LL = ["LLB", "LLA", "LLR"]
-		let ML = ["MLB", "MLA", "MLR"]
-		let HL = ["HLB", "HLA", "HLR"]
-		for (let level in LL)
-			AITweaks.replaceDifficulties(database.globals.config.FinsBotSwitching[LL[level]].toLowerCase(), "lowLevelAIs")
-		for (let level in ML)
-			AITweaks.replaceDifficulties(database.globals.config.FinsBotSwitching[ML[level]].toLowerCase(), "midLevelAIs")
-		for (let level in HL)
-			AITweaks.replaceDifficulties(database.globals.config.FinsBotSwitching[HL[level]].toLowerCase(), "highLevelAIs")
-		// for (let botName in allSwappableBots)
-			// AITweaks.replaceDifficulties(allSwappableBots[botName])
-		
-		//Rogues will only *ever* use exusec behaviour, so it's appropriate to flip the switch here. If they become a behaviour option, this will have to default to true if behaviour is enabled.
-		if (config.spawnChanges.controlOptions.roguesNeutralToUsecs)
-		{
-			botTypes.exusec.difficulty.easy.Mind.DEFAULT_ENEMY_USEC = true
-			botTypes.exusec.difficulty.normal.Mind.DEFAULT_ENEMY_USEC = false
-			botTypes.exusec.difficulty.hard.Mind.DEFAULT_ENEMY_USEC = true
-			botTypes.exusec.difficulty.impossible.Mind.DEFAULT_ENEMY_USEC = true
-		}
-	}
-	
-	//This is a whole mess at the moment, but this function swaps out easy, hard and impossible difficulties, while leaving normal as the default
-	static replaceDifficulties(botName, aiLevel?)
-	{
-		botName = botName.toLowerCase()
-		if (botTypes[botName])
-		{
-			if (aiLevel)
-				botTypes[botName].difficulty = AITweaks.clone(database.globals.config.FinsDifficultyLevels[aiLevel])
-			else
-			{
-				botTypes[botName].difficulty.easy = AITweaks.clone(database.globals.config.FinsDifficultyLevels.lowLevelAIs.easy)
-				botTypes[botName].difficulty.hard = AITweaks.clone(database.globals.config.FinsDifficultyLevels.midLevelAIs.hard)
-				///////////////////////////
-				botTypes[botName].difficulty.normal = AITweaks.clone(database.globals.config.FinsDifficultyLevels.midLevelAIs.hard)
-				///////////////////////////
-				botTypes[botName].difficulty.impossible = AITweaks.clone(database.globals.config.FinsDifficultyLevels.highLevelAIs.impossible)
-			}
-		}
-	}
-	
-	
-	
-	//Hijacking this core function to make the scav and PMC AI be friends with eachother. -Or maybe to make the Raiders pick a side, or possibly even to make only PMCs of one faction spawn. All that should be able to be done from here.
-	//Original function is from Aki_Data\Server\eft-bots\src\callback.js
-	static generateBots(url, info, sessionId, printWep, printArm, printBot, output)
-	{
-		let a = jsonUtil.deserialize(output)
-		a.data = AITweaks.pmcScavAlliance(a.data, sessionId)
-		output = jsonUtil.serialize(a)
-
-		return output
-	}
-	
-	static establishBotGenValues()
-	{
-		let hasPMCs = []
-		for (let i in config.aiChanges.changeBots)
-			if (config.aiChanges.changeBots[i].includes(botNameSwaps.bear) || config.aiChanges.changeBots[i].includes(botNameSwaps.usec))
-				hasPMCs.push[i]
-		
-		let output = [];
-		
-		
-		//Make sure bot names can be compared in a lower-case way
-		let scavBots = []
-		let raiderBots = []
-		let pmcBots = []
-		
-		
-		//Difficulty switcheroo
-		//database.globals.config.FinsDifficultyLevels
-		//This establishes which bots should have their AI switched around with which others, and what the chances of that are.
-		let switchBoard = undefined
-		let switchChances
-		let lowerCaseLLAIs = [] //Low level AIs
-		let lowerCaseMLAIs = [] //Mid level AIs
-		let lowerCaseHLAIs = [] //High level AIs
-		//These aren't used until a little further down
-			for (let name in config.aiChanges.changeBots.lowLevelAIs)
-				lowerCaseLLAIs.push(config.aiChanges.changeBots.lowLevelAIs[name].toLowerCase())
-			for (let name in config.aiChanges.changeBots.midLevelAIs)
-				lowerCaseMLAIs.push(config.aiChanges.changeBots.midLevelAIs[name].toLowerCase())
-			for (let name in config.aiChanges.changeBots.highLevelAIs)
-				lowerCaseHLAIs.push(config.aiChanges.changeBots.highLevelAIs[name].toLowerCase())
-		let lowerCaseScavGearAIs = [] //Low level AIs
-		let lowerCaseRaiderGearAIs = [] //Mid level AIs
-		let lowerCasePMCGearAIs = [] //High level AIs
-		
-		if (config.AIbehaviourChanges.enabled && !config.disableAllAIChanges)
-			[switchBoard, switchChances] = AITweaks.createSwitchBoard()
-		database.globals.config.genVals = {
-
-			"scavBots": scavBots,
-			"raiderBots": raiderBots,
-			"pmcBots": pmcBots,
-			"lowerCaseLLAIs": lowerCaseLLAIs,
-			"lowerCaseMLAIs": lowerCaseMLAIs,
-			"lowerCaseHLAIs": lowerCaseHLAIs,
-			"lowerCaseScavGearAIs": lowerCaseScavGearAIs,
-			"lowerCaseRaiderGearAIs": lowerCaseRaiderGearAIs,
-			"lowerCasePMCGearAIs": lowerCasePMCGearAIs,
-			"switchBoard": switchBoard,
-			"switchChances": switchChances,
-			}
-	}
-	
-	static pmcScavAlliance(bots, sessionId)
-	{
-		
-		/* if (!database.globals.config.genVals)
-			AITweaks.establishBotGenValues() */
-
-		let scavBots = database.globals.config.genVals.scavBots
-		let raiderBots = database.globals.config.genVals.raiderBots
-		let pmcBots = database.globals.config.genVals.pmcBots
-		let lowerCaseLLAIs = database.globals.config.genVals.lowerCaseLLAIs
-		let lowerCaseMLAIs = database.globals.config.genVals.lowerCaseMLAIs
-		let lowerCaseHLAIs = database.globals.config.genVals.lowerCaseHLAIs
-		let switchBoard = database.globals.config.genVals.switchBoard
-		let switchChances = database.globals.config.genVals.switchChances
-
-		for (let botIndex in bots)
-		{
-			// console.time('bot');
-			let botNum = botIndex
-			let bot = bots[botIndex]
-			
-			bot.Info.Settings.origRole = bot.Info.Settings.Role
-			let origRole = bot.Info.Settings.Role
-			let role = origRole
-			
-			let isPmc = botHelper.shouldBotBePmc(role);
-			let pmcSide;
-			let AICategory = "midLevelAIs"
-
-			if (isPmc)
-			{
-				pmcSide = botGenerator.getRandomisedPmcSide();
-				role = AKIPMC
-				// bot.Info.Settings.Role = AKIPMC
-			}
-
-			
-			bot.Info.Side = (isPmc) ? pmcSide : "Savage"
-			
-
-			//Difficulty swaps. These are useless, at the moment, save for IDing bots with botmon.
-			if (lowerCaseLLAIs.includes(role.toLowerCase())) //Low level AIs are set to "Easy"
-			{
-				bot.Info.Settings.BotDifficulty = "easy"
-				AICategory = "lowLevelAIs"
-			}
-			else if (lowerCaseMLAIs.includes(role.toLowerCase())) //Mid level AIs are set to "Hard"
-			{
-				bot.Info.Settings.BotDifficulty = "hard"
-				AICategory = "midLevelAIs"
-			}
-			else if (lowerCaseHLAIs.includes(role.toLowerCase())) //High level AIs are set to "Impossible"
-			{
-				bot.Info.Settings.BotDifficulty = "impossible"
-				AICategory = "highLevelAIs"
-			}
-			else
-				bot.Info.Settings.BotDifficulty = "normal"
-
-			
-			//This is where behaviour changes happen. This comes after inventory changes that depend on role.
-			if (switchBoard && switchBoard[role]) //If Switchboard is enabled, and the bot is elligible
-			{
-				//Role swaps
-				if (switchChances[role].length > 0)
-				{
-					let switchRole = switchChances[role][RandomUtil.getInt(0, switchChances[role].length - 1)] //Randomly pick a role from the list
-					if (switchRole != "none"){
-						bot.Info.Settings.Role = switchRole //Switch role
-						//Logger.info(`switch bot from ${bot.Info.Settings.origRole} to ${switchRole}`)
-					}
-						
-
-				}
-			}
-			//If switching is enabled but the bot isn't elligible, and isn't a boss
-			else if (switchBoard && !switchBoard[role] && (!botHelper.isBotBoss(role) && role.toLowerCase().includes("sectant")))
-			{
-				
-			}
-			else //Even if switchboard isn't enabled, do not allow PMCs to default to cursed behaviour.
-			{
-				if (role == bot.Info.Settings.Role.toLowerCase() //If the original role matches the current role
-				&& bot.Info.Settings.Role.toLowerCase() == AKIPMC.toLowerCase() //If the current role is the AKIPMC default role
-				&& AKIPMC.toLowerCase() == "cursedassault") //If the AKIPMC default role is cursedassault
-				{
-					// bot.Info.Settings.Role = database.globals.config.FinsBotSwitching.HLB//"pmcBot"
-					bot.Info.Settings.Role = PMCSwap
-					bot.Info.Settings.BotDifficulty = "normal"
-					//Logger.info(`switch bot from ${bot.Info.Settings.origRole} to ${PMCSwap}`)
-				}
-			}
-			//Make sure their skills match their new role if they're on the list
-			if (["followertagilla"].includes(bot.Info.Settings.Role.toLowerCase()))
-				bot.Skills = botGenerator.generateSkills(botTypes[bot.Info.Settings.Role.toLowerCase()].skills)
-
-			
-			
-				
-			//bot.Inventory.items = bot.Inventory.items.filter(i => i._tpl != undefined && !blacklistFile.includes(i._tpl) && itemdb[i._tpl] != undefined && itemdb[i._tpl]?._props?.FinAllowed != false)
-			// console.log(`${bot.Info.Settings.origRole} -> gear from: ${role} role: ${bot.Info.Settings.Role} Side:  ${bot.Info.Side} PMC: ${isPmc} ${AICategory} ${AIGearCategory}`)
-			
-		}
-		
-		return bots;
-	}
-	
-	static saveToFile(data, filePath)
-	{
-		var fs = require('fs');
-				fs.writeFile(modFolder + filePath, JSON.stringify(data, null, 4), function (err) {
-				if (err) throw err;
-			});
-	}
-	
-	
-	static createSwitchBoard()
-	{
-		if (!database.globals.config.FinsBotSwitching)
-			return [false, false]
-		let LLBoard = {	"default": 0 }
-			LLBoard[database.globals.config.FinsBotSwitching.LLB] = 0
-			LLBoard[database.globals.config.FinsBotSwitching.LLA] = 0
-			LLBoard[database.globals.config.FinsBotSwitching.LLR] = 0
-		let MLBoard = {	"default": 0 }
-			MLBoard[database.globals.config.FinsBotSwitching.MLB] = 0
-			MLBoard[database.globals.config.FinsBotSwitching.MLA] = 0
-			MLBoard[database.globals.config.FinsBotSwitching.MLR] = 0
-		let HLBoard = {	"default": 0 }
-			HLBoard[database.globals.config.FinsBotSwitching.HLB] = 0
-			HLBoard[database.globals.config.FinsBotSwitching.HLA] = 0
-			HLBoard[database.globals.config.FinsBotSwitching.HLR] = 0
-		
-		let switchBoard = {}
-
-		let botsToSwitch = []
-
-		for (let botCat in config.aiChanges.changeBots)
-			for (let bot in config.aiChanges.changeBots[botCat])
-				if (!botsToSwitch.includes(config.aiChanges.changeBots[botCat][bot].toLowerCase()))
-					botsToSwitch.push(config.aiChanges.changeBots[botCat][bot].toLowerCase())
-		for (let bot in LLBoard)
-			if (!botsToSwitch.includes(bot.toLowerCase()) && bot != "default")
-				botsToSwitch.push(bot.toLowerCase())
-		for (let bot in MLBoard)
-			if (!botsToSwitch.includes(bot.toLowerCase()) && bot != "default")
-				botsToSwitch.push(bot.toLowerCase())
-		for (let bot in HLBoard)
-			if (!botsToSwitch.includes(bot.toLowerCase()) && bot != "default")
-				botsToSwitch.push(bot.toLowerCase())
-		for (let bot in botsToSwitch)
-			botsToSwitch[bot] = properCaps[botsToSwitch[bot]]
-		let switchOptions = [database.globals.config.FinsBotSwitching.LLB,
-			database.globals.config.FinsBotSwitching.LLA,
-			database.globals.config.FinsBotSwitching.LLR,
-			database.globals.config.FinsBotSwitching.MLB,
-			database.globals.config.FinsBotSwitching.MLA,
-			database.globals.config.FinsBotSwitching.MLR,
-			database.globals.config.FinsBotSwitching.HLB,
-			database.globals.config.FinsBotSwitching.HLA,
-			database.globals.config.FinsBotSwitching.HLR
-			]
-
-		let LLSwitch = {"assault": config.AIbehaviourChanges.lowLevelAIs["default"]}
-		LLSwitch[database.globals.config.FinsBotSwitching.LLB] = config.AIbehaviourChanges.lowLevelAIs.balanced
-		LLSwitch[database.globals.config.FinsBotSwitching.LLA] = config.AIbehaviourChanges.lowLevelAIs.aggressive
-		LLSwitch[database.globals.config.FinsBotSwitching.LLR] = config.AIbehaviourChanges.lowLevelAIs.ranged
-		let MLSwitch = {"pmcBot": config.AIbehaviourChanges.midLevelAIs["default"]}
-		MLSwitch[database.globals.config.FinsBotSwitching.MLB] = config.AIbehaviourChanges.midLevelAIs.balanced
-		MLSwitch[database.globals.config.FinsBotSwitching.MLA] = config.AIbehaviourChanges.midLevelAIs.aggressive
-		MLSwitch[database.globals.config.FinsBotSwitching.MLR] = config.AIbehaviourChanges.midLevelAIs.ranged
-		let HLSwitch = {}
-		HLSwitch[PMCSwap] = config.AIbehaviourChanges.highLevelAIs["default"]
-		HLSwitch[database.globals.config.FinsBotSwitching.HLB] = config.AIbehaviourChanges.highLevelAIs.balanced
-		HLSwitch[database.globals.config.FinsBotSwitching.HLA] = config.AIbehaviourChanges.highLevelAIs.aggressive
-		HLSwitch[database.globals.config.FinsBotSwitching.HLR] = config.AIbehaviourChanges.highLevelAIs.ranged
-		for (let botName in botsToSwitch)
-		{
-			botName = botsToSwitch[botName]
-			if (!botName)
-				continue
-			let botCat
-			if (config.aiChanges.changeBots.lowLevelAIs.includes(botName.toLowerCase()))
-			{
-				botCat = "lowLevelAIs"
-				switchBoard[botName] = AITweaks.clone(LLSwitch)
-			}
-			else if (config.aiChanges.changeBots.midLevelAIs.includes(botName.toLowerCase()))
-			{
-				botCat = "midLevelAIs"
-				switchBoard[botName] = AITweaks.clone(MLSwitch)
-			}
-			else if (config.aiChanges.changeBots.highLevelAIs.includes(botName.toLowerCase()))
-			{
-				botCat = "highLevelAIs"
-				switchBoard[botName] = AITweaks.clone(HLSwitch)
-			}
-			else
-			{
-				// switchBoard[botName] = {"default": {"chance": 1}}
-				continue
-			}
-		}
-		for (let bot in switchOptions)
-			if (!switchBoard[switchOptions[bot]])
-				switchBoard[switchOptions[bot]] = {"pmcBot": {"chance": 1}}
-		switchBoard["exusec"] = {"exusec": {"chance": 1}}
-		
-		let switchChances = {}
-		for (let mainBot in switchBoard)
-		{
-			switchChances[mainBot] = []
-			for (let switchBot in switchBoard[mainBot])
-				for (let i = 0; i < switchBoard[mainBot][switchBot]; i++)
-						switchChances[mainBot].push(switchBot)
-		}
-		return [switchBoard, switchChances]
-	}
-	
-	
-	static recordWinLoss(url, info, sessionId)
-	{
-		let PMC = profileHelper.getPmcProfile(sessionId)
-		let diffAdjust = 0.6
-		let diffRatio = 1
-		//Only allow for one adjustment per run
-		if (progDiff[sessionId] == true)
-			return AITweaks.nullResponse()
-		// PMC.Stats.OverallCounters.Items.find(i => i.Key[0] == "Sessions") ? progDiff[sessionId].raids = PMC.Stats.OverallCounters.Items.find(i => i.Key[0] == "Sessions").Value : progDiff[sessionId].raids = 0
-		// PMC.Stats.OverallCounters.Items.find(i => i.Key[1] == "Killed") ? progDiff[sessionId].deaths = PMC.Stats.OverallCounters.Items.find(i => i.Key[1] == "Killed").Value : progDiff[sessionId].deaths = 0
-		// PMC.Stats.OverallCounters.Items.find(i => i.Key[1] == "Survived") ? progDiff[sessionId].survives = PMC.Stats.OverallCounters.Items.find(i => i.Key[1] == "Survived").Value : progDiff[sessionId].survives = 0
-		// PMC.Stats.OverallCounters.Items.find(i => i.Key[0] == "CurrentWinStreak") ? progDiff[sessionId].winStreak = PMC.Stats.OverallCounters.Items.find(i => i.Key[0] == "CurrentWinStreak").Value : progDiff[sessionId].winStreak = 0
-		let upMult = diffRatio
-		let downMult = 1 / diffRatio
-		if (info.exit == "survived")//If they survived
-		{
-			progDiff[sessionId].winStreak += 1
-			progDiff[sessionId].deathStreak = 0
-			progDiff[sessionId].diffMod += (diffAdjust * Math.sqrt(progDiff[sessionId].winStreak)) * upMult
-		}
-		if (info.exit == "killed")//If they perished
-		{
-			progDiff[sessionId].winStreak = 0
-			progDiff[sessionId].deathStreak += 1
-			progDiff[sessionId].diffMod -= (diffAdjust / Math.sqrt(progDiff[sessionId].deathStreak)) * downMult
-		}
-		var fs = require('fs');
-			fs.writeFile(modFolder + "donottouch/progress.json", JSON.stringify(progDiff, null, 4), function (err) {
-			if (err) throw err;
-		});
-		Logger.info(`Fins AI Tweaks:  Difficulty adjusted by ${progDiff[sessionId].diffMod}`)
-		AITweaks.adjustDifficulty(url, info, sessionId)
-		return AITweaks.nullResponse()
-	}
-	
-	static adjustDifficulty(url, info, sessionId)
-	{
-		let PMC = profileHelper.getPmcProfile(sessionId)
-		// console.log(PMC)
-		if (!progDiff[sessionId])
-		{
-			progDiff[sessionId] = {}
-			progDiff[sessionId].diffMod = 0
-			progDiff[sessionId].raids = 0
-			progDiff[sessionId].deaths = 0
-			progDiff[sessionId].survives = 0
-			progDiff[sessionId].winStreak = 0
-			progDiff[sessionId].deathStreak = 0
-			progDiff[sessionId].lock = false
-		}
-		
-		let LLD = config.aiChanges.lowLevelAIDifficultyMod_Neg3_3
-		let MLD = config.aiChanges.midLevelAIDifficultyMod_Neg3_3 - LLD
-		let HLD = config.aiChanges.highLevelAIDifficultyMod_Neg3_3 - LLD
-		LLD = progDiff[sessionId].diffMod
-		MLD += progDiff[sessionId].diffMod
-		HLD += progDiff[sessionId].diffMod
-		AITweaks.setDifficulty(LLD, HLD, MLD, MLD, MLD)
-	}
-	
-	
-	//This is for things that I want to run exactly once upon the game actually starting.
-	static runOnGameStart(url?, info?, sessionId?, output?)
-	{
-		InRaidConfig.raidMenuSettings.aiAmount = "AsOnline"
-		InRaidConfig.raidMenuSettings.aiDifficulty = "AsOnline"
-		config.playerId = sessionId //Make the player's ID accessible at any point
-		//Difficulty changes are now made HERE, rather than in the main function.
-		AITweaks.setDifficulty(config.aiChanges.lowLevelAIDifficultyMod_Neg3_3, config.aiChanges.highLevelAIDifficultyMod_Neg3_3, config.aiChanges.midLevelAIDifficultyMod_Neg3_3, config.aiChanges.midLevelAIDifficultyMod_Neg3_3, config.aiChanges.midLevelAIDifficultyMod_Neg3_3)
-		//Automatic enemy gear adjustments. Currently only applies to weapons
-		
-		
-		for (let i in database.globals.bot_presets)
-			database.globals.bot_presets[i].UseThis = false
-		//Autmatic difficulty adjustments. THESE ONLY ADJUST WHEN THE SERVER RESTARTS
-		if (config.enableAutomaticDifficulty && sessionId)
-		{
-			AITweaks.adjustDifficulty(url, info, sessionId)
-		}
-		
-		return output
-	}
-	
-	
-	static fillEmptyDifficultySlots()
-	{
-		//Doing this manually for now. Make it programatic later.
-		let problemBots = ["followergluharsnipe", "assaultgroup"]
-		for (let bot in botTypes)
-			if (!botTypes[bot].difficulty || !botTypes[bot].difficulty.easy || !botTypes[bot].difficulty.easy.Lay)
-				problemBots.push(bot)
-		let solutionBot = "pmcbot"
-		for (let bot in problemBots)
-			// if (botTypes[problemBots[bot]])
-				// botTypes[problemBots[bot]].difficulty = AITweaks.clone(botTypes[solutionBot].difficulty)
-			// else
-				botTypes[problemBots[bot]] = AITweaks.clone(botTypes[solutionBot])
-		botTypes[BotConfig.pmc.bearType] = AITweaks.clone(botTypes.bear)
-		botTypes[BotConfig.pmc.usecType] = AITweaks.clone(botTypes.usec)
-		botTypes["followertagilla"] = AITweaks.clone(botTypes.assault)
-		botTypes["assaultgroup"].inventory.items = botTypes.bear.inventory.items
-	}
-	
-	
-	//All actual assignment of difficulty values has been moved into this function
-	static setDifficulty(scavDiffMod, PMCDiffMod, raiderDiffMod, gluharRaiderDiffMod, minionDiffMod)
-	{
-		
-		let diffSet;
-		let diffMod;
-		
-		if (!database.bots.types.assaultgroup)
-			database.bots.types.assaultgroup = AITweaks.clone(botTypes.pmcbot)
-		
-		//Modifying bosses
-		if (config.aiChanges.changeBossAI)
-		{
-			config.aiChanges.changeBots.bossLevelAIs = []
-			for (let bot in botTypes)
-				if (botHelper.isBotBoss(bot) && !bot.includes("test"))
-					for (let aiTypes in config.aiChanges.changeBots)
-						if (config.aiChanges.changeBots[aiTypes].filter(i => i.toLowerCase() == bot.toLowerCase()))
-						{
-							config.aiChanges.changeBots.bossLevelAIs.push(bot)
-							break
-						}
-		}
-		AITweaks.generateDifficultyLevels(scavDiffMod, PMCDiffMod, raiderDiffMod, gluharRaiderDiffMod, minionDiffMod)
-		if (!config.disableAllAIChanges)
-			AITweaks.scrambleBots()
-		
-		if (!config.disableAllAIChanges && !config.AIbehaviourChanges.enabled)
-		{
-			for (let aiTypes in config.aiChanges.changeBots)
-				for (let botIndex in config.aiChanges.changeBots[aiTypes])
-				{
-					if (botTypes[config.aiChanges.changeBots[aiTypes][botIndex].toLowerCase()])
-					{
-						let botName = config.aiChanges.changeBots[aiTypes][botIndex].toLowerCase()
-						let bot = botTypes[botName]
-						bot.difficulty = database.globals.config.FinsDifficultyLevels[aiTypes]
-					}
-				}
-			botTypes[PMCSwap.toLowerCase()].difficulty.impossible = AITweaks.clone(database.globals.config.FinsDifficultyLevels.highLevelAIs.impossible)
-			if (PMCSwap.toLowerCase() != "followerTagilla".toLowerCase())
-				botTypes["followertagilla"].difficulty = AITweaks.clone(database.globals.config.FinsDifficultyLevels.lowLevelAIs)
-			Logger.info("Fin's AI Tweaks: AI difficulty changes complete.")
-		}
-		
-		//Do this after all the AI changes, to make sure this one sticks
-		if (!config.disableAllAIChanges)
-		{
-			//AITweaks.setPMCHostility()
-			AITweaks.checkTalking()
-
-			if (advAIConfig.Enabled == true)
-				AITweaks.applyAdvancedAIConfig()
-		}
-		AITweaks.roundAllBotStats()
-		
-		AITweaks.applySkills()
-	}
-	
-	
-	static applyAdvancedAIConfig()
-	{
-		for (let settingCat in advAIConfig.AI_setting_categories)
-			for (let botGroup in advAIConfig.AI_setting_categories[settingCat].setting_multipliers)
-				for (let settingName of advAIConfig.AI_setting_categories[settingCat].setting_names)
-					for (let botName of advAIConfig.bot_Categories[botGroup])
-						AITweaks.changeSettingByName(botTypes[botName], settingName, advAIConfig.AI_setting_categories[settingCat].setting_multipliers[botGroup], true)
-	}
-	
-	static changeSettingByName(bot, settingName, value, mult)
-	{
-		if (settingName.substring(0,3) == "-1_")
-		{
-			settingName = settingName.substring(3)
-			value = 1 / value
-		}
-		for (let diff in bot.difficulty)
-			for (let cat in bot.difficulty[diff])
-				//Why am I doing it this way? This is weird and looks mega inefficient. Fix later, assuming this wasn't done for a good reason.
-				for (let set in bot.difficulty[diff][cat])
-					if (set == settingName) //This kinda assumes no setting names will be repeated, which isn't entirely true.
-					{
-						mult ? bot.difficulty[diff][cat][set] *= value : bot.difficulty[diff][cat][set] = value
-						return
-					}
-	}
-	
-	main()
-	{
-		AITweaks.fillEmptyDifficultySlots()
-		// AITweaks.swapBearUsecConfig(botNameSwaps.bear, botNameSwaps.usec)
-		
-		//Change the core AI values. Check if any bots are set to be quiet
-		AITweaks.changeCoreAI()
-		let accuracyCoef = 1//config.overallDifficultyMultipliers.aiAimSpeedMult
-		let scatteringCoef = 1//config.overallDifficultyMultipliers.aiShotSpreadMult
-		let gainSightCoef = 1//config.overallDifficultyMultipliers.aiVisionSpeedMult
-		let marksmanCoef = config.overallDifficultyMultipliers.sniperBotAccuracyMult
-		let visibleDistCoef = 1//config.overallDifficultyMultipliers.visibleDistanceMult
-		this.changeOverallDifficulty(accuracyCoef , scatteringCoef, gainSightCoef * 0.5, marksmanCoef, visibleDistCoef)
-		//This is now done on game start
-		AITweaks.setDifficulty(config.aiChanges.lowLevelAIDifficultyMod_Neg3_3, config.aiChanges.highLevelAIDifficultyMod_Neg3_3, config.aiChanges.midLevelAIDifficultyMod_Neg3_3, 
-			config.aiChanges.midLevelAIDifficultyMod_Neg3_3, config.aiChanges.midLevelAIDifficultyMod_Neg3_3); 
-	}
-	
-
-	
-	//This is where skills get added to certain bots. -This is probably going to get a little messy.
-	static applySkills()
-	{
-		Logger.info('FINs AI TWEAKS: applySkills')
-		//followertagilla likes to rush in and get killed. So he needs some buffs.
-		botTypes.followertagilla.skills.Common = {"Endurance":{"min":5100,"max":5100},"Strength":{"min":10000,"max":10000},"Vitality":{"min":5100,"max":5100},"Health":{"min":5100,"max":5100},"Metabolism":{"min":5100,"max":5100},"StressResistance":{"min":5100,"max":5100},"Immunity":{"min":5100,"max":5100},"CovertMovement":{"min":5100,"max":5100},"MagDrills":{"min":5100,"max":5100},"Intellect":{"min":5100,"max":5100},"BotSound":{"min":3600,"max":4400}}
-	}
-	
-	
-	static generateDifficultyLevels(scavDiffMod, PMCDiffMod, raiderDiffMod, gluharRaiderDiffMod, minionDiffMod)
-	{
-		let diffSet;
-		let diffMod;
-		database.globals.config.FinsDifficultyLevels = {}
-		for (let aiTypes in config.aiChanges.changeBots)
-		{
-			database.bots.types[aiTypes] = AITweaks.clone(botTypes.pmcbot)
-			let bot = database.bots.types[aiTypes]
-			let botName = aiTypes
-			if (aiTypes == "lowLevelAIs")
-			{diffSet = [3,3,3,3];diffMod = scavDiffMod}
-			else if (aiTypes == "midLevelAIs")
-			{diffSet = [4,4,4,4]; diffMod = raiderDiffMod}
-			else if (aiTypes == "highLevelAIs")
-			{diffSet = [5,5,5,5];diffMod = PMCDiffMod}
-			else if (aiTypes == "bossLevelAIs")
-			{diffSet = [6.5,6.5,6.5,6.5];diffMod = Math.max(PMCDiffMod, raiderDiffMod, scavDiffMod)}
-			else
-			console.log(`${aiTypes} is being overwritten for some reason?`) //Should never appear if things are working properly.
-			AITweaks.changeForAllDifficulties(bot, diffSet, diffMod, botName)
-			// database.bots.types[aiTypes] = AITweaks.clone(database.bots.types[aiTypes].difficulty)
-			database.globals.config.FinsDifficultyLevels[aiTypes] = AITweaks.clone(database.bots.types[aiTypes].difficulty)
-			delete database.bots.types[aiTypes]
-		}
-	}
-	
-
-	changeHealth(bot, botName, mult)
-	{
-		Logger.info(`Fins AI Tweaks: Setting Health of ${botName}`)
-		if (config.overallDifficultyMultipliers.setTheseBotsToDefaultPlayerHPBeforeMultsAreUsed.includes(botName))
-			bot.health.BodyParts = [{"Head": {"min": 35,"max": 35},"Chest": {"min": 85,"max": 85},"Stomach": {"min": 70,"max": 70},"LeftArm": {"min": 60,"max": 60},"RightArm": {"min": 60,"max": 60},"LeftLeg": {"min": 65,"max": 65},"RightLeg": {"min": 65,"max": 65}}]
-		for (let variants in bot.health.BodyParts)
-			for (let limb in bot.health.BodyParts[variants])
-				if (limb.toLowerCase() != "head" || config.overallDifficultyMultipliers.changeHeadHPValues)
-					for (let maxMin in bot.health.BodyParts[variants][limb])
-						bot.health.BodyParts[variants][limb][maxMin] = Math.round(bot.health.BodyParts[variants][limb][maxMin] * mult)
-	}
-	
-	adjustHealthValues(PMC, scav, raider, boss, cultist)
-	{
-		for (let i in botTypes)
-		{
-			let bot = botTypes[i]
-			if (["assault", "marksman"].includes(i))
-			{
-				this.changeHealth(bot, i, scav)
-			}
-			else if ([botNameSwaps.bear, botNameSwaps.usec, AKIPMC.toLowerCase()].includes(i))
-			{
-				this.changeHealth(bot, i, PMC)
-			}
-			else if (["pmcbot","followergluharassault","followergluharsnipe","followergluharscout","followergluharsecurity","followerbully","followerkojaniy","followersanitar"].includes(i))
-			{
-				this.changeHealth(bot, i, raider)
-			}
-			else if (["sectantpriest", "sectantwarrior"].includes(i))
-			{
-				this.changeHealth(bot, i, cultist)
-			}
-			else if (["bossbully", "bossgluhar", "bosskilla", "bosskojaniy", "bosssanitar"].includes(i))
-			{
-				this.changeHealth(bot, i, boss)
-			}
-		}
 	}
 
 	static clearString(s: string)
@@ -1912,6 +1205,124 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		}
 	}
 
+	static roundNumber(stat) //Actually truncates
+	{
+		if (typeof(stat) == "number")
+		{
+			let absoluteNum = Math.sqrt(stat * stat)
+			let decimal = absoluteNum < 1 ? true : false
+			let integer = decimal ? 0 : stat - (stat % 1)
+			if (integer == stat)
+				return stat
+			let negative = stat < 0 ? true : false
+			
+			let strStat = (stat * 1).toString().replace("-","").replace(".","") //Convert to string
+			// console.log(`${absoluteNum} ${decimal} ${integer} ${negative} ${strStat}`)
+			for (let i = 1; i < strStat.length; i++)//count the leading zeroes
+				if (strStat[i] == "0")
+					null//zeroes++
+				else
+					strStat = strStat.length < i + 3 ? strStat : strStat.slice(0, i + 3)
+			stat = +(integer.toString() + "." + strStat.slice(1)) * (negative ? -1 : 1)
+		}
+		return stat
+	}
+	
+	
+    
+	//This function is used when the value will vary by bot difficulty. Values can theoretically be infinitely low or infinitely high
+	//value is an array of all possible values
+
+	static changeStat(type, value, difficulty, botCat, multiplier?)
+	{
+		if (multiplier == undefined)
+			multiplier = 1
+		let setValue
+
+		if (value.length == 1)
+		{
+			if (typeof(value[0]) == "number")
+				botCat[type] = value[0] * multiplier
+			else
+				botCat[type] = value[0]
+			return
+		}
+			
+		let exceptions = ["VisibleDistance", "PART_PERCENT_TO_HEAL", "HearingSense", "AIMING_TYPE"] //Distance is on here because there's a config value to modify that on its own, same with hearing
+		if (!exceptions.includes(type) && typeof(value[0]) == "number")//Some values don't work with this system. Things with unusual caps, like visible angle.
+		{
+			//These values must be whole numbers
+			let decimalExceptions = ["BAD_SHOOTS_MIN", "BAD_SHOOTS_MAX", "MIN_SHOOTS_TIME", "MAX_SHOOTS_TIME"]
+			
+			let divisor = 100
+			
+			if (Math.trunc(difficulty) != difficulty && !decimalExceptions.includes(type)) //If it's not a whole number.. ..Oh boy. We're getting into a rabbit hole now, aren't we?
+			{
+				let newValues = [value[0]] //An array with the lowest possible value as its starting point
+				for (let val = 0; val < value.length - 1; val++)
+				{
+					let difference = value[val + 1] - value[val]
+					for (let i = 0; i < divisor; i++)
+						newValues.push(newValues[(val * divisor) + i] + (difference / divisor))
+				}
+				value = newValues
+				difficulty = Math.round(difficulty * divisor)
+			}
+			else if (Math.trunc(difficulty) != difficulty && decimalExceptions.includes(type))
+			{
+				difficulty = Math.round(difficulty)
+			}
+			let numValues = value.length - 1 //This should allow for variations in the size of the difficulty setting arrays.
+			
+			//Should allow for a smooth transition into difficulties greater than the standard 0-5 range
+			if (difficulty > numValues)
+			{
+				if (value[(numValues - 1)] - value[numValues] < 0) //going up
+					{setValue = value[numValues] + ((value[numValues] - value[(numValues - 1)]) * (difficulty - numValues))
+					if(setValue > 100 && type.slice(-4) == "_100")
+						setValue = 100}
+				else if (value[numValues] == 0)
+					setValue = 0
+				else
+					setValue = value[numValues] * Math.pow((value[numValues] / value[(numValues - 1)]) , difficulty - numValues)
+			}
+			else if (difficulty < 0)
+			{
+				if (value[1] - value[0] < 0) //going up
+					setValue = value[0] + ((value[0] - value[1]) * (difficulty * -1))
+				else if (value[0] <= 0)
+					setValue = 0
+				else
+				{
+					setValue = value[0] * Math.pow((value[0] / value[(1)]) , difficulty * -1)
+				}
+			}
+			else
+				setValue = value[difficulty]
+			if (Math.round(value[numValues]) == value[numValues]) //If all values are integers, keep it that way
+				if (value.find(i => Math.round[value[i]] == value[i]))
+				{
+					//console.log(value)
+					setValue = Math.round(setValue)
+				}
+		}
+		else
+		{
+			let numValues = value.length - 1
+			difficulty = Math.round(difficulty)
+			if (difficulty > numValues)
+				difficulty = numValues
+			if (difficulty < 0)
+				difficulty = 0
+			setValue = value[difficulty]
+		}
+		botCat[type] = setValue * multiplier
+	}
+
+
+	static clone(data: any) {
+		return JSON.parse(JSON.stringify(data));
+	}
 }
 
 
