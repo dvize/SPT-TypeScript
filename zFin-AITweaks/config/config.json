@@ -1,30 +1,46 @@
 {
-    "Explanation": {
-        "############## Set the values to true or false, or to a number if it's that type of value. It should be fairly self explanatory, but if there's anything weird I'll make a readme file that explains more. It should be in the mod's main folder.######################": "///",
-        "############## For real, check the README file if anything here confuses you in the slighest. Heck, even if it doesn't confuse you, it can't hurt to glance over it anyways.######################": "///",
-        "Notes on Bot Names": "Scav = assault; Sniper = marksman; Raider = pmcbot, Rogue = exusec; Cultist leader = sectantpriest; Cultist = sectantwarrior; PMC = bear, usec, assaultgroup; Reshala = bossbully; Gluhar = bossgluhar; Killa = bosskilla; Shturman = bosskojaniy; Sanitar = bosssanitar; Boss minions = followerbully, followergluharassault, followergluharscout, followergluharsecurity, followergluharsnipe, followerkojaniy, followersanitar"
-    },
     "disableAllAIChanges": false,
 	"enableAutomaticDifficulty": false,
+	"enableLegendaryPlayerMode": true,
+	"enableEscortMode": true,
     "aiChanges": {
+		"chanceChangeScavToWild": 75,
+		"chanceLegendReplacesPMC": 10,
         "changeBots": {
             "lowLevelAIs": [
-                "assault"
+                "assault",
+				"marksman", 
+				"cursedassault"
             ],
             "midLevelAIs": [
+				"sectantpriest", 
+				"sectantwarrior",
                 "pmcbot",
+				"exusec",
                 "followergluharassault",
                 "followergluharscout",
                 "followergluharsecurity",
                 "followergluharsnipe",
                 "followerkojaniy",
                 "followersanitar",
-                "followerbully"
+                "followerbully",
+				"followertagilla", 
+				"followerbirdeye", 
+				"followerbigpipe"
             ],
             "highLevelAIs": [
                 "assaultgroup",
                 "bear",
                 "usec"
+            ],
+			"bossLevelAIs": [
+				"bossbully", 
+				"bossgluhar", 
+				"bosskilla", 
+				"bosskojaniy", 
+				"bosssanitar", 
+				"bosstagilla", 
+				"bossknight"
             ]
         },
         "overallAIDifficultyMod": -0.5,
@@ -71,27 +87,6 @@
         "scavs": true,
         "raiders": true,
         "PMCs": true
-    },
-    "AIbehaviourChanges": {
-        "enabled": true,
-        "highLevelAIs": {
-            "default": 1,
-            "balanced": 0,
-            "aggressive": 0,
-            "ranged": 0
-        },
-        "midLevelAIs": {
-            "default": 1,
-            "balanced": 1,
-            "aggressive": 1,
-            "ranged": 1
-        },
-        "lowLevelAIs": {
-            "default": 2,
-            "balanced": 3,
-            "aggressive": 1,
-            "ranged": 1
-        }
     },
     "spawnChanges": {
         "controlOptions": {

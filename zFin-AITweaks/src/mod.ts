@@ -11,7 +11,13 @@ import { IBotConfig } from "@spt-aki/models/spt/config/IBotConfig";
 import { IInRaidConfig  } from "@spt-aki/models/spt/config/IInraidConfig";
 import { BotHelper } from "@spt-aki/helpers/BotHelper";
 import { ProfileHelper } from "@spt-aki/helpers/ProfileHelper";
-
+import { IBotBase } from "@spt-aki/models/eft/common/tables/IBotBase";
+import {BotGenerator} from "@spt-aki/generators/BotGenerator";
+import { IGenerateBotsRequestData } from "@spt-aki/models/eft/bot/IGenerateBotsRequestData";
+import {IBotType} from "@spt-aki/models/eft/common/tables/IBotType"
+import {BotGenerationCacheService} from "@spt-aki/services/BotGenerationCacheService"
+import { RandomUtil } from "@spt-aki/utils/RandomUtil";
+import { JsonUtil } from "@spt-aki/utils/JsonUtil";
 
 let configServer : ConfigServer;
 let profileHelper;
@@ -23,23 +29,37 @@ let databaseServer;
 let locations;
 let botTypes;
 let modFolder;
-
+let botGenerator;
 let baseAI;
 let config;
 let advAIConfig;
 let InRaidConfig;
-let progDiff;
+let progressRecord;
+let botGenerationCacheService;
+let legendaryFile;
+let playerLevelPMC;
+let GlobalSessionID;
 
 const modName = "Fin-AITweaks";
 
 const locationNames = ["interchange", "bigmap", "rezervbase", "woods", "shoreline", "laboratory", "lighthouse", "factory4_day", "factory4_night"];
 const locationNamesVerbose = ["interchange", "customs", "reserve", "woods", "shoreline", "labs", "lighthouse", "factory", "factory"];
 
+//add entourage mode - npcs with guard ai escort player.. random pmc generated with level below yours
+//add legendary pmc mode - clone player if survive 10 raids weith no deaths inbetween from progress.json.  Fight cloned player randomly on map.
+
 class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 {
 	preAkiLoad(container: DependencyContainer): void
 	{
 		Logger = container.resolve("WinstonLogger")
+		config = require("../config/config.json");
+		//set config checks early in case i need to not setup dynamic/static routers.
+
+		if (config.enableEscortMode)
+		{
+
+		}
 		
 		const dynamicRouterModService = container.resolve<DynamicRouterModService>("DynamicRouterModService");
 		const staticRouterModService = container.resolve<StaticRouterModService>("StaticRouterModService");
@@ -54,9 +74,24 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		//Game start
 		staticRouterModService.registerStaticRouter(`StaticAkiGameStart${modName}`,[{url: "/client/game/start",
 			action: (url, info, sessionId, output) =>{
+				GlobalSessionID = sessionId;
 				AITweaks.runOnGameStart(url, info, sessionId, output);
 				return output
 		}}],"aki");
+
+		if (!config.disableAllAIChanges)
+		{
+			container.afterResolution("BotGenerationCacheService", (_t, result: BotGenerationCacheService) => 
+			{
+				result.getBot = AITweaks.getBot;
+			}, {frequency: "Always"});
+
+			container.afterResolution("BotGenerationCacheService", (_t, result: BotGenerationCacheService) => 
+			{
+				result.storeBots = AITweaks.storeBots;
+			}, {frequency: "Always"});
+		}
+
 	}
 
 	postAkiLoad(container: DependencyContainer): void
@@ -74,7 +109,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 				config.allowHealthTweaks.multipliers.raiderHealthMult, config.allowHealthTweaks.multipliers.bossHealthMult, 
 				config.allowHealthTweaks.multipliers.cultistHealthMult)	
 		}
-			
+		
 		Logger.info("Fin's AI Tweaks: Finished")
 	}
 
@@ -86,7 +121,9 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		configServer = container.resolve("ConfigServer");
 		databaseServer = container.resolve("DatabaseServer");
 		configServer = container.resolve("ConfigServer");
+		botGenerator = container.resolve("BotGenerator");
 		database = databaseServer.getTables();
+		botGenerationCacheService = container.resolve("BotGenerationCacheService");
 
 		locations = database.locations;
 		botTypes = database.bots.types;
@@ -102,19 +139,191 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		//Load Config Files
 		BotConfig = configServer.getConfig<IBotConfig>(ConfigTypes.BOT);
 		InRaidConfig = configServer.getConfig<IInRaidConfig>(ConfigTypes.IN_RAID);
-		config = require("../config/config.json");
+		
 		advAIConfig = require("../config/advanced AI config.json");
-		progDiff = require("../donottouch/progress.json");
+		progressRecord = require("../donottouch/progress.json");
+		legendaryFile = require("../donottouch/legendary.json")
 	}
 	
 	//All functions that need to be run when the route "/raid/profile/save" is used should go in here, as config-reliant conditionals can't be used on the initial load function
 	static onRaidSave(url, info, sessionId, output)
 	{
+		playerLevelPMC = profileHelper.getPmcProfile(sessionId).Info.Level;
+		GlobalSessionID = sessionId;
+
 		Logger.info('FINs AI TWEAKS: onRaidSave')
 		if (config.enableAutomaticDifficulty)
 			AITweaks.recordWinLoss(url, info, sessionId)
-		delete database.globals.config.genVals
+
+		if (config.enableLegendaryPlayerMode)
+		{
+			AITweaks.legendaryPlayerCheck(sessionId)
+		}
+		//delete database.globals.config.genVals
 		return output
+	}
+
+
+	static getBot(role: string): IBotBase
+    {
+		//need to also modify botcacheservice so when retrieving if no cached value then default to 
+
+		if (["assault", "cursedassault"].includes(role.toLowerCase()))
+		{
+			// if the role is assault or cursedassault, change to newrole and return bot based on chance.
+			
+			if (botGenerationCacheService.storedBots.has(role))
+			{
+				let cachedOfType = botGenerationCacheService.storedBots.get(role); //still an array of maps of that type
+
+				if (cachedOfType.length > 0)
+            	{
+					let chance = botGenerator.randomUtil.getChance100(config.aiChanges.chanceChangeScavToWild);
+					//let mymodified = JSON.stringify(cachedOfType[0], null, "\t")
+					//Logger.info(`mymodified = ${mymodified}`)
+
+					if(chance)
+					{
+						let newrole = botGenerator.getPmcRoleByDescription(role); //will always be bear and use built-in function
+						cachedOfType[cachedOfType.length-1].Info.Settings.Role = newrole;
+						//botGenerationCacheService.logger.info(`AITweaks: Substituting ${role} with ${AITweaks.serialize(cachedOfType[0].Info.Settings.Role)}!`);
+						return cachedOfType.pop();
+					}
+
+					return cachedOfType.pop();
+           	 	}
+				
+			}
+
+			botGenerationCacheService.logger.error(`OH NO! Cache does not contain ${role} in it!`);
+        	return undefined;
+		}
+
+        if (botGenerationCacheService.storedBots.has(role))
+        {
+            let cachedOfType = botGenerationCacheService.storedBots.get(role);
+            if (cachedOfType.length > 0)
+            {
+                return cachedOfType.pop();
+            }
+			
+            botGenerationCacheService.logger.error(`OH NO! Cache array does not contain value for ${role}!`);
+        }
+		
+
+        botGenerationCacheService.logger.error(`OH NO! Cache does not contain ${role} in it!`);
+        return undefined;
+    }
+
+	static storeBots(botsToStore: IBotBase[]): void
+    {
+		const pmcTypeLabel = "PMC";
+		//Logger.info(`In AITweaks.storeBots Function`)
+        botsToStore.forEach(bot => 
+        {
+            const type = bot.sptIsPmc ? pmcTypeLabel : bot.Info.Settings.Role;
+            if (botGenerationCacheService.storedBots.has(type))
+            {
+				if (type == pmcTypeLabel)
+				{
+					//Logger.info(`${type} is a pmcTypeLabel`)
+					if (legendaryFile[GlobalSessionID])
+					{
+						//Logger.info(`legendaryFile[SessionID] exists`)
+						let chance = botGenerator.randomUtil.getChance100(config.aiChanges.chanceLegendReplacesPMC)
+						if (chance)
+						{
+							//Logger.info(`Hit the chance of replacing PMC`)
+							
+							bot = legendaryFile[GlobalSessionID];
+							//Logger.info(`legendaryFile[GlobalSessionID] is the replacement for e`)
+							
+							bot = botGenerator.generateDogtag(bot);
+							bot.Info.Side = "Savage"
+							bot.Info.Settings.Role = botGenerator.randomUtil.getArrayValue(["followerBirdEye", "followerBigPipe", "bossKnight", "bossKilla"]);
+							//botGenerator.botEquipmentFilterService.filterBotEquipment(e, playerLevelPMC, true, e.Info.Settings.Role);
+
+							botGenerationCacheService.storedBots.get(type).unshift(bot);
+							Logger.info(`Throwing legendary PMC of ${bot.Info.Settings.Role} into cachedbots (not guaranteed)`)
+							return;
+						}
+					}
+				}
+				//Logger.info(`Has ${type} but not PMC so just storing on stack`)
+                botGenerationCacheService.storedBots.get(type).unshift(bot);
+            }
+            else
+            {
+				//Logger.info(`Does not have ${type} so setting type`)
+                botGenerationCacheService.storedBots.set(type, [bot]);
+            }
+        });
+    }
+
+	static legendaryPlayerCheck(sessionID: string)
+	{
+		if(profileHelper.getPmcProfile(sessionID)){
+			
+			let setLegendary: boolean;
+			//Logger.info(`in legendaryPlayerCheck function`)
+			
+			let therecord = progressRecord[sessionID];
+	
+			//Logger.info(`therecord: ${AITweaks.serialize(therecord)}`)
+	
+			if(therecord.deathStreak > 0){
+				setLegendary = false;
+				Logger.info(`Last Winstreak: ${AITweaks.serialize(therecord.winStreak)}`)
+				AITweaks.createLegendPlayer(sessionID, setLegendary);
+				return;
+			}
+			if(therecord.winStreak >= 10) //change this later back to 10
+			{
+				setLegendary = true;
+				Logger.info(`Current Winstreak: ${AITweaks.serialize(therecord.winStreak)}`)
+				AITweaks.createLegendPlayer(sessionID, setLegendary);
+				return;
+			}
+		}
+
+	}
+
+	static createLegendPlayer(sessionID: string, setLegendary: boolean)
+	{
+		if (setLegendary){
+			//do stuff here, add check to see if entry already exists
+			//check if existing array of playerprofiles
+			if(profileHelper.getPmcProfile(sessionID)){
+
+				let playerprofile = profileHelper.getPmcProfile(sessionID);
+			
+				if (legendaryFile[sessionID])
+				{
+					Logger.info(`Legendary Player Exists, Overwriting`)
+					//Logger.info(`playerprofile stringified: ${JSON.stringify(playerprofile)}`)
+					legendaryFile[sessionID] = playerprofile;
+					legendaryFile[sessionID].Info.Settings.Role = botGenerator.randomUtil.getArrayValue(["followerBirdEye", "followerBigPipe", "bossKnight", "bossKilla"])
+					legendaryFile[sessionID].Info.Settings.BotDifficulty = "hard";
+					AITweaks.saveToFile(legendaryFile, "donottouch/legendary.json");
+				}
+				else{
+					Logger.info(`Legendary Player Does not exist, adding`)
+					//Logger.info(`playerprofile stringified: ${JSON.stringify(playerprofile)}`)
+					legendaryFile[sessionID] = playerprofile;
+					legendaryFile[sessionID].Info.Settings.Role = "PMC";
+					legendaryFile[sessionID].Info.Settings.BotDifficulty = "hard";
+					AITweaks.saveToFile(legendaryFile, "donottouch/legendary.json");
+				}
+				//Logger.info('Saved Legendary Player');
+
+			}
+			
+		}
+		else{
+			//should i clear legendary profile?
+			Logger.info('setLegendary was false. Do not save Legendary Player')
+
+		}
 	}
 
 	static noTalking(botList, easy, normal, hard, impossible)
@@ -258,7 +467,6 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 			}
 		}
 	}
-	
 
 	static saveToFile(data, filePath)
 	{
@@ -275,30 +483,30 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		let diffAdjust = 0.6
 		let diffRatio = 1
 		//Only allow for one adjustment per run
-		if (progDiff[sessionId] == true)
+		if (progressRecord[sessionId] == true)
 			return AITweaks.nullResponse()
-		// PMC.Stats.OverallCounters.Items.find(i => i.Key[0] == "Sessions") ? progDiff[sessionId].raids = PMC.Stats.OverallCounters.Items.find(i => i.Key[0] == "Sessions").Value : progDiff[sessionId].raids = 0
-		// PMC.Stats.OverallCounters.Items.find(i => i.Key[1] == "Killed") ? progDiff[sessionId].deaths = PMC.Stats.OverallCounters.Items.find(i => i.Key[1] == "Killed").Value : progDiff[sessionId].deaths = 0
-		// PMC.Stats.OverallCounters.Items.find(i => i.Key[1] == "Survived") ? progDiff[sessionId].survives = PMC.Stats.OverallCounters.Items.find(i => i.Key[1] == "Survived").Value : progDiff[sessionId].survives = 0
-		// PMC.Stats.OverallCounters.Items.find(i => i.Key[0] == "CurrentWinStreak") ? progDiff[sessionId].winStreak = PMC.Stats.OverallCounters.Items.find(i => i.Key[0] == "CurrentWinStreak").Value : progDiff[sessionId].winStreak = 0
+		// PMC.Stats.OverallCounters.Items.find(i => i.Key[0] == "Sessions") ? progressRecord[sessionId].raids = PMC.Stats.OverallCounters.Items.find(i => i.Key[0] == "Sessions").Value : progressRecord[sessionId].raids = 0
+		// PMC.Stats.OverallCounters.Items.find(i => i.Key[1] == "Killed") ? progressRecord[sessionId].deaths = PMC.Stats.OverallCounters.Items.find(i => i.Key[1] == "Killed").Value : progressRecord[sessionId].deaths = 0
+		// PMC.Stats.OverallCounters.Items.find(i => i.Key[1] == "Survived") ? progressRecord[sessionId].survives = PMC.Stats.OverallCounters.Items.find(i => i.Key[1] == "Survived").Value : progressRecord[sessionId].survives = 0
+		// PMC.Stats.OverallCounters.Items.find(i => i.Key[0] == "CurrentWinStreak") ? progressRecord[sessionId].winStreak = PMC.Stats.OverallCounters.Items.find(i => i.Key[0] == "CurrentWinStreak").Value : progressRecord[sessionId].winStreak = 0
 		let upMult = diffRatio
 		let downMult = 1 / diffRatio
 		if (info.exit == "survived")//If they survived
 		{
-			progDiff[sessionId].winStreak += 1
-			progDiff[sessionId].deathStreak = 0
-			progDiff[sessionId].diffMod += (diffAdjust * Math.sqrt(progDiff[sessionId].winStreak)) * upMult
+			progressRecord[sessionId].winStreak += 1
+			progressRecord[sessionId].deathStreak = 0
+			progressRecord[sessionId].diffMod += (diffAdjust * Math.sqrt(progressRecord[sessionId].winStreak)) * upMult
 		}
 		if (info.exit == "killed")//If they perished
 		{
-			progDiff[sessionId].winStreak = 0
-			progDiff[sessionId].deathStreak += 1
-			progDiff[sessionId].diffMod -= (diffAdjust / Math.sqrt(progDiff[sessionId].deathStreak)) * downMult
+			progressRecord[sessionId].winStreak = 0
+			progressRecord[sessionId].deathStreak += 1
+			progressRecord[sessionId].diffMod -= (diffAdjust / Math.sqrt(progressRecord[sessionId].deathStreak)) * downMult
 		}
-		Logger.info(`Fins AI Tweaks:  Difficulty adjusted by ${progDiff[sessionId].diffMod}`)
+		Logger.info(`Fins AI Tweaks:  Difficulty adjusted by ${progressRecord[sessionId].diffMod}`)
 		AITweaks.adjustDifficulty(url, info, sessionId)
 		var fs = require('fs');
-			fs.writeFile(modFolder + "donottouch/progress.json", JSON.stringify(progDiff, null, 4), function (err) {
+			fs.writeFile(modFolder + "donottouch/progress.json", JSON.stringify(progressRecord, null, 4), function (err) {
 			if (err) throw err;
 		});
 		
@@ -309,24 +517,24 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 	{
 		let PMC = profileHelper.getPmcProfile(sessionId)
 		// console.log(PMC)
-		if (!progDiff[sessionId])
+		if (!progressRecord[sessionId])
 		{
-			progDiff[sessionId] = {}
-			progDiff[sessionId].diffMod = 0
-			progDiff[sessionId].raids = 0
-			progDiff[sessionId].deaths = 0
-			progDiff[sessionId].survives = 0
-			progDiff[sessionId].winStreak = 0
-			progDiff[sessionId].deathStreak = 0
-			progDiff[sessionId].lock = false
+			progressRecord[sessionId] = {}
+			progressRecord[sessionId].diffMod = 0
+			progressRecord[sessionId].raids = 0
+			progressRecord[sessionId].deaths = 0
+			progressRecord[sessionId].survives = 0
+			progressRecord[sessionId].winStreak = 0
+			progressRecord[sessionId].deathStreak = 0
+			progressRecord[sessionId].lock = false
 		}
 		
 		let LLD = config.aiChanges.lowLevelAIDifficultyMod_Neg3_3
 		let MLD = config.aiChanges.midLevelAIDifficultyMod_Neg3_3 - LLD
 		let HLD = config.aiChanges.highLevelAIDifficultyMod_Neg3_3 - LLD
-		LLD = progDiff[sessionId].diffMod
-		MLD += progDiff[sessionId].diffMod
-		HLD += progDiff[sessionId].diffMod
+		LLD = progressRecord[sessionId].diffMod
+		MLD += progressRecord[sessionId].diffMod
+		HLD += progressRecord[sessionId].diffMod
 		AITweaks.setDifficulty(LLD, HLD, MLD, MLD, MLD)
 	}
 	

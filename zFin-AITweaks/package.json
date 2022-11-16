@@ -1,10 +1,10 @@
 {
-    "name": "Fin's AI Tweaks",
-    "version": "1.2.3",
+    "name": "Fins AI Tweaks ",
+    "version": "1.2.5",
     "main": "src/mod.js",
     "license": "See License file",
     "author": "Fin",
-    "akiVersion": "3.2.*",
+    "akiVersion": "3.3.*",
     "scripts": {
         "setup:environment": "npm i",
         "build:unzipped": "copyfiles -e \"./node_modules/**/*.*\" -e \"./dist/**/*.*\" -e \"./package-lock.json\" -e \"./tsconfig.json\" -e \"./README.txt\" -e \"./mod.code-workspace\" \"./**/*.*\" ./dist",
