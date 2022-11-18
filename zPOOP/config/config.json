@@ -4,8 +4,17 @@
 	"enableLegendaryPlayerMode": true,
 	"enableEscortMode": true,
     "aiChanges": {
-		"chanceChangeScavToWild": 75,
+		"chanceChangeScavToWild": 50,
 		"chanceLegendReplacesPMC": 10,
+		"pmcAltRolesPickList": [
+			"followerbirdeye", 
+			"followerbigpipe", 
+			"bossknight", 
+			"bosskilla", 
+			"bossbully", 
+			"bosstagilla",
+			"bosskojaniy"
+			],
         "changeBots": {
             "lowLevelAIs": [
                 "assault",

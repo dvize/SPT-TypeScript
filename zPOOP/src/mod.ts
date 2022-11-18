@@ -41,8 +41,43 @@ let playerLevelPMC;
 let GlobalSessionID;
 let profileOrigRole;
 let profileOrigSide;
+let pmcAltRolesPickList;
 
 const modName = "Fin-AITweaks";
+        
+let roleCase = {
+	"assault": "assault",
+	"exusec": "exUsec",
+	"marksman": "marksman",
+	"pmcbot": "pmcBot",
+	"sectantpriest": "sectantPriest",
+	"sectantwarrior": "sectantWarrior",
+	"assaultgroup": "assaultGroup",
+	"bossbully": "bossBully",
+	"bosstagilla": "bossTagilla",
+	"bossgluhar": "bossGluhar",
+	"bosskilla": "bossKilla",
+	"bosskojaniy": "bossKojaniy",
+	"bosssanitar": "bossSanitar",
+	"followerbully": "followerBully",
+	"followergluharassault": "followerGluharAssault",
+	"followergluharscout": "followerGluharScout",
+	"followergluharsecurity": "followerGluharSecurity",
+	"followergluharsnipe": "followerGluharSnipe",
+	"followerkojaniy": "followerKojaniy",
+	"followersanitar": "followerSanitar",
+	"followertagilla": "followerTagilla",
+	"cursedassault": "cursedAssault",
+	"usec": "usec",
+	"bear": "bear",
+	"bosstest": "bossTest",
+	"followertest": "followerTest",
+	"gifter": "gifter",
+	"bossknight": "bossKnight",
+	"followerbigpipe": "followerBigPipe",
+	"followerbirdeye": "followerBirdEye",
+	"test": "test"
+	}
 
 const locationNames = ["interchange", "bigmap", "rezervbase", "woods", "shoreline", "laboratory", "lighthouse", "factory4_day", "factory4_night"];
 const locationNamesVerbose = ["interchange", "customs", "reserve", "woods", "shoreline", "labs", "lighthouse", "factory", "factory"];
@@ -131,7 +166,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 
 		locations = database.locations;
 		botTypes = database.bots.types;
-
+		pmcAltRolesPickList = config.aiChanges.pmcAltRolesPickList;
 		
 		let dir = __dirname;
 		let dirArray = dir.split("\\");
@@ -147,7 +182,7 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 		advAIConfig = require("../config/advanced AI config.json");
 		progressRecord = require("../donottouch/progress.json");
 		legendaryFile = require("../donottouch/legendary.json");
-
+		
 		
 	}
 	
@@ -190,12 +225,18 @@ class AITweaks implements IPreAkiLoadMod, IPostAkiLoadMod
 
 					if(chance)
 					{
-						let newrole = botGenerator.getPmcRoleByDescription(role); //will always be bear and use built-in function
+						//let tempside = botGenerator.getRandomisedPmcSide().toLowerCase();
+						//let newrole = botGenerator.getPmcRoleByDescription(tempside); //will use built-in function
+						let newrole = botGenerator.randomUtil.getArrayValue(pmcAltRolesPickList);
+						newrole = roleCase[newrole];
 						cachedOfType[cachedOfType.length-1].Info.Settings.Role = newrole;
-						//botGenerationCacheService.logger.info(`AITweaks: Substituting ${role} with ${AITweaks.serialize(cachedOfType[0].Info.Settings.Role)}!`);
+						cachedOfType[cachedOfType.length-1].Info.Side = "Savage";
+						botGenerationCacheService.logger.info(`AITweaks: Substituting ${role} with ${AITweaks.serialize(cachedOfType[cachedOfType.length-1].Info.Settings.Role)}!`);
 						return cachedOfType.pop();
-					}
 
+						//when bot dies return its role type to normal assault?
+					}
+					botGenerationCacheService.logger.info(`AITweaks: Not Substituting ${AITweaks.serialize(cachedOfType[cachedOfType.length-1].Info.Settings.Role)}!`);
 					return cachedOfType.pop();
            	 	}
 				

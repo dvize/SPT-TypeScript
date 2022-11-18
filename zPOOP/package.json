@@ -1,9 +1,9 @@
 {
-    "name": "Fins AI Tweaks ",
-    "version": "1.2.5",
+    "name": "Props Obviously Original Program",
+    "version": "1.2.7",
     "main": "src/mod.js",
     "license": "See License file",
-    "author": "Fin",
+    "author": "Props",
     "akiVersion": "3.3.*",
     "scripts": {
         "setup:environment": "npm i",
