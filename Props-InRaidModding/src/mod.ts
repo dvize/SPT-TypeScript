@@ -64,7 +64,7 @@ class ModInRaid implements IPostDBLoadMod, IPreAkiLoadMod
 
 	static SetAllModdableProps() 
 	{
-		logger.info(`ModInRaid: Setting all mods to RaidModdable True and Slots.required to false`)
+		//logger.info(`ModInRaid: Setting all mods to RaidModdable True and Slots.required to false`)
 		for (let id in items)
 		{
 			//if undefined raid moddable, make it moddable.
@@ -104,7 +104,7 @@ class ModInRaid implements IPostDBLoadMod, IPreAkiLoadMod
 
 	static isWeaponValid(itemList: Item[]): boolean
     {
-		logger.info(`ModInRaid: Check isWeaponValid`);
+		//logger.info(`ModInRaid: Check isWeaponValid`);
 
         for (const item of itemList)
         {
@@ -154,30 +154,35 @@ class ModInRaid implements IPostDBLoadMod, IPreAkiLoadMod
 			missingRequiredMods = parentWeaponTemplate._props.Slots.find(i =>	ModInRaid.checkRequired(i) == true && !compatibleModsPool[i._id]);
 		}
 	
-		const pmcProfile = profileHelper.getPmcProfile(sessionId);
-        const botEquipmentRole = (["usec", "bear"].includes(botRole)) ? "pmc" : botRole
+		const pmcProfile = BotGeneratorHelp.profileHelper.getPmcProfile(sessionId);
+        const botEquipmentRole = BotGeneratorHelp.getBotEquipmentRole(botRole);
         const modLimits = BotGeneratorHelp.initModLimits(botEquipmentRole);
-        const botEquipConfig = botConfig.equipment[botEquipmentRole];
-        const botEquipBlacklist = botEquipmentFilterService.getBotEquipmentBlacklist(botEquipmentRole, pmcProfile.Info.Level);
+
+        const botEquipConfig = BotGeneratorHelp.botConfig.equipment[botEquipmentRole];
+        const botEquipBlacklist = BotGeneratorHelp.botEquipmentFilterService.getBotEquipmentBlacklist(botEquipmentRole, pmcProfile.Info.Level);
 
         if (!parentWeaponTemplate._props.Slots.length
             && !parentWeaponTemplate._props.Cartridges.length
             && !parentWeaponTemplate._props.Chambers.length)
         {
-            //logger.error(`Unable to add mods to weapon ${parentWeaponTemplate._name} ${parentWeaponTemplate._id} but lacks slots/cartridges/chambers`);
+            //BotGeneratorHelp.logger.error(BotGeneratorHelp.localisationService.getText("bot-unable_to_add_mods_to_weapon_missing_ammo_slot", {weaponName: parentWeaponTemplate._name, weaponId: parentWeaponTemplate._id}));
+
             return weapon;
-        }       
+        }
 
         // Iterate over mod pool and choose mods to add to item
         for (const modSlot in compatibleModsPool)
         {
+            // Check weapon has slot for mod to fit in
             const modsParent = BotGeneratorHelp.getModItemSlot(modSlot, parentWeaponTemplate);
             if (!modsParent)
             {
-                //logger.error(`'${modSlot}' does not exist for weapon ${parentWeaponTemplate._id} ${parentWeaponTemplate._name}`);
+                //logger.error(BotGeneratorHelp.localisationService.getText("bot-weapon_missing_mod_slot", {modSlot: modSlot, weaponId: parentWeaponTemplate._id, weaponName: parentWeaponTemplate._name}));
+
                 continue;
             }
 
+            // Check spawn chance of mod
             if (!BotGeneratorHelp.shouldModBeSpawned(modsParent, modSlot, modSpawnChances))
             {
                 continue;
@@ -185,6 +190,13 @@ class ModInRaid implements IPostDBLoadMod, IPreAkiLoadMod
 
             const isRandomisableSlot = botEquipConfig.randomisedWeaponModSlots && botEquipConfig.randomisedWeaponModSlots.includes(modSlot);
             const modToAdd = BotGeneratorHelp.chooseModToPutIntoSlot(modSlot, isRandomisableSlot, modsParent, botEquipBlacklist, compatibleModsPool, weapon, ammoTpl, parentWeaponTemplate);
+
+            // Compatible mod not found
+            if (!modToAdd)
+            {
+                continue;
+            }
+
             const modToAddTemplate = modToAdd[1];
 
             if (!BotGeneratorHelp.isModValidForSlot(modToAdd, modsParent, modSlot, parentWeaponTemplate))
@@ -197,7 +209,7 @@ class ModInRaid implements IPostDBLoadMod, IPreAkiLoadMod
                 continue;
             }
 
-            // if mod_scope/mod_mount is randomly generated, check and add any sub mod_scope objects into the pool of mods
+            // If mod_scope/mod_mount is randomly generated, check and add any sub mod_scope objects into the pool of mods
             // This helps fix empty mounts appearing on weapons
             if (isRandomisableSlot && ["mod_scope", "mod_mount"].includes(modSlot.toLowerCase()))
             {
@@ -221,7 +233,7 @@ class ModInRaid implements IPostDBLoadMod, IPreAkiLoadMod
             }
 
             const modId = BotGeneratorHelp.hashUtil.generate();
-            weapon.push(BotGeneratorHelp.createModItem(modId, modToAddTemplate._id, weaponParentId, modSlot, modToAddTemplate));
+            weapon.push(BotGeneratorHelp.createModItem(modId, modToAddTemplate._id, weaponParentId, modSlot, modToAddTemplate, botRole));
             
             // I first thought we could use the recursive generateModsForItems as previously for cylinder magazines.
             // However, the recurse doesnt go over the slots of the parent mod but over the modPool which is given by the bot config
@@ -230,7 +242,7 @@ class ModInRaid implements IPostDBLoadMod, IPreAkiLoadMod
             const modParentItem = BotGeneratorHelp.databaseServer.getTables().templates.items[modToAddTemplate._parent];
             if (BotGeneratorHelp.botWeaponGeneratorHelper.magazineIsCylinderRelated(modParentItem._name))
             {
-                // we don't have child mods, we need to create the camoras for the magazines instead
+                // We don't have child mods, we need to create the camoras for the magazines instead
                 BotGeneratorHelp.fillCamora(weapon, modPool, modId, modToAddTemplate);
             }
             else
@@ -238,7 +250,7 @@ class ModInRaid implements IPostDBLoadMod, IPreAkiLoadMod
                 if (Object.keys(modPool).includes(modToAddTemplate._id) || (modToAddTemplate._props.Slots && modToAddTemplate._props.Slots.find(i => ModInRaid.checkRequired(i) == true)))
                 {
                     // Call self recursivly to add mods to this mod
-                    this.generateModsForWeapon(sessionId, weapon, modPool, modId, modToAddTemplate, modSpawnChances, ammoTpl, botRole);
+                    ModInRaid.generateModsForWeapon(sessionId, weapon, modPool, modId, modToAddTemplate, modSpawnChances, ammoTpl, botRole);
                 }
             }
         }
