@@ -6,14 +6,13 @@
     "aiChanges": {
 		"chanceChangeScavToWild": 50,
 		"chanceLegendReplacesPMC": 10,
-		"pmcAltRolesPickList": [
+		"scavAltRolesPickList": [
 			"followerbirdeye", 
 			"followerbigpipe", 
 			"bossknight", 
 			"bosskilla", 
 			"bossbully", 
-			"bosstagilla",
-			"bosskojaniy"
+			"bosstagilla"
 			],
         "changeBots": {
             "lowLevelAIs": [
