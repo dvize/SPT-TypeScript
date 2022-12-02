@@ -1,0 +1,11 @@
+{
+	"pmc":{
+		"Pattern1":{
+			"Name": "All mix",
+			"botTypes": [
+				"pmcbot"
+			],
+			"botCounts": [3]
+		}
+	}
+}

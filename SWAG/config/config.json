@@ -1,0 +1,12 @@
+{
+	"aiDifficulty": "normal",
+	"aiAmount": "normal",
+	"waveLimit": 50,
+	"WaveTimerMinInSeconds": 240,
+	"WaveTimerMaxInSeconds": 300,
+	"UseDefaultSpawns": {
+		"Waves": true,
+		"Bosses": true,
+		"TriggeredWaves": true
+	}
+}

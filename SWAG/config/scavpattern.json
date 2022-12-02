@@ -1,0 +1,26 @@
+{
+	"scav":{
+		"Pattern1":{
+			"Name": "Scavs Pat",
+			"botTypes": [
+				"assault"
+			],
+			"botCounts": [4]
+		},
+		"Pattern2":{
+			"Name": "Scavs Cursed",
+			"botTypes": [
+				"cursedassault"
+			],
+			"botCounts": [1]
+		},
+		"Pattern3":{
+			"Name": "Ex Usec",
+			"botTypes": [
+				"exusec"
+			],
+			"botCounts": [2]
+		}
+
+	}
+}

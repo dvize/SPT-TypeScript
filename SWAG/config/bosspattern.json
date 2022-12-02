@@ -1,0 +1,25 @@
+{
+	"boss":{
+		"Pattern1":{
+			"Name": "Boss Pat 1",
+			"botTypes": [
+				"bosskilla"
+			],
+			"botCounts": [1]
+		},
+		"Pattern2":{
+			"Name": "Boss Pat 2",
+			"botTypes": [
+				"bossbully"
+			],
+			"botCounts": [2]
+		},
+		"Pattern3":{
+			"Name": "Boss Knight Patty Maker",
+			"botTypes": [
+				"bossknight"
+			],
+			"botCounts": [2]
+		}
+	}
+}
