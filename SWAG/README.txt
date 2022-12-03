@@ -59,7 +59,7 @@ Valid bot types to use:
 "bosstagilla"
 "bossgluhar"
 "bosskilla"
-"bosskojaniy"
+"bosskojaniy"				<--- this bot is extremely dumb, wouldn't use
 "bosssanitar"
 "followerbully"
 "followergluharassault"
@@ -120,7 +120,7 @@ we have a json file here. if you want to add a pattern, copy the exact layout fo
 				"exusec",			<--------- I added a line so added a comma
 				"pmcbot"			<--------- I added a bot type(all lowercase) and the last line does not have comma (always).
 			],
-			"botCounts": [3], [2]	<-------- added comma because i added an extra bount count.  the number of botTypes must equal the number of botCounts.
+			"botCounts": [3, 2]	<-------- added comma because i added an extra bount count.  the number of botTypes must equal the number of botCounts.
 												also last item does not have comma. [3] means up to 3 exusec and [2] means up to 2 pmcbots. They will not be spawned
 												at the exact same time but close.. if you want the spawn times to be close, use a closer range between min and max spawn 
 												time in the config.

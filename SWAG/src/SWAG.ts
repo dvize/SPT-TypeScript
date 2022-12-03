@@ -19,29 +19,34 @@ import { BotController } from "@spt-aki/controllers/BotController";
 import { HttpResponseUtil } from "@spt-aki/utils/HttpResponseUtil";
 import { IInRaidConfig } from "@spt-aki/models/spt/config/IInraidConfig";
 
-const config = require(`../config/config.json`);
-const pmcpattern = require(`../config/pmcpattern.json`);
-const scavpattern = require(`../config/scavpattern.json`);
-const bosspattern = require(`../config/bosspattern.json`);
-const modName = "SWAG"
-const waveLimit = config.waveLimit;
 
+
+const modName = "SWAG"
 let logger: ILogger;
 let jsonUtil: JsonUtil
 let configServer: ConfigServer;
 let botConfig: IBotConfig;
 let databaseServer: DatabaseServer;
-let bots;
 let locations;
 let savedLocations;
-let botHelper;
-let randomUtil;
+let botHelper: BotHelper;
+let randomUtil: RandomUtil;
 let status: gamestate;
 let globalSpawnCounter = 0;
 let botCallbacks: BotCallbacks;
 let botController: BotController;
 let httpResponse: HttpResponseUtil;
 let InRaidConfig: IInRaidConfig;
+
+
+const config = require(`../config/config.json`);
+const pmcpattern = require(`../config/pmcpattern.json`);
+const scavpattern = require(`../config/scavpattern.json`);
+const bosspattern = require(`../config/bosspattern.json`);
+
+const waveLimit = config.waveLimit;
+const bossChance = config.bossChance;
+
 enum gamestate {
 	"infoInitialized",
 	"alreadyGenerated"
@@ -124,6 +129,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
 		const dynamicRouterModService = container.resolve<DynamicRouterModService>("DynamicRouterModService");
 		const staticRouterModService = container.resolve<StaticRouterModService>("StaticRouterModService");
+		
 
 		staticRouterModService.registerStaticRouter(
 			`${modName}-/singleplayer/settings/raid/menu`,
@@ -158,7 +164,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		configServer = container.resolve<ConfigServer>("ConfigServer");
 		botConfig = configServer.getConfig<IBotConfig>(ConfigTypes.BOT);
 		databaseServer = container.resolve<DatabaseServer>("DatabaseServer");
-		bots = databaseServer.getTables().bots;
 		locations = databaseServer.getTables().locations;
 		botHelper = container.resolve<BotHelper>("BotHelper");
 		randomUtil = container.resolve<RandomUtil>("RandomUtil");
@@ -178,6 +183,12 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		for(let map in botConfig.pmc.pmcType.sptbear) {
 			for(let botType in botConfig.pmc.pmcType.sptbear[map]){
 				botConfig.pmc.pmcType.sptbear[map][botType] = 40;
+			}
+		}
+
+		for(let map in botConfig.pmc.pmcType.sptusec) {
+			for(let botType in botConfig.pmc.pmcType.sptusec[map]){
+				botConfig.pmc.pmcType.sptusec[map][botType] = 40;
 			}
 		}
 		
@@ -254,8 +265,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
 	static genWaveManager(patternConfig: any, map: string, managetype: string): void 
 	{
-		const waveLimit = config.waveLimit;
-
 		switch(managetype){
 			case "pmc": this.genWave(patternConfig, map, managetype); break;
 			case "boss": this.genWave(patternConfig, map, managetype); break;
@@ -277,13 +286,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 				default: break;
 			}
 
-			//check if boss is enabled in the raid settings and get chance to spawn boss from config
-			if(manageType == "boss" && InRaidConfig.raidMenuSettings.bossEnabled == true){
-				
-				let chance = randomUtil.getChance100(config.bossWaveChance);
-				if(!chance) return;
-			}
-
 			let aiAmountMultiplier;
 			//set up ai horde mode to work
 			switch(config.aiAmount.toLowerCase()){
@@ -301,6 +303,18 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
 			for(let i = 0; i < waveLimit; i++)
 			{	
+				//get chance to spawn boss from config at the wave level
+				if(manageType == "boss")
+				{
+					let chance = randomUtil.getChance100(bossChance);
+					if(!chance) 
+					{
+						logger.info(`SWAG: Boss Wave Chance: ${chance}`);
+						return;
+					}
+					logger.info(`SWAG: Boss Wave Chance: ${chance}`);
+				}
+
 				//logger.info(`patternConfig: ${JSON.stringify(patternType)}`);
 				wavetimemin += config.WaveTimerMinInSeconds;
 				wavetimemax += config.WaveTimerMaxInSeconds;
@@ -311,7 +325,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 				
 				for(let type in randomPattern[1].botTypes)
 				{
-					logger.info(`type: ${randomPattern[1].botTypes[type]}`);
+					//logger.info(`type: ${randomPattern[1].botTypes[type]}`);
 
 					if(manageType == "pmc"){
 						pmcSide = SWAG.getPmcSideByRole(randomPattern[1].botTypes[type]);
