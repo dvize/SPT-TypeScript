@@ -59,14 +59,12 @@ Valid bot types to use:
 "bosstagilla"
 "bossgluhar"
 "bosskilla"
-"bosskojaniy"				<--- this bot is extremely dumb, wouldn't use
 "bosssanitar"
 "followerbully"
 "followergluharassault"
 "followergluharscout"
 "followergluharsecurity"
 "followergluharsnipe"
-"followerkojaniy" 			<--- this bot is extremely dumb, wouldn't use
 "followersanitar"
 "followertagilla"
 "cursedassault"

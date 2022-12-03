@@ -1,7 +1,7 @@
 {
 	"aiDifficulty": "normal",
 	"aiAmount": "normal",
-	"bossChance": 5,
+	"bossChance": 2,
 	"waveLimit": 50,
 	"WaveTimerMinInSeconds": 240,
 	"WaveTimerMaxInSeconds": 300,
