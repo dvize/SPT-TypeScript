@@ -1,0 +1,75 @@
+{
+	"GPNVG": {
+		"GPNVGenabled": 1,
+	
+		"GPNVGintensity": 4.00,
+		"GPNVGmask": "Anvis",
+		"GPNVGmasksize": 1.35,
+		"GPNVGnoiseintensity": 0.00,
+		"GPNVGnoisescale": 0,
+		"GPNVGdiffuseintensity": -0.1,
+
+		"GPNVGredlevel": 0,
+		"GPNVGgreenlevel": 200,
+		"GPNVGbluelevel": 200,
+		"GPNVGalphalevel": 254
+	},
+
+	"N15": {
+		"N15enabled": 1,
+	
+		"N15intensity": 3.70,
+		"N15mask": "Binocular",
+		"N15masksize": 1.35,
+		"N15noiseintensity": 0.0,
+		"N15noisescale": 0,
+		"N15diffuseintensity": -0.1,
+	
+		"N15redlevel": 0,
+		"N15greenlevel": 100,
+		"N15bluelevel": 200,
+		"N15alphalevel": 254
+		},
+	
+	"PNV10T": {
+		"PNV10Tenabled": 1,
+		
+		"PNV10Tintensity": 3.70,
+		"PNV10Tmask": "Binocular",
+		"PNV10Tmasksize": 1.35,
+		"PNV10Tnoiseintensity": 0.0,
+		"PNV10Tnoisescale": 0,
+		"PNV10Tdiffuseintensity": -0.1,
+		
+		"PNV10Tredlevel": 0,
+		"PNV10Tgreenlevel": 250,
+		"PNV10Tbluelevel": 0,
+		"PNV10Talphalevel": 254
+		},
+
+	"PVS14": {
+		"PVS14enabled": 1,
+		
+		"PVS14intensity": 3.70,
+		"PVS14mask": "Anvis",
+		"PVS14masksize": 1.50,
+		"PVS14noiseintensity": 0.0,
+		"PVS14noisescale": 0,
+		"PVS14diffuseintensity": -0.1,
+			
+		"PVS14redlevel": 150,
+		"PVS14greenlevel": 200,
+		"PVS14bluelevel": 150,
+		"PVS14alphalevel": 254
+		},
+		
+	"T7": {
+		"T7enabled": 1,
+		
+		"T7ramppalette": "BlackHot",
+		"T7mask": "Anvis",
+		"T7masksize": 1.35,
+		"T7rampshift": -0.059,
+		"T7colorcoef": 0.2
+	}
+}

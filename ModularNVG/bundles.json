@@ -1,0 +1,50 @@
+{
+	"manifest": [
+		{
+			"key": "assets/content/items/mods/scopes/scope_all_flir_rs32_225_9x_35_60hz.bundle",
+			"dependencyKeys": [
+				"shaders",
+				"cubemap",
+				"assets/systems/effects/nightvision.bundle",
+				"assets/content/textures/holemanager/round_spec_mask.bundle",
+				"assets/systems/effects/nightvision/mask_nv_textures",
+				"assets/commonassets/physics/physicsmaterials.bundle",
+				"packages/com.unity.postproessing/postprocessing/postprocessresources.bundle"
+			]
+		},
+		{
+			"key": "assets/content/items/mods/scopes/scope_all_torrey_pines_logic_t12_w_30hz.bundle",
+			"dependencyKeys": [
+				"shaders",
+				"cubemap",
+				"assets/systems/effects/nightvision.bundle",
+				"assets/systems/effects/nightvision/mask_nv_textures",
+				"assets/commonassets/physics/physicsmaterials.bundle",
+				"packages/com.unity.postproessing/postprocessing/postprocessresources.bundle"
+			]
+		},
+		{
+			"key": "assets/content/items/mods/scopes/scope_base_trijicon_reap-ir.bundle",
+			"dependencyKeys": [
+				"shaders",
+				"cubemap",
+				"assets/systems/effects/nightvision.bundle",
+				"assets/content/textures/holemanager/round_spec_mask.bundle",
+				"assets/systems/effects/nightvision/mask_nv_textures",
+				"assets/commonassets/physics/physicsmaterials.bundle",
+				"packages/com.unity.postproessing/postprocessing/postprocessresources.bundle"
+			]
+		},
+		{
+			"key": "assets/content/items/mods/tactical/tactical_mp155_kalashnikov_ultima_camera_thermal.bundle",
+			"dependencyKeys": [
+				"shaders",
+				"cubemap",
+				"assets/systems/effects/nightvision.bundle",
+				"assets/systems/effects/nightvision/mask_nv_textures",
+				"assets/commonassets/physics/physicsmaterials.bundle",
+				"packages/com.unity.postproessing/postprocessing/postprocessresources.bundle"
+			]
+		}
+	]
+}

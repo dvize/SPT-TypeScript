@@ -1,0 +1,9 @@
+{
+	"akiVersion": "3.3.*",
+    "name": "ModularNVG",
+    "author": "jc980/Props",
+    "version": "1.0.5",
+    "license": "NCSA",
+    "devdependencies": {},
+    "main": "src/ModularNVG.js"
+}
