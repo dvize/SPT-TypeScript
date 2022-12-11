@@ -20,6 +20,13 @@
 				"bossknight"
 			],
 			"botCounts": [2]
+		},
+		"Pattern4":{
+			"Name": "birdfeeder",
+			"botTypes": [
+				"bosstagilla"
+			],
+			"botCounts": [1]
 		}
 	}
 }

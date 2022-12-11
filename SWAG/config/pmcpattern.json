@@ -6,6 +6,13 @@
 				"pmcbot"
 			],
 			"botCounts": [3]
+		},
+		"Pattern2":{
+			"Name": "birdfeeder",
+			"botTypes": [
+				"pmcbot"
+			],
+			"botCounts": [2]
 		}
 	}
 }

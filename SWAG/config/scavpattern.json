@@ -20,6 +20,13 @@
 				"exusec"
 			],
 			"botCounts": [2]
+		},
+		"Pattern4":{
+			"Name": "birdfeeder",
+			"botTypes": [
+				"exusec"
+			],
+			"botCounts": [1]
 		}
 
 	}

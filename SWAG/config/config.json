@@ -5,9 +5,11 @@
 	"waveLimit": 50,
 	"WaveTimerMinInSeconds": 240,
 	"WaveTimerMaxInSeconds": 300,
+	"RandomSoloPatternFilePerMap": false,
 	"UseDefaultSpawns": {
 		"Waves": true,
 		"Bosses": true,
 		"TriggeredWaves": true
-	}
+	},
+	"DebugOutput": false
 }
