@@ -1,11 +1,10 @@
 {
     "disableAllAIChanges": false,
-	"enableAutomaticDifficulty": false,
+	"enableAutomaticDifficulty": true,
 	"enableLegendaryPlayerMode": true,
-	"enableEscortMode": true,
     "aiChanges": {
 		"chanceChangeScavToWild": 50,
-		"chanceLegendReplacesPMC": 10,
+		"chanceLegendReplacesPMC": 100,
 		"scavAltRolesPickList": [
 			"followerbirdeye", 
 			"followerbigpipe", 
@@ -94,7 +93,10 @@
     "allowBotsToTalk": {
         "scavs": true,
         "raiders": true,
-        "PMCs": true
+        "PMCs": true,
+        "bosses": true,
+        "rogues": true,
+        "followers": true
     },
     "spawnChanges": {
         "controlOptions": {

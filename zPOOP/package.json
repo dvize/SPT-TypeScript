@@ -1,10 +1,10 @@
 {
     "name": "Props Obviously Original Program",
-    "version": "1.2.7",
-    "main": "src/mod.js",
+    "version": "1.3.0",
+    "main": "src/POOP.js",
     "license": "See License file",
     "author": "Props",
-    "akiVersion": "3.3.*",
+    "akiVersion": "3.4.*",
     "scripts": {
         "setup:environment": "npm i",
         "build:unzipped": "copyfiles -e \"./node_modules/**/*.*\" -e \"./dist/**/*.*\" -e \"./package-lock.json\" -e \"./tsconfig.json\" -e \"./README.txt\" -e \"./mod.code-workspace\" \"./**/*.*\" ./dist",
