@@ -25,8 +25,10 @@ aiAmount: multiplies the random amount selected from a types botcount (in a pmcc
 
 	"low": aiAmountMultiplier = 0.5
 	"medium": aiAmountMultiplier = 1.0
-	"high": aiAmountMultiplier = 3.0
-	"horde": aiAmountMultiplier = 6.0
+	"high": aiAmountMultiplier = 2.5
+	"horde": aiAmountMultiplier = 5.0
+
+"RandomSoloFilePerMap" : Makes it that instead of picking from all patterns it will choose one pattern file to use for a raid randomly.  so you either get all pmcs, all scavs, or all boss waves for a raid.
 
 
 "waveLimit": set the number of waves to spawn.  It will randomly select a pattern from each (pmc, boss, scav) and generate this amount of waves.  
@@ -51,7 +53,8 @@ Valid bot types to use:
 "assault"
 "exusec"
 "marksman"
-"pmcbot" 					<----  use this for pmcs
+"sptbear" 					<----  use this for pmcs
+"sptusec"					<----  use this for pmcs
 "sectantpriest"
 "sectantwarrior"
 "assaultgroup"
@@ -75,60 +78,121 @@ Valid bot types to use:
 
 pmgconfig example: 
 
-{
-	"pmc":{
-		"Pattern1":{
-			"Name": "All mix",
+	[
+		{
+			"Name": "Raiders of the Lost Cock",
 			"botTypes": [
-				"pmcbot"
+				"assaultgroup",
+				"assaultgroup",
+				"assaultgroup"
 			],
-			"botCounts": [3]
+			"botCounts": [2, 1, 2],
+			"time_min": -1,
+			"time_max": -1,
+			"specificTimeOnly": "false"
 		},
-		"Pattern2":{
-			"Name": "Ex Usec",
+		{
+			"Name": "its a bear party",
 			"botTypes": [
-				"exusec"
+				"sptbear"
 			],
-			"botCounts": [3]
+			"botCounts": [4],
+			"time_min": "",
+			"time_max": "",
+			"specificTimeOnly": "false"
 		}
-	}
-}
+	]
 
 we have a json file here. if you want to add a pattern, copy the exact layout for a pattern and then paste it below.
 
-{
-	"pmc":{
-		"Pattern1":{
-			"Name": "All mix",
+	[
+		{
+			"Name": "Raiders of the Lost Cock",
 			"botTypes": [
-				"pmcbot"
+				"assaultgroup",
+				"assaultgroup",
+				"assaultgroup"
 			],
-			"botCounts": [3]
+			"botCounts": [2, 1, 2],
+			"time_min": -1,
+			"time_max": -1,
+			"specificTimeOnly": "false"
 		},
-		"Pattern2":{
-			"Name": "Ex Usec",
+		{
+			"Name": "its a bear party",
 			"botTypes": [
-				"exusec"
+				"sptbear"
 			],
-			"botCounts": [3]
-		}, 							<--------- if you add, remember to add this comma
-		"Pattern3":{				<--------- this name for pattern must be unique so i just change number 
-			"Name": "Ex Usec",		<--------- you can name this pattern whatever you want.
-			"botTypes": [
-				"exusec",			<--------- I added a line so added a comma
-				"pmcbot"			<--------- I added a bot type(all lowercase) and the last line does not have comma (always).
+			"botCounts": [4],
+			"time_min": "",
+			"time_max": "",
+			"specificTimeOnly": "false"
+		},									<----- add a comma since we added a row
+		{
+			"Name": "its a usec party",		<--- make a unique name for this file.
+			"botTypes": [					
+				"sptusec",					<---- for each new  type, add quotes and a comma except for last
+				"sptusec"
 			],
-			"botCounts": [3, 2]	<-------- added comma because i added an extra bount count.  the number of botTypes must equal the number of botCounts.
-												also last item does not have comma. [3] means up to 3 exusec and [2] means up to 2 pmcbots. They will not be spawned
-												at the exact same time but close.. if you want the spawn times to be close, use a closer range between min and max spawn 
-												time in the config.
+			"botCounts": [4, 4],			<---- if you have more than one botType, you must have a botcount
+			"time_min": "",							that matches each type. it will be in desc order and bot
+			"time_max": "",							count left-> right
+			"specificTimeOnly": "false"
+		},
+	]
+
+New Features:
+
+To set a specific time for a wave (don't mess up this combo or error)
+	time_min = fill this in (time in seconds), it should be a number that replaces the quotations.
+	time_max = fill this in (time in seconds), it should be a number that replaces the quotations.
+	specificTimeOnly  set this true 
+
+If you set time_min = -1 and time_max = -1 that is an instant spawn.
+
+
+
+Boss Patterns
+-------------------------------------------------------------------------------
+
+Example:
+
+	[
+		{
+			"Name": "Goon Squad Trio",
+			"BossName": "bossknight",
+			"BossEscortType": "exusec",
+			"BossEscortAmount": "2",
+			"Time": -1,
+			"Supports": [
+				{
+				"BossEscortType": "followerbigpipe",
+				"BossEscortAmount": "1"
+				},
+				{
+				"BossEscortType": "followerbirdeye",
+				"BossEscortAmount": "1"
+				},
+				{
+				"BossEscortType": "followergluharscout",
+				"BossEscortAmount": "0"
+				}
+			],
+			"RandomTimeSpawn": true
 		}
-	}
-}
-
-The botTypes must have at least one type or it causes an error.
-The botCounts are a random chance from 1 to the number thats written.  It may multiply based on the AI Amount selected.
-I recommend my AI Limiter if using high bot amounts.
-
-WARNING: in the PMC file if you try to use sptbear, sptusec, bear, or usec it will cause an error. with the logic changes
-i guess they handle that on their end so just use pmcbot and exusec for pmc.
+	]
+		
+		Name: unique name in teh boss file. It can match other pattern files if you want to spawn together.
+		
+		BossName: grab that from list of bots above
+		
+		bossEscortType must match the supports given (at least i think.. i haven't experimented but they could end up killing eachother then)..
+		
+		BossEscortAmount: should match the number of support and their escort amounts.  Notice all though there are 3 supports the sum of the bossescortamount adds up to the BossEscortAmount listed above.
+		
+		Time: this is the time in seconds they spawn... -1 means instant spawn usually.
+		
+		RandomTimeSpawn:what it means in name.
+		
+		
+		

@@ -1,10 +1,10 @@
 {
     "name": "Simple Wave AI Generator (SWAG)",
-    "version": "1.0.1",
+    "version": "1.2.0",
     "main": "src/SWAG.js",
-    "license": "See License file",
+    "license": "MIT",
     "author": "Props",
-    "akiVersion": "3.3.*",
+    "akiVersion": "3.4.*",
     "scripts": {
         "setup:environment": "npm i",
         "build:unzipped": "copyfiles -e \"./node_modules/**/*.*\" -e \"./dist/**/*.*\" -e \"./package-lock.json\" -e \"./tsconfig.json\" -e \"./README.txt\" -e \"./mod.code-workspace\" \"./**/*.*\" ./dist",

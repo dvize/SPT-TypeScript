@@ -1,18 +1,47 @@
-{
-	"pmc":{
-		"Pattern1":{
-			"Name": "All mix",
-			"botTypes": [
-				"pmcbot"
-			],
-			"botCounts": [3]
-		},
-		"Pattern2":{
-			"Name": "birdfeeder",
-			"botTypes": [
-				"pmcbot"
-			],
-			"botCounts": [2]
-		}
+[
+	{
+		"Name": "All mix",
+		"botTypes": [
+			"sptbear",
+			"sptusec",
+			"assaultgroup"
+		],
+		"botCounts": [3, 3, 3],
+		"time_min": 200,
+		"time_max": 300,
+		"specificTimeOnly": "true"
+	},
+	{
+		"Name": "its a usec party",
+		"botTypes": [
+			"sptusec"
+		],
+		"botCounts": [4],
+		"time_min": "",
+		"time_max": "",
+		"specificTimeOnly": "false"
+	},
+	{
+		"Name": "its a bear party",
+		"botTypes": [
+			"sptbear"
+		],
+		"botCounts": [4],
+		"time_min": "",
+		"time_max": "",
+		"specificTimeOnly": "false"
+	},
+	{
+		"Name": "Raiders of the Lost Cock",
+		"botTypes": [
+			"assaultgroup",
+			"assaultgroup",
+			"assaultgroup"
+		],
+		"botCounts": [2, 1, 2],
+		"time_min": -1,
+		"time_max": -1,
+		"specificTimeOnly": "false"
 	}
-}
+	
+]

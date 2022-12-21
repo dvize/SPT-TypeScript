@@ -2,8 +2,8 @@
 	"aiDifficulty": "normal",
 	"aiAmount": "normal",
 	"bossChance": 2,
-	"waveLimit": 50,
-	"WaveTimerMinInSeconds": 240,
+	"waveLimit": 10,
+	"WaveTimerMinInSeconds": 180,
 	"WaveTimerMaxInSeconds": 300,
 	"RandomSoloPatternFilePerMap": false,
 	"UseDefaultSpawns": {

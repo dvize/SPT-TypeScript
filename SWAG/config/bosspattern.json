@@ -1,32 +1,25 @@
-{
-	"boss":{
-		"Pattern1":{
-			"Name": "Boss Pat 1",
-			"botTypes": [
-				"bosskilla"
-			],
-			"botCounts": [1]
-		},
-		"Pattern2":{
-			"Name": "Boss Pat 2",
-			"botTypes": [
-				"bossbully"
-			],
-			"botCounts": [2]
-		},
-		"Pattern3":{
-			"Name": "Boss Knight Patty Maker",
-			"botTypes": [
-				"bossknight"
-			],
-			"botCounts": [2]
-		},
-		"Pattern4":{
-			"Name": "birdfeeder",
-			"botTypes": [
-				"bosstagilla"
-			],
-			"botCounts": [1]
-		}
+[
+	{
+		"Name": "Goon Squad Trio",
+		"BossName": "bossknight",
+		"BossEscortType": "exusec",
+		"BossEscortAmount": "2",
+		"Time": -1,
+		"Supports": [
+			{
+			"BossEscortType": "followerbigpipe",
+			"BossEscortAmount": "1"
+			},
+			{
+			"BossEscortType": "followerbirdeye",
+			"BossEscortAmount": "1"
+			},
+			{
+			"BossEscortType": "followergluharscout",
+			"BossEscortAmount": "0"
+			}
+		],
+		"RandomTimeSpawn": true
 	}
-}
+	
+]

@@ -16,6 +16,7 @@ import { BotCallbacks } from "@spt-aki/callbacks/BotCallbacks";
 import { IEmptyRequestData } from "@spt-aki/models/eft/common/IEmptyRequestData";
 import { BotController } from "@spt-aki/controllers/BotController";
 import { HttpResponseUtil } from "@spt-aki/utils/HttpResponseUtil";
+import { Time } from '../types/models/spt/config/IRagfairConfig';
 
 const modName = "SWAG"
 let logger: ILogger;
@@ -93,7 +94,8 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
 	public static pmcType: string[] = [
 		"sptbear",
-		"sptusec"
+		"sptusec",
+		"pmcbot"
 	]
 
 	public static scavType: string[] = [
@@ -124,7 +126,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		"sectantpriest",
 		"sectantwarrior"
 	]
-
 
 	public static validMaps: string[] = [
 		"bigmap",
@@ -207,10 +208,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
 		waveLimit = config.waveLimit;
 		bossChance = config.bossChance;
-
-		//singleplayer/settings/bot/maxCap
-		//singleplayer/settings/bot/limit/0
-		//logger.info(JSON.stringify(botConfig.maxBotCap, null, `\t`));
 
 		//Set Max Bot Caps 
 		for (let map in botConfig.maxBotCap) {
@@ -331,15 +328,10 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 	static genWave(patternConfig: any, map: string, manageType: string): void {
 		if(config.DebugOutput)
 			logger.info(`managetype: ${manageType}`);
-		let patternType: string;
+		
+		let patternArray: Pattern[];
 
-		//fk i'm dumb
-		switch (manageType) {
-			case "pmc": patternType = patternConfig.pmc; break;
-			case "boss": patternType = patternConfig.boss; break;
-			case "scav": patternType = patternConfig.scav; break;
-			default: break;
-		}
+		patternArray = patternConfig;
 
 
 		//set up ai horde mode to work
@@ -359,14 +351,22 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
 		let wavetimemin: number = 0;
 		let wavetimemax: number = 0;
-		let randomPattern: any;
+		let customwavetimemin: number = 0;
+		let customwavetimemax: number = 0;
+		let randomPattern: Pattern;
 		let pmcSide: string;
 		let isPlayers: boolean;
+		let sameNameinBoss: boolean = false;
+		let sameBossPattern: Pattern;
+		let sameNameinScav: boolean = false;
+		let sameScavPattern: Pattern;
+		let sameNameinPmc: boolean = false;
+		let samePmcPattern: Pattern;
+		let targetname: string;
 
+		//Start waves here.
 		for (let i = 0; i < waveLimit; i++) {
-			//get chance to spawn boss from config at the wave level
-			if(config.DebugOutput)
-				logger.warning(`=====================================================`);
+			
 			if (manageType === "boss") {
 				let chance = randomUtil.getChance100(bossChance);
 				if (!chance) {
@@ -376,210 +376,157 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 				//logger.info(`SWAG: Boss Wave Chance: ${chance}`);
 			}
 
-			//logger.info(`patternConfig: ${JSON.stringify(patternType)}`);
-			wavetimemin += config.WaveTimerMinInSeconds;
-			wavetimemax += config.WaveTimerMaxInSeconds;
-			let patternobj = Object.entries(patternType);
-			randomPattern = patternobj[SWAG.getRandIntInclusive(0, patternobj.length - 1)];
-			//logger.info(`randomPattern: ${JSON.stringify(randomPattern)}`);
+			//get chance to spawn boss from config at the wave level
+			if(config.DebugOutput)
+				logger.warning(`=====================================================`);
 
-			//After we have found the pattern, find out if same name in other json files and spawn with same time.  otherwise regular spawn.
+			// if(config.DebugOutput)
+			//  	logger.info(`patternArray: ${patternArray}`);
+
+			if (patternArray.length > 0) 
+			{
+				randomPattern = patternArray[SWAG.getRandIntInclusive(0, patternArray.length - 1)];
+			}
+
+			if(config.DebugOutput)
+				logger.info(`randomPattern: ${JSON.stringify(randomPattern)}`);
+
+			//if they entered timer for a non-boss wave then use it.
+			if(randomPattern.specificTimeOnly === true && manageType !== "boss"){
+				customwavetimemin = randomPattern.time_min;
+				customwavetimemax = randomPattern.time_max;
+			}
+			else (randomPattern.time_min === undefined || randomPattern.time_max === undefined) 
+			{
+				//need to multiply the wave timer 
+				wavetimemin = config.WaveTimerMinInSeconds * (i+1);
+				wavetimemax = config.WaveTimerMaxInSeconds * (i+1);
+			}
+
+			//Logic to determine if we need to print concurrent waves at same time
 			
+			targetname = randomPattern.Name.toLowerCase();
 
-
-			let sameNameinBoss: boolean = false;
-			let sameBossPattern: any;
-			let sameNameinScav: boolean = false;
-			let sameScavPattern: any;
-			let sameNameinPmc: boolean = false;
-			let samePmcPattern: any;
-
-
-			let targetname = randomPattern[1].Name.toLowerCase();
-
-			if (pmcpattern.pmc) {
-				for (let pattern in pmcpattern.pmc) {
-					if (pmcpattern.pmc[pattern].Name.toLowerCase() === targetname) { // got to fix this logic again fuck
-						sameNameinPmc = true;
-						samePmcPattern = pmcpattern.pmc[pattern];
-						if(config.DebugOutput)
-							logger.info(`SWAG: Same Name in PMC: ${JSON.stringify(pmcpattern.pmc[pattern].Name)}`);
+				//check all 3 files for same name
+				if (pmcpattern) {
+					for (let pattern in pmcpattern) {
+						if (pmcpattern[pattern].Name.toLowerCase() === targetname) {
+							sameNameinPmc = true;
+							samePmcPattern = pmcpattern[pattern];
+							if(config.DebugOutput)
+								logger.info(`SWAG: Same Name in PMC: ${pmcpattern[pattern].Name}`);
+						}
 					}
 				}
-			}
 
-			if (bosspattern.boss) {
-				for (let pattern in bosspattern.boss) {
-					if (bosspattern.boss[pattern].Name.toLowerCase() === targetname) {
-						sameNameinBoss = true;
-						sameBossPattern = bosspattern.boss[pattern];
-						if(config.DebugOutput)
-							logger.info(`SWAG: Same Name in Boss: ${JSON.stringify(bosspattern.boss[pattern].Name)}`);
+				if (bosspattern) {
+					for (let pattern in bosspattern) {
+						if (bosspattern[pattern].Name.toLowerCase() === targetname) {
+							sameNameinBoss = true;
+							sameBossPattern = bosspattern[pattern];
+							if(config.DebugOutput)
+								logger.info(`SWAG: Same Name in Boss: ${bosspattern[pattern].Name}`);
+						}
 					}
 				}
-			}
 
-			if (scavpattern.scav) {
-				for (let pattern in scavpattern.scav) {
-					if (scavpattern.scav[pattern].Name.toLowerCase() === targetname) {
-						sameNameinScav = true;
-						sameScavPattern = scavpattern.scav[pattern];
-						if(config.DebugOutput)
-							logger.info(`SWAG: Same Name in Scav: ${JSON.stringify(scavpattern.scav[pattern].Name)}`);
+				if (scavpattern) {
+					for (let pattern in scavpattern) {
+						if (scavpattern[pattern].Name.toLowerCase() === targetname) {
+							sameNameinScav = true;
+							sameScavPattern = scavpattern[pattern];
+							if(config.DebugOutput)
+								logger.info(`SWAG: Same Name in Scav: ${scavpattern[pattern].Name}`);
+						}
 					}
 				}
-			}
 
 			//rewrite this logic so that its based on individual booleans.
 			
 			if(sameNameinPmc)
 			{
-				for (let type in samePmcPattern.botTypes) {
-					//logger.info(`type: ${randomPattern[1].botTypes[type]}`);
-					if (SWAG.pmcType.includes(samePmcPattern.botTypes[type])){
-						pmcSide = SWAG.getPmcSideByRole(samePmcPattern.botTypes[type]);
-						isPlayers = true;
-		
-						let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, samePmcPattern.botCounts[type])));
-		
-						let pmcwave = new wave(0, wavetimemin, wavetimemax, 1, aiAmountTemp,
-							"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[samePmcPattern.botTypes[type]], isPlayers);
-						if(config.DebugOutput)
-							logger.info(`wave#${i} (pmc): ${samePmcPattern.botTypes[type]}: ${JSON.stringify(pmcwave)}`)
-		
-						locations[map].base.waves.push(pmcwave);
-						}
-					else if(SWAG.bossType.includes(samePmcPattern.botTypes[type]))
-					{
-						pmcSide = "Savage";
-						isPlayers = false;
-
-						let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, samePmcPattern.botCounts[type])));
-		
-						let bosswave = new wave(0, wavetimemin, wavetimemax, 1, aiAmountTemp,
-							"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[samePmcPattern.botTypes[type]], isPlayers);
-						if(config.DebugOutput)
-							logger.info(`wave#${i} (boss): ${samePmcPattern.botTypes[type]}: ${JSON.stringify(bosswave)}`)
-		
-						locations[map].base.waves.push(bosswave);
-					}
-					else if(SWAG.scavType.includes(samePmcPattern.botTypes[type])){
-						pmcSide = "Savage";
-						isPlayers = false;
-
-						let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, samePmcPattern.botCounts[type])));
-		
-						let scavwave = new wave(0, wavetimemin, wavetimemax, 1, aiAmountTemp,
-							"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[samePmcPattern.botTypes[type]], isPlayers);
-						if(config.DebugOutput)
-							logger.info(`wave#${i} (scav): ${samePmcPattern.botTypes[type]}: ${JSON.stringify(scavwave)}`)
-		
-						locations[map].base.waves.push(scavwave);
-					}					
-				}
+				SWAG.genWaveStage2(samePmcPattern, map, locations, aiAmountMultiplier, wavetimemin, wavetimemax, customwavetimemin, customwavetimemax, pmcSide, isPlayers, i);
 			}
 			
 			if(sameNameinBoss)
 			{
-				for (let type in sameBossPattern.botTypes) {
-					//logger.info(`type: ${randomPattern[1].botTypes[type]}`);
-				
-					if (SWAG.pmcType.includes(sameBossPattern.botTypes[type])){
-						pmcSide = SWAG.getPmcSideByRole(sameBossPattern.botTypes[type]);
-						isPlayers = true;
-		
-						let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, sameBossPattern.botCounts[type])));
-		
-						let pmcwave = new wave(0, wavetimemin, wavetimemax, 1, aiAmountTemp,
-							"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[sameBossPattern.botTypes[type]], isPlayers);
-						if(config.DebugOutput)
-							logger.info(`wave#${i} (pmc): ${sameBossPattern.botTypes[type]}: ${JSON.stringify(pmcwave)}`)
-		
-						locations[map].base.waves.push(pmcwave);
-						}
-					else if(SWAG.bossType.includes(sameBossPattern.botTypes[type]))
-					{
-						pmcSide = "Savage";
-						isPlayers = false;
-
-						let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, sameBossPattern.botCounts[type])));
-		
-						let bosswave = new wave(0, wavetimemin, wavetimemax, 1, aiAmountTemp,
-							"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[sameBossPattern.botTypes[type]], isPlayers);
-						if(config.DebugOutput)
-							logger.info(`wave#${i} (boss): ${sameBossPattern.botTypes[type]}: ${JSON.stringify(bosswave)}`)
-		
-						locations[map].base.waves.push(bosswave);
-					}
-					else if(SWAG.scavType.includes(sameBossPattern.botTypes[type])){
-						pmcSide = "Savage";
-						isPlayers = false;
-
-						let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, sameBossPattern.botCounts[type])));
-		
-						let scavwave = new wave(0, wavetimemin, wavetimemax, 1, aiAmountTemp,
-							"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[sameBossPattern.botTypes[type]], isPlayers);
-						if(config.DebugOutput)
-							logger.info(`wave#${i} (scav): ${sameBossPattern.botTypes[type]}: ${JSON.stringify(scavwave)}`)
-		
-						locations[map].base.waves.push(scavwave);
-					}					
-				}
-
+				SWAG.genWaveStage2(sameBossPattern, map, locations, aiAmountMultiplier, wavetimemin, wavetimemax, customwavetimemin, customwavetimemax, pmcSide, isPlayers, i);
 			}
 
 			if(sameNameinScav)
 			{
-				for (let type in sameScavPattern.botTypes) {
-					//logger.info(`type: ${randomPattern[1].botTypes[type]}`);
-					
-					if (SWAG.pmcType.includes(sameScavPattern.botTypes[type])){
-						pmcSide = SWAG.getPmcSideByRole(sameScavPattern.botTypes[type]);
-						isPlayers = true;
-		
-						let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, sameScavPattern.botCounts[type])));
-		
-						let pmcwave = new wave(0, wavetimemin, wavetimemax, 1, aiAmountTemp,
-							"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[sameScavPattern.botTypes[type]], isPlayers);
-						if(config.DebugOutput)
-							logger.info(`wave#${i} (pmc): ${sameScavPattern.botTypes[type]}: ${JSON.stringify(pmcwave)}`)
-		
-						locations[map].base.waves.push(pmcwave);
-						}
-					else if(SWAG.bossType.includes(sameScavPattern.botTypes[type]))
-					{
-						pmcSide = "Savage";
-						isPlayers = false;
-
-						let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, sameScavPattern.botCounts[type])));
-		
-						let bosswave = new wave(0, wavetimemin, wavetimemax, 1, aiAmountTemp,
-							"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[sameScavPattern.botTypes[type]], isPlayers);
-						if(config.DebugOutput)
-							logger.info(`wave#${i} (boss): ${sameScavPattern.botTypes[type]}: ${JSON.stringify(bosswave)}`)
-		
-						locations[map].base.waves.push(bosswave);
-					}
-					else if(SWAG.scavType.includes(sameScavPattern.botTypes[type])){
-						pmcSide = "Savage";
-						isPlayers = false;
-
-						let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, sameScavPattern.botCounts[type])));
-		
-						let scavwave = new wave(0, wavetimemin, wavetimemax, 1, aiAmountTemp,
-							"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[sameScavPattern.botTypes[type]], isPlayers);
-						if(config.DebugOutput)
-							logger.info(`wave#${i} (scav): ${sameScavPattern.botTypes[type]}: ${JSON.stringify(scavwave)}`)
-		
-						locations[map].base.waves.push(scavwave);
-					}					
-				}
-
+				SWAG.genWaveStage2(sameScavPattern, map, locations, aiAmountMultiplier, wavetimemin, wavetimemax, customwavetimemin, customwavetimemax, pmcSide, isPlayers, i);
 			}
 			// cycle through the bot types and spawn them as additional waves
 
 		}
 	}
+
+	static genWaveStage2(genPattern: any, map: string, locations: any, aiAmountMultiplier: number, wavetimemin: number, wavetimemax: number, customwavetimemin: number, customwavetimemax: number,
+		pmcSide: string, isPlayers: boolean, wavenum: number)
+	{
+		for (let type in genPattern.botTypes) {
+			//logger.info(`type: ${randomPattern[1].botTypes[type]}`);
+			if (SWAG.pmcType.includes(genPattern.botTypes[type])){
+				pmcSide = SWAG.getPmcSideByRole(genPattern.botTypes[type]);
+				isPlayers = true;
+
+				let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, genPattern.botCounts[type])));
+
+				let pmcwave = new wave(0, customwavetimemin !== undefined ? customwavetimemin : wavetimemin, 
+					customwavetimemax !== undefined ? customwavetimemax : wavetimemax, 1, aiAmountTemp,
+					"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[genPattern.botTypes[type]], isPlayers);
+				if(config.DebugOutput)
+					logger.info(`wave#${wavenum} (pmc): ${genPattern.botTypes[type]}: ${JSON.stringify(pmcwave)}`)
+
+				locations[map].base.waves.push(pmcwave);
+			}
+			else if(SWAG.bossType.includes(genPattern.BossName))
+			{
+				pmcSide = "Savage";
+				isPlayers = false;
+				let theBoss = genPattern.BossName;
+				let theBossSupport: BossSupport[];
+				
+				for(let index in genPattern.Supports)
+				{
+					theBossSupport[index] = new BossSupport(
+						genPattern.Supports[index].BossEscortType,
+						SWAG.diffProper[config.aiDifficulty.toLowerCase()],
+						genPattern.Supports[index].BossEscortAmount
+					)
+				}
+				//let aiSupportAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, genPattern.botCounts[type])));
+				
+				if (genPattern.Time === undefined){
+					genPattern.Time = (customwavetimemin !== undefined ? customwavetimemin : wavetimemin);
+				}
+				
+				let mybosswave = new bosswave(SWAG.roleCase[theBoss], 100, "", false, SWAG.diffProper[config.aiDifficulty.toLowerCase()],
+				SWAG.diffProper[config.aiDifficulty.toLowerCase()], genPattern.BossEscortAmount, genPattern.Time, theBossSupport, genPattern.RandomTimeSpawn);
+
+				if(config.DebugOutput)
+					logger.info(`wave#${wavenum} (boss): ${genPattern.BossName}: ${JSON.stringify(bosswave)}`)
+
+				locations[map].base.BossLocationSpawn.push(bosswave);
+			}
+			else if(SWAG.scavType.includes(genPattern.botTypes[type])){
+				pmcSide = "Savage";
+				isPlayers = false;
+
+				let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, genPattern.botCounts[type])));
+
+				let scavwave = new wave(0, customwavetimemin !== undefined ? customwavetimemin : wavetimemin, 
+					customwavetimemax !== undefined ? customwavetimemax : wavetimemax, 1, aiAmountTemp,
+					"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[genPattern.botTypes[type]], isPlayers);
+				if(config.DebugOutput)
+					logger.info(`wave#${wavenum} (scav): ${genPattern.botTypes[type]}: ${JSON.stringify(scavwave)}`)
+
+				locations[map].base.waves.push(scavwave);
+			}					
+		}
+	}
+
 
 	static ClearDefaultSpawns(): void {
 		if (!savedLocations) {
@@ -661,3 +608,49 @@ class wave {
 
 }
 
+class bosswave {
+	BossName: string;
+    BossChance: number;
+    BossZone: string;
+    BossPlayer: boolean;
+    BossDifficult: string;
+    BossEscortDifficult: string;
+	BossEscortAmount: number;
+	Time: number;  //default -1 for instant?
+	Supports: BossSupport[];
+    RandomTimeSpawn: boolean; // default false
+
+	constructor(BossName, BossChance, BossZone, BossPlayer, BossDifficult, BossEscortDifficult, BossEscortAmount, Time, Supports, RandomTimeSpawn) {
+		this.BossName = BossName;
+		this.BossChance = BossChance;
+		this.BossZone = BossZone;
+		this.BossPlayer = BossPlayer;
+		this.BossDifficult = BossDifficult;
+		this.BossEscortDifficult = BossEscortDifficult;
+		this.BossEscortAmount = BossEscortAmount;
+		this.Time = Time;
+		this.Supports = Supports;
+		this.RandomTimeSpawn = RandomTimeSpawn;
+	}
+}
+
+class BossSupport {
+	BossEscortType: string;
+	BossEscortDifficult: string[];
+	BossEscortAmount: number;
+
+	constructor(BossEscortType, BossEscortDifficult, BossEscortAmount) {
+		this.BossEscortType = BossEscortType;
+		this.BossEscortDifficult = BossEscortDifficult;
+		this.BossEscortAmount = BossEscortAmount;
+	}
+}
+
+class Pattern {
+	Name: string;
+	botTypes: string[];
+	botCounts: number[];
+	time_min: number;
+	time_max: number;
+	specificTimeOnly: boolean;
+}

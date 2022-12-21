@@ -1,33 +1,48 @@
-{
-	"scav":{
-		"Pattern1":{
-			"Name": "Scavs Pat",
-			"botTypes": [
-				"assault"
-			],
-			"botCounts": [4]
-		},
-		"Pattern2":{
-			"Name": "Scavs Cursed",
-			"botTypes": [
-				"cursedassault"
-			],
-			"botCounts": [1]
-		},
-		"Pattern3":{
-			"Name": "Ex Usec",
-			"botTypes": [
-				"exusec"
-			],
-			"botCounts": [2]
-		},
-		"Pattern4":{
-			"Name": "birdfeeder",
-			"botTypes": [
-				"exusec"
-			],
-			"botCounts": [1]
-		}
-
+[	
+	{
+		"Name": "Scavs R Us",
+		"botTypes": [
+			"assault",
+			"cursedassault",
+			"assault"
+		],
+		"botCounts": [3, 1, 3],
+		"time_min": "",
+		"time_max": "",
+		"specificTimeOnly": "false"
+	},
+	{
+		"Name": "Scavs After Dark",
+		"botTypes": [
+			"assault",
+			"cursedassault",
+			"assault"
+		],
+		"botCounts": [2, 1, 2],
+		"time_min": "",
+		"time_max": "",
+		"specificTimeOnly": "false"
+	},
+	{
+		"Name": "Wife's BF",
+		"botTypes": [
+			"exusec"
+		],
+		"botCounts": [2, 1, 2],
+		"time_min": 1100,
+		"time_max": 1200,
+		"specificTimeOnly": "true"
+	},
+	{
+		"Name": "Dead",
+		"botTypes": [
+			"assault",
+			"cursedassault",
+			"assault"
+		],
+		"botCounts": [2, 1, 2],
+		"time_min": -1,
+		"time_max": -1,
+		"specificTimeOnly": "false"
 	}
-}
+]
