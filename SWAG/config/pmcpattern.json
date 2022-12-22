@@ -17,8 +17,8 @@
 			"sptusec"
 		],
 		"botCounts": [4],
-		"time_min": "",
-		"time_max": "",
+		"time_min": null,
+		"time_max": null,
 		"specificTimeOnly": "false"
 	},
 	{
@@ -27,8 +27,8 @@
 			"sptbear"
 		],
 		"botCounts": [4],
-		"time_min": "",
-		"time_max": "",
+		"time_min": null,
+		"time_max": null,
 		"specificTimeOnly": "false"
 	},
 	{

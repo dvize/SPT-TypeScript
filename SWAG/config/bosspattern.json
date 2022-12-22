@@ -20,6 +20,95 @@
 			}
 		],
 		"RandomTimeSpawn": true
+	},
+	{
+		"Name": "Boss Pat 1",
+		"BossName": "bosskilla",
+		"BossEscortType": "exusec",
+		"BossEscortAmount": "2",
+		"Time": -1,
+		"Supports": [
+			{
+			"BossEscortType": "exusec",
+			"BossEscortAmount": "1"
+			},
+			{
+			"BossEscortType": "exusec",
+			"BossEscortAmount": "1"
+			}
+		],
+		"RandomTimeSpawn": true
+	},
+	{
+		"Name": "Boss Pat 2",
+		"BossName": "bossbully",
+		"BossEscortType": "assaultgroup",
+		"BossEscortAmount": "2",
+		"Time": -1,
+		"Supports": [
+			{
+			"BossEscortType": "assaultgroup",
+			"BossEscortAmount": "1"
+			},
+			{
+			"BossEscortType": "assaultgroup",
+			"BossEscortAmount": "1"
+			}
+		],
+		"RandomTimeSpawn": true
+	},
+	{
+		"Name": "Sanitar Sucks",
+		"BossName": "bossgluhar",
+		"BossEscortType": "assaultgroup",
+		"BossEscortAmount": "4",
+		"Time": -1,
+		"Supports": [
+			{
+			"BossEscortType": "followergluharassault",
+			"BossEscortAmount": "1"
+			},
+			{
+			"BossEscortType": "followergluharscout",
+			"BossEscortAmount": "1"
+			},
+			{
+			"BossEscortType": "followergluharsecurity",
+			"BossEscortAmount": "1"
+			},
+			{
+			"BossEscortType": "followergluharsnipe",
+			"BossEscortAmount": "1"
+			}
+		],
+		"RandomTimeSpawn": true
+	},
+	{
+		"Name": "Tagilla/Killa",
+		"BossName": "bosstagilla",
+		"BossEscortType": "bosskilla",
+		"BossEscortAmount": "1",
+		"Time": -1,
+		"Supports": [
+			{
+			"BossEscortType": "bosskilla",
+			"BossEscortAmount": "1"
+			}
+		],
+		"RandomTimeSpawn": true
+	},
+	{
+		"Name": "Altar Boy",
+		"BossName": "sectantpriest",
+		"BossEscortType": "sectantwarrior",
+		"BossEscortAmount": "1",
+		"Time": -1,
+		"Supports": [
+			{
+			"BossEscortType": "sectantwarrior",
+			"BossEscortAmount": "1"
+			}
+		],
+		"RandomTimeSpawn": true
 	}
-	
 ]

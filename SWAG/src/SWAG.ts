@@ -12,11 +12,6 @@ import { ConfigTypes } from "@spt-aki/models/enums/ConfigTypes";
 import { IBotConfig } from "@spt-aki/models/spt/config/IBotConfig";
 import { LocationCallbacks } from "@spt-aki/callbacks/LocationCallbacks";
 import { ConfigServer } from "@spt-aki/servers/ConfigServer";
-import { BotCallbacks } from "@spt-aki/callbacks/BotCallbacks";
-import { IEmptyRequestData } from "@spt-aki/models/eft/common/IEmptyRequestData";
-import { BotController } from "@spt-aki/controllers/BotController";
-import { HttpResponseUtil } from "@spt-aki/utils/HttpResponseUtil";
-import { Time } from '../types/models/spt/config/IRagfairConfig';
 
 const modName = "SWAG"
 let logger: ILogger;
@@ -28,11 +23,6 @@ let locations;
 let savedLocations;
 let botHelper: BotHelper;
 let randomUtil: RandomUtil;
-let status: gamestate;
-let globalSpawnCounter = 0;
-let botCallbacks: BotCallbacks;
-let botController: BotController;
-let httpResponse: HttpResponseUtil;
 
 let config;
 let pmcpattern;
@@ -42,10 +32,6 @@ let waveLimit;
 let bossChance;
 let aiAmountMultiplier;
 
-enum gamestate {
-	"infoInitialized",
-	"alreadyGenerated"
-}
 
 type JSONValue =
 	| string
@@ -102,7 +88,20 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		"assault",
 		"exusec",
 		"marksman",
-		"cursedassault"
+		"cursedassault",
+		"followerbully",
+		"followergluharassault",
+		"followergluharscout",
+		"followergluharsecurity",
+		"followergluharsnipe",
+		"followerkojaniy",
+		"followersanitar",
+		"followertagilla",
+		"followerbigpipe",
+		"followerbirdeye",
+		"sectantwarrior",
+		"assaultgroup",
+		"gifter"
 	]
 		
 	public static bossType: string[] = [
@@ -112,19 +111,8 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		"bosskilla",
 		"bosskojaniy",
 		"bosssanitar",
-		"followerbully",
-		"followergluharassault",
-		"followergluharscout",
-		"followergluharsecurity",
-		"followergluharsnipe",
-		"followerkojaniy",
-		"followersanitar",
-		"followertagilla",
 		"bossknight",
-		"followerbigpipe",
-		"followerbirdeye",
-		"sectantpriest",
-		"sectantwarrior"
+		"sectantpriest"
 	]
 
 	public static validMaps: string[] = [
@@ -168,10 +156,9 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 					action: (url: string, info: any, sessionID: string, output: string): any => {
 						// Is this hideout already closed?
 						const locations = container.resolve<DatabaseServer>("DatabaseServer").getTables().locations;
-						if (status != gamestate.infoInitialized) {
-							SWAG.ClearDefaultSpawns();
-							SWAG.configureMaps(container);
-						}
+						
+						SWAG.ClearDefaultSpawns();
+						SWAG.configureMaps(container);
 						return output;
 					}
 				}], "aki");
@@ -198,8 +185,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		locations = databaseServer.getTables().locations;
 		botHelper = container.resolve<BotHelper>("BotHelper");
 		randomUtil = container.resolve<RandomUtil>("RandomUtil");
-		botController = container.resolve<BotController>("BotController");
-		httpResponse = container.resolve<HttpResponseUtil>("HttpResponseUtil");
 
 		config = require(`../config/config.json`);
 		pmcpattern = require(`../config/pmcpattern.json`);
@@ -242,7 +227,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		if(config.DebugOutput)
 			logger.info(`SWAG: Generating Waves`)
 		// Uses it as variable for waves were generated (server restart, etc)
-		status = gamestate.infoInitialized;
 
 		let spawnpoints = [];
 
@@ -250,12 +234,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 			let map_name = map.toLowerCase();
 			// logger.info(`map_name: ${map_name}`);
 			// logger.info(`locations: ${locations}`);
-
-			//Get unique possible zone types in array for pmc
-			let pmcZoneTypes: string[] = [];
-			let bossZoneTypes: string[] = [];
-
-			//grab/assign a unique name to spawn points to use later 
 
 			if (this.validMaps.includes(map_name)) {
 				if(config.DebugOutput){ 
@@ -285,7 +263,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 					//logger.info(`waves: ${JSON.stringify(locations[map].base.waves, null, `\t`)}`);
 					if(config.DebugOutput)
 						logger.info(`========================================`);
-					globalSpawnCounter = 0;
+
 				}
 				
 			}
@@ -351,8 +329,8 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
 		let wavetimemin: number = 0;
 		let wavetimemax: number = 0;
-		let customwavetimemin: number = 0;
-		let customwavetimemax: number = 0;
+		let customwavetimemin: number;
+		let customwavetimemax: number;
 		let randomPattern: Pattern;
 		let pmcSide: string;
 		let isPlayers: boolean;
@@ -365,8 +343,8 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		let targetname: string;
 
 		//Start waves here.
-		for (let i = 0; i < waveLimit; i++) {
-			
+		for (let wavenum = 0; wavenum < waveLimit; wavenum++) 
+		{
 			if (manageType === "boss") {
 				let chance = randomUtil.getChance100(bossChance);
 				if (!chance) {
@@ -391,17 +369,50 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 			if(config.DebugOutput)
 				logger.info(`randomPattern: ${JSON.stringify(randomPattern)}`);
 
+			//redo this entire logic as it is causing an infinite loop
 			//if they entered timer for a non-boss wave then use it.
-			if(randomPattern.specificTimeOnly === true && manageType !== "boss"){
-				customwavetimemin = randomPattern.time_min;
-				customwavetimemax = randomPattern.time_max;
+
+			if(manageType !== "boss"){
+				if(randomPattern.specificTimeOnly == true)
+				{
+					//is the time good?
+					if(randomPattern.time_min == null || randomPattern.time_max == null)
+					{
+						if(wavenum == 0){
+							wavetimemin = config.WaveTimerMinInSeconds;
+							wavetimemax = config.WaveTimerMaxInSeconds;
+						}
+						else{
+							wavetimemin += config.WaveTimerMaxInSeconds;
+							wavetimemax += config.WaveTimerMaxInSeconds;
+						}
+					}
+					else{
+						customwavetimemin = randomPattern.time_min;
+						customwavetimemax = randomPattern.time_max;
+					}
+					
+				}
+				else{
+					if(wavenum == 0){
+						wavetimemin = config.WaveTimerMinInSeconds;
+						wavetimemax = config.WaveTimerMaxInSeconds;
+					}
+					else{
+						wavetimemin += config.WaveTimerMaxInSeconds;
+						wavetimemax += config.WaveTimerMaxInSeconds;
+					}
+				}
 			}
-			else (randomPattern.time_min === undefined || randomPattern.time_max === undefined) 
+			
+			if(config.DebugOutput)
 			{
-				//need to multiply the wave timer 
-				wavetimemin = config.WaveTimerMinInSeconds * (i+1);
-				wavetimemax = config.WaveTimerMaxInSeconds * (i+1);
+				logger.info(`wavetimemin: ${JSON.stringify(wavetimemin)}`);
+				logger.info(`wavetimemax: ${JSON.stringify(wavetimemax)}`);
+				logger.info(`customwavetimemin: ${JSON.stringify(customwavetimemin)}`);
+				logger.info(`customwavetimemax: ${JSON.stringify(customwavetimemax)}`);
 			}
+				
 
 			//Logic to determine if we need to print concurrent waves at same time
 			
@@ -443,62 +454,50 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
 			//rewrite this logic so that its based on individual booleans.
 			
-			if(sameNameinPmc)
+			if(sameNameinPmc == true)
 			{
-				SWAG.genWaveStage2(samePmcPattern, map, locations, aiAmountMultiplier, wavetimemin, wavetimemax, customwavetimemin, customwavetimemax, pmcSide, isPlayers, i);
+				SWAG.genWaveStage2(samePmcPattern, map, locations, aiAmountMultiplier, wavetimemin, wavetimemax, customwavetimemin, customwavetimemax, pmcSide, isPlayers, wavenum);
 			}
 			
-			if(sameNameinBoss)
+			if(sameNameinBoss == true)
 			{
-				SWAG.genWaveStage2(sameBossPattern, map, locations, aiAmountMultiplier, wavetimemin, wavetimemax, customwavetimemin, customwavetimemax, pmcSide, isPlayers, i);
+				SWAG.genWaveStage2(sameBossPattern, map, locations, aiAmountMultiplier, wavetimemin, wavetimemax, customwavetimemin, customwavetimemax, pmcSide, isPlayers, wavenum);
 			}
 
-			if(sameNameinScav)
+			if(sameNameinScav == true)
 			{
-				SWAG.genWaveStage2(sameScavPattern, map, locations, aiAmountMultiplier, wavetimemin, wavetimemax, customwavetimemin, customwavetimemax, pmcSide, isPlayers, i);
+				SWAG.genWaveStage2(sameScavPattern, map, locations, aiAmountMultiplier, wavetimemin, wavetimemax, customwavetimemin, customwavetimemax, pmcSide, isPlayers, wavenum);
 			}
 			// cycle through the bot types and spawn them as additional waves
-
+			continue;
 		}
 	}
 
 	static genWaveStage2(genPattern: any, map: string, locations: any, aiAmountMultiplier: number, wavetimemin: number, wavetimemax: number, customwavetimemin: number, customwavetimemax: number,
-		pmcSide: string, isPlayers: boolean, wavenum: number)
+		pmcSide: string, isPlayers: boolean, wavenumalt: number)
 	{
-		for (let type in genPattern.botTypes) {
-			//logger.info(`type: ${randomPattern[1].botTypes[type]}`);
-			if (SWAG.pmcType.includes(genPattern.botTypes[type])){
-				pmcSide = SWAG.getPmcSideByRole(genPattern.botTypes[type]);
-				isPlayers = true;
-
-				let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, genPattern.botCounts[type])));
-
-				let pmcwave = new wave(0, customwavetimemin !== undefined ? customwavetimemin : wavetimemin, 
-					customwavetimemax !== undefined ? customwavetimemax : wavetimemax, 1, aiAmountTemp,
-					"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[genPattern.botTypes[type]], isPlayers);
-				if(config.DebugOutput)
-					logger.info(`wave#${wavenum} (pmc): ${genPattern.botTypes[type]}: ${JSON.stringify(pmcwave)}`)
-
-				locations[map].base.waves.push(pmcwave);
-			}
-			else if(SWAG.bossType.includes(genPattern.BossName))
+		if(SWAG.bossType.includes(genPattern.BossName))
 			{
 				pmcSide = "Savage";
 				isPlayers = false;
 				let theBoss = genPattern.BossName;
 				let theBossSupport: BossSupport[];
+				let tempsupport: BossSupport;
 				
 				for(let index in genPattern.Supports)
 				{
-					theBossSupport[index] = new BossSupport(
-						genPattern.Supports[index].BossEscortType,
-						SWAG.diffProper[config.aiDifficulty.toLowerCase()],
-						genPattern.Supports[index].BossEscortAmount
-					)
+					tempsupport = {
+						BossEscortType: genPattern.Supports[index].BossEscortType,
+						BossEscortAmount: genPattern.Supports[index].BossEscortAmount,
+						BossEscortDifficult: SWAG.diffProper[config.aiDifficulty.toLowerCase()]
+					}
+
+					theBossSupport.push(tempsupport);
 				}
 				//let aiSupportAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, genPattern.botCounts[type])));
 				
-				if (genPattern.Time === undefined){
+				if (genPattern.Time === undefined || genPattern.Time === null)
+				{
 					genPattern.Time = (customwavetimemin !== undefined ? customwavetimemin : wavetimemin);
 				}
 				
@@ -506,25 +505,51 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 				SWAG.diffProper[config.aiDifficulty.toLowerCase()], genPattern.BossEscortAmount, genPattern.Time, theBossSupport, genPattern.RandomTimeSpawn);
 
 				if(config.DebugOutput)
-					logger.info(`wave#${wavenum} (boss): ${genPattern.BossName}: ${JSON.stringify(bosswave)}`)
+					logger.info(`wave#${wavenumalt} (boss): ${genPattern.BossName}: ${JSON.stringify(bosswave)}`)
 
 				locations[map].base.BossLocationSpawn.push(bosswave);
+				return;
 			}
-			else if(SWAG.scavType.includes(genPattern.botTypes[type])){
-				pmcSide = "Savage";
-				isPlayers = false;
+		else{
 
-				let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, genPattern.botCounts[type])));
-
-				let scavwave = new wave(0, customwavetimemin !== undefined ? customwavetimemin : wavetimemin, 
-					customwavetimemax !== undefined ? customwavetimemax : wavetimemax, 1, aiAmountTemp,
-					"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[genPattern.botTypes[type]], isPlayers);
-				if(config.DebugOutput)
-					logger.info(`wave#${wavenum} (scav): ${genPattern.botTypes[type]}: ${JSON.stringify(scavwave)}`)
-
-				locations[map].base.waves.push(scavwave);
-			}					
+			for (let type in genPattern.botTypes)
+			{
+				//logger.info(`type: ${randomPattern[1].botTypes[type]}`);
+				if (SWAG.pmcType.includes(genPattern.botTypes[type])){
+					pmcSide = SWAG.getPmcSideByRole(genPattern.botTypes[type]);
+					isPlayers = true;
+	
+					let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, genPattern.botCounts[type])));
+	
+					let pmcwave = new wave(0, customwavetimemin !== undefined ? customwavetimemin : wavetimemin, 
+						customwavetimemax !== undefined ? customwavetimemax : wavetimemax, 1, aiAmountTemp,
+						"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[genPattern.botTypes[type]], isPlayers);
+					if(config.DebugOutput)
+						logger.info(`wave#${wavenumalt} (pmc): ${genPattern.botTypes[type]}: ${JSON.stringify(pmcwave)}`)
+	
+					locations[map].base.waves.push(pmcwave);
+					continue;
+				}
+				
+				if(SWAG.scavType.includes(genPattern.botTypes[type])){
+					pmcSide = "Savage";
+					isPlayers = false;
+	
+					let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, genPattern.botCounts[type])));
+	
+					let scavwave = new wave(0, customwavetimemin !== undefined ? customwavetimemin : wavetimemin, 
+						customwavetimemax !== undefined ? customwavetimemax : wavetimemax, 1, aiAmountTemp,
+						"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[genPattern.botTypes[type]], isPlayers);
+					if(config.DebugOutput)
+						logger.info(`wave#${wavenumalt} (scav): ${genPattern.botTypes[type]}: ${JSON.stringify(scavwave)}`)
+	
+					locations[map].base.waves.push(scavwave);
+					continue;
+				}					
+			}
 		}
+		return;
+		
 	}
 
 
@@ -575,7 +600,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 				}
 			}
 		}
-		status = gamestate.alreadyGenerated;
 	}
 }
 

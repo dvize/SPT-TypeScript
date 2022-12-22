@@ -2,8 +2,8 @@
 	"aiDifficulty": "normal",
 	"aiAmount": "normal",
 	"bossChance": 2,
-	"waveLimit": 10,
-	"WaveTimerMinInSeconds": 180,
+	"waveLimit": 5,
+	"WaveTimerMinInSeconds": 240,
 	"WaveTimerMaxInSeconds": 300,
 	"RandomSoloPatternFilePerMap": false,
 	"UseDefaultSpawns": {
@@ -11,5 +11,5 @@
 		"Bosses": true,
 		"TriggeredWaves": true
 	},
-	"DebugOutput": false
+	"DebugOutput": true
 }
