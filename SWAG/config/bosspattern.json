@@ -27,88 +27,43 @@
 		"BossEscortType": "exusec",
 		"BossEscortAmount": "2",
 		"Time": -1,
-		"Supports": [
-			{
-			"BossEscortType": "exusec",
-			"BossEscortAmount": "1"
-			},
-			{
-			"BossEscortType": "exusec",
-			"BossEscortAmount": "1"
-			}
-		],
+		"Supports": null,
 		"RandomTimeSpawn": true
 	},
 	{
 		"Name": "Boss Pat 2",
 		"BossName": "bossbully",
-		"BossEscortType": "assaultgroup",
+		"BossEscortType": "followerbully",
 		"BossEscortAmount": "2",
 		"Time": -1,
-		"Supports": [
-			{
-			"BossEscortType": "assaultgroup",
-			"BossEscortAmount": "1"
-			},
-			{
-			"BossEscortType": "assaultgroup",
-			"BossEscortAmount": "1"
-			}
-		],
+		"Supports": null,
 		"RandomTimeSpawn": true
 	},
 	{
 		"Name": "Sanitar Sucks",
 		"BossName": "bossgluhar",
-		"BossEscortType": "assaultgroup",
-		"BossEscortAmount": "4",
+		"BossEscortType": "followergluharassault",
+		"BossEscortAmount": "2",
 		"Time": -1,
-		"Supports": [
-			{
-			"BossEscortType": "followergluharassault",
-			"BossEscortAmount": "1"
-			},
-			{
-			"BossEscortType": "followergluharscout",
-			"BossEscortAmount": "1"
-			},
-			{
-			"BossEscortType": "followergluharsecurity",
-			"BossEscortAmount": "1"
-			},
-			{
-			"BossEscortType": "followergluharsnipe",
-			"BossEscortAmount": "1"
-			}
-		],
+		"Supports": null,
 		"RandomTimeSpawn": true
 	},
 	{
 		"Name": "Tagilla/Killa",
 		"BossName": "bosstagilla",
-		"BossEscortType": "bosskilla",
-		"BossEscortAmount": "1",
+		"BossEscortType": "followergluharscout",
+		"BossEscortAmount": "0",
 		"Time": -1,
-		"Supports": [
-			{
-			"BossEscortType": "bosskilla",
-			"BossEscortAmount": "1"
-			}
-		],
+		"Supports": null,
 		"RandomTimeSpawn": true
 	},
 	{
 		"Name": "Altar Boy",
 		"BossName": "sectantpriest",
 		"BossEscortType": "sectantwarrior",
-		"BossEscortAmount": "1",
+		"BossEscortAmount": "2",
 		"Time": -1,
-		"Supports": [
-			{
-			"BossEscortType": "sectantwarrior",
-			"BossEscortAmount": "1"
-			}
-		],
+		"Supports": null,
 		"RandomTimeSpawn": true
 	}
 ]

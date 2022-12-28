@@ -86,13 +86,12 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 	public static pmcType: string[] = [
 		"sptbear",
 		"sptusec",
-		"assaultgroup",
-		"cursedassault"
+		"cursedassault",
+		"pmcbot"
 	]
 
 	public static scavType: string[] = [
 		"assault",
-		"pmcbot",
 		"exusec",
 		"marksman",
 		"followerbully",
@@ -279,37 +278,11 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 				if (element === "OpenZones")
 				{
 					myOpenZones = baseobj[element].split(",");
+					Spawnpoints.addSpawns(map, myOpenZones);	
 					break;
 				}
 			}
-			
-			let botZoneNameList: string[] = [];
-			for(let element in baseobj)
-			{
-				if (element === "SpawnPointParams")
-				{
-					workingspawnpoints = baseobj[element];
-					
-					if(config.DebugOutput){
-						logger.info(`Found spawnpoints for ${map}`)
-					}
-					
 
-					workingspawnpoints.forEach(element => {
-						botZoneNameList.push(element.BotZoneName);
-									
-					});
-
-					let allzones: string[] = myOpenZones.concat(botZoneNameList);
-					allzones = this.removeNonUnique(allzones);
-					if(config.DebugOutput){
-						logger.info(`Adding Spawn Location:${allzones}`);
-					}
-					Spawnpoints.addSpawns(map, allzones);		
-					break;
-				}
-			}
-			
 		}
 	}
 
@@ -577,12 +550,15 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 	{
 		if(SWAG.bossType.includes(genPattern.BossName))
 			{
-				pmcSide = "Savage";
 				isPlayers = false;
 				let theBoss = genPattern.BossName;
-				let theBossSupport: BossSupport[] = [];
+				let theBossSupport: BossSupport[] = null;
 				let myBossZones = this.getRandomStringArrayValue(Spawnpoints.getSpawns(map));
 				
+				if (myBossZones == null){
+					myBossZones = ""
+				}
+
 				if(config.DebugOutput)
 				{
 					logger.error(`Random Boss Zone: ${JSON.stringify(myBossZones)}`);
@@ -591,11 +567,13 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 				
 				if (genPattern.Supports != null)
 				{
+					theBossSupport = [];
 					for(let index in genPattern.Supports)
 					{
+						let tempDifficulty: string[] = [SWAG.diffProper[config.aiDifficulty.toLowerCase()]];
 						let tempsupport = new BossSupport(
-							SWAG.roleCase[genPattern.Supports[index].BossEscortType],
-							SWAG.diffProper[config.aiDifficulty.toLowerCase()],
+							SWAG.roleCase[genPattern.Supports[index].BossEscortType.toLowerCase()],
+							tempDifficulty,
 							genPattern.Supports[index].BossEscortAmount
 						);
 						
@@ -604,17 +582,14 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 					}
 				}
 				
-				//let aiSupportAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, genPattern.botCounts[type])));
 				
 				if (genPattern.Time === undefined || genPattern.Time === null)
 				{
 					genPattern.Time = (customwavetimemin !== undefined ? customwavetimemin : wavetimemin);
 				}
 				
-				
-
-				let mybosswave = new bosswave(SWAG.roleCase[theBoss], 100, myBossZones, false, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[genPattern.BossEscortType],
-				SWAG.diffProper[config.aiDifficulty.toLowerCase()], genPattern.BossEscortAmount, genPattern.Time, "", "", theBossSupport, genPattern.RandomTimeSpawn);
+				let mybosswave = new bosswave(SWAG.roleCase[theBoss], 100, myBossZones, false, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[genPattern.BossEscortType.toLowerCase()],
+				SWAG.diffProper[config.aiDifficulty.toLowerCase()], genPattern.BossEscortAmount, genPattern.Time, theBossSupport, genPattern.RandomTimeSpawn);
 
 				if(config.DebugOutput)
 					logger.info(`wave#${wavenumalt} (boss): ${genPattern.BossName}: ${JSON.stringify(mybosswave)}`)
@@ -624,43 +599,42 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 			}
 		else{
 
-			for (let type in genPattern.botTypes)
-			{
-				//logger.info(`type: ${randomPattern[1].botTypes[type]}`);
-				if (SWAG.pmcType.includes(genPattern.botTypes[type])){
-					pmcSide = SWAG.getPmcSideByRole(genPattern.botTypes[type]);
-					isPlayers = true;
-	
-					let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, genPattern.botCounts[type])));
-	
-					let pmcwave = new wave(0, customwavetimemin !== undefined ? customwavetimemin : wavetimemin, 
-						customwavetimemax !== undefined ? customwavetimemax : wavetimemax, 1, aiAmountTemp,
-						"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[genPattern.botTypes[type]], isPlayers);
-					if(config.DebugOutput)
-						logger.info(`wave#${wavenumalt} (pmc): ${genPattern.botTypes[type]}: ${JSON.stringify(pmcwave)}`)
-	
-					locations[map].base.waves.push(pmcwave);
-					continue;
-				}
-				
-				if(SWAG.scavType.includes(genPattern.botTypes[type])){
-					pmcSide = "Savage";
-					isPlayers = false;
-	
-					let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, genPattern.botCounts[type])));
-	
-					let scavwave = new wave(0, customwavetimemin !== undefined ? customwavetimemin : wavetimemin, 
-						customwavetimemax !== undefined ? customwavetimemax : wavetimemax, 1, aiAmountTemp,
-						"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[genPattern.botTypes[type]], isPlayers);
-					if(config.DebugOutput)
-						logger.info(`wave#${wavenumalt} (scav): ${genPattern.botTypes[type]}: ${JSON.stringify(scavwave)}`)
+				for (let type in genPattern.botTypes)
+				{
+					//logger.info(`type: ${randomPattern[1].botTypes[type]}`);
+					if (SWAG.pmcType.includes(genPattern.botTypes[type])){
+						pmcSide = SWAG.getPmcSideByRole(genPattern.botTypes[type]);
+						isPlayers = true;
+		
+						let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, genPattern.botCounts[type])));
+		
+						let pmcwave = new wave(0, customwavetimemin !== undefined ? customwavetimemin : wavetimemin, 
+							customwavetimemax !== undefined ? customwavetimemax : wavetimemax, 1, aiAmountTemp,
+							"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[genPattern.botTypes[type].toLowerCase()], isPlayers);
+						if(config.DebugOutput)
+							logger.info(`wave#${wavenumalt} (pmc): ${genPattern.botTypes[type]}: ${JSON.stringify(pmcwave)}`)
+		
+						locations[map].base.waves.push(pmcwave);
+					}
 					
-					locations[map].base.waves.push(scavwave);
-					continue;
-				}					
+					if(SWAG.scavType.includes(genPattern.botTypes[type])){
+						pmcSide = "Savage";
+						isPlayers = false;
+		
+						let aiAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, genPattern.botCounts[type])));
+		
+						let scavwave = new wave(0, customwavetimemin !== undefined ? customwavetimemin : wavetimemin, 
+							customwavetimemax !== undefined ? customwavetimemax : wavetimemax, 1, aiAmountTemp,
+							"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[genPattern.botTypes[type].toLowerCase()], isPlayers);
+						if(config.DebugOutput)
+							logger.info(`wave#${wavenumalt} (scav): ${genPattern.botTypes[type]}: ${JSON.stringify(scavwave)}`)
+						
+						locations[map].base.waves.push(scavwave);
+					}					
+				}
 			}
-		}
-		return;
+		
+			return;
 		
 	}
 
@@ -755,14 +729,14 @@ class bosswave {
     BossDifficult: string;
 	BossEscortType: string;
 	BossEscortDifficult: string;
-	BossEscortAmount: number;
+	BossEscortAmount: string;
 	Time: number;  //default -1 for instant?
-	TriggerId: string;
-	TriggerName: string;
+	// TriggerId: string;
+	// TriggerName: string;
 	Supports: BossSupport[];
     RandomTimeSpawn: boolean; // default false
 
-	constructor(BossName, BossChance, BossZone, BossPlayer, BossDifficult, BossEscortType, BossEscortDifficult, BossEscortAmount, Time, TriggerId, TriggerName, Supports, RandomTimeSpawn) {
+	constructor(BossName, BossChance, BossZone, BossPlayer, BossDifficult, BossEscortType, BossEscortDifficult, BossEscortAmount, Time, Supports, RandomTimeSpawn) {
 		this.BossName = BossName;
 		this.BossChance = BossChance;
 		this.BossZone = BossZone;
@@ -772,8 +746,8 @@ class bosswave {
 		this.BossEscortDifficult = BossEscortDifficult;
 		this.BossEscortAmount = BossEscortAmount;
 		this.Time = Time;
-		this.TriggerId = TriggerId;
-		this.TriggerName = TriggerName;
+		// this.TriggerId = TriggerId;
+		// this.TriggerName = TriggerName;
 		this.Supports = Supports;
 		this.RandomTimeSpawn = RandomTimeSpawn;
 	}

@@ -3,12 +3,11 @@
 		"Name": "All mix",
 		"botTypes": [
 			"sptbear",
-			"sptusec",
-			"assaultgroup"
+			"sptusec"
 		],
-		"botCounts": [3, 3, 3],
-		"time_min": 200,
-		"time_max": 300,
+		"botCounts": [3, 3],
+		"time_min": 100,
+		"time_max": 200,
 		"specificTimeOnly": "true"
 	},
 	{
@@ -34,9 +33,9 @@
 	{
 		"Name": "Raiders of the Lost Cock",
 		"botTypes": [
-			"assaultgroup",
-			"assaultgroup",
-			"assaultgroup"
+			"exusec",
+			"cursedassault",
+			"exusec"
 		],
 		"botCounts": [2, 1, 2],
 		"time_min": -1,

@@ -3,14 +3,14 @@
 	"aiAmount": "normal",
 	"bossChance": 2,
 	"waveLimit": 5,
-	"WaveTimerMinInSeconds": 240,
-	"WaveTimerMaxInSeconds": 300,
+	"WaveTimerMinInSeconds": 120,
+	"WaveTimerMaxInSeconds": 240,
 	"RandomSoloPatternFilePerMap": false,
-	"setMaxBotsPerTypePerMap": 50,
+	"setMaxBotsPerTypePerMap": 40,
 	"UseDefaultSpawns": {
 		"Waves": true,
 		"Bosses": true,
 		"TriggeredWaves": true
 	},
-	"DebugOutput": true
+	"DebugOutput": false
 }
