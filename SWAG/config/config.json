@@ -6,6 +6,7 @@
 	"WaveTimerMinInSeconds": 240,
 	"WaveTimerMaxInSeconds": 300,
 	"RandomSoloPatternFilePerMap": false,
+	"setMaxBotsPerTypePerMap": 50,
 	"UseDefaultSpawns": {
 		"Waves": true,
 		"Bosses": true,

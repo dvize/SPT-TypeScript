@@ -31,7 +31,8 @@ let bosspattern;
 let waveLimit;
 let bossChance;
 let aiAmountMultiplier;
-
+let Spawnpoints: SpawnLocations;
+let status: gamestate;
 
 type JSONValue =
 	| string
@@ -40,6 +41,10 @@ type JSONValue =
 	| { [x: string]: JSONValue }
 	| Array<JSONValue>;
 
+enum gamestate {
+	"infoInitialized",
+	"clearedSpawns"
+}
 
 class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
@@ -81,14 +86,15 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 	public static pmcType: string[] = [
 		"sptbear",
 		"sptusec",
-		"pmcbot"
+		"assaultgroup",
+		"cursedassault"
 	]
 
 	public static scavType: string[] = [
 		"assault",
+		"pmcbot",
 		"exusec",
 		"marksman",
-		"cursedassault",
 		"followerbully",
 		"followergluharassault",
 		"followergluharscout",
@@ -100,7 +106,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		"followerbigpipe",
 		"followerbirdeye",
 		"sectantwarrior",
-		"assaultgroup",
 		"gifter"
 	]
 		
@@ -156,9 +161,10 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 					action: (url: string, info: any, sessionID: string, output: string): any => {
 						// Is this hideout already closed?
 						const locations = container.resolve<DatabaseServer>("DatabaseServer").getTables().locations;
-						
-						SWAG.ClearDefaultSpawns();
-						SWAG.configureMaps(container);
+						if (status != gamestate.infoInitialized) {
+							SWAG.ClearDefaultSpawns();
+							SWAG.configureMaps(container);
+						}
 						return output;
 					}
 				}], "aki");
@@ -196,19 +202,19 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
 		//Set Max Bot Caps 
 		for (let map in botConfig.maxBotCap) {
-			botConfig.maxBotCap[map] = 40;
+			botConfig.maxBotCap[map] = config.setMaxBotsPerTypePerMap;
 		}
 
 		//Fix PMC Bot Limits
 		for (let map in botConfig.pmc.pmcType.sptbear) {
 			for (let botType in botConfig.pmc.pmcType.sptbear[map]) {
-				botConfig.pmc.pmcType.sptbear[map][botType] = 40;
+				botConfig.pmc.pmcType.sptbear[map][botType] = config.setMaxBotsPerTypePerMap;
 			}
 		}
 
 		for (let map in botConfig.pmc.pmcType.sptusec) {
 			for (let botType in botConfig.pmc.pmcType.sptusec[map]) {
-				botConfig.pmc.pmcType.sptusec[map][botType] = 40;
+				botConfig.pmc.pmcType.sptusec[map][botType] = config.setMaxBotsPerTypePerMap;
 			}
 		}
 
@@ -219,8 +225,92 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 			botConfig.presetBatch[thetype] = 50;
 			//logger.info(`thetype:${thetype} - ${JSON.stringify(botConfig.presetBatch[thetype], null, `\t`)}`);
 		}
+		
+		SWAG.findSpawnValues();
+	}
 
-		//logger.info(JSON.stringify(botConfig.maxBotCap, null, `\t`));
+	static removeNonUnique(array: string[]): string[] {
+		return array.filter((item, index) => array.indexOf(item) === index);
+	  }
+
+	static findSpawnValues(): void {
+		//Assign names to all spawn points for existing maps (even custom locations)
+		let workingspawnpoints: SpawnPointParam[];
+
+		for (let map in locations) {
+			let baseobj = locations[map].base;
+			for(let element in baseobj){
+				if (element === "SpawnPointParams")
+				{
+					workingspawnpoints = baseobj[element];
+
+					if(config.DebugOutput){
+						//logger.info(`Found spawnpoints for ${map}`)
+					}
+
+					workingspawnpoints.forEach(element => {
+						let temp: SpawnPointParam = element;
+						if (temp.BotZoneName === undefined || temp.BotZoneName === null || temp.BotZoneName === "") {
+							temp.BotZoneName = `${map}${element.Id.substring(0,8)}Zone`;
+						}
+						
+						if(config.DebugOutput){
+							//logger.info(`Adding spawnpoint name:${JSON.stringify(temp.BotZoneName, null, `\t`)}`);
+						}					
+					});
+
+					break;
+				}
+			}
+			
+			//logger.info(`spawns:${JSON.stringify(spawns, null, `\t`)}`)
+		}
+
+		
+		//Add spawn points to map manager with existing Open Zones
+		Spawnpoints = new SpawnLocations();
+		for (let map in locations) 
+		{
+			let baseobj = locations[map].base;
+			let myOpenZones: string[] = [];
+
+			for (let element in baseobj)
+			{
+				if (element === "OpenZones")
+				{
+					myOpenZones = baseobj[element].split(",");
+					break;
+				}
+			}
+			
+			let botZoneNameList: string[] = [];
+			for(let element in baseobj)
+			{
+				if (element === "SpawnPointParams")
+				{
+					workingspawnpoints = baseobj[element];
+					
+					if(config.DebugOutput){
+						logger.info(`Found spawnpoints for ${map}`)
+					}
+					
+
+					workingspawnpoints.forEach(element => {
+						botZoneNameList.push(element.BotZoneName);
+									
+					});
+
+					let allzones: string[] = myOpenZones.concat(botZoneNameList);
+					allzones = this.removeNonUnique(allzones);
+					if(config.DebugOutput){
+						logger.info(`Adding Spawn Location:${allzones}`);
+					}
+					Spawnpoints.addSpawns(map, allzones);		
+					break;
+				}
+			}
+			
+		}
 	}
 
 	static configureMaps(container: DependencyContainer): void {
@@ -228,7 +318,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 			logger.info(`SWAG: Generating Waves`)
 		// Uses it as variable for waves were generated (server restart, etc)
 
-		let spawnpoints = [];
+		status = gamestate.infoInitialized;
 
 		for (let map in locations) {
 			let map_name = map.toLowerCase();
@@ -263,9 +353,10 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 					//logger.info(`waves: ${JSON.stringify(locations[map].base.waves, null, `\t`)}`);
 					if(config.DebugOutput)
 						logger.info(`========================================`);
-
+					
 				}
-				
+			
+					
 			}
 		}
 	}
@@ -274,6 +365,10 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		min = Math.ceil(min);
 		max = Math.floor(max);
 		return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
+
+	static getRandomStringArrayValue(array: string[]): string {
+		return array[Math.floor(Math.random() * array.length)];
 	}
 
 	static getRandomisedPmcSide(): string {
@@ -364,6 +459,10 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 			if (patternArray.length > 0) 
 			{
 				randomPattern = patternArray[SWAG.getRandIntInclusive(0, patternArray.length - 1)];
+			}
+
+			if(randomPattern === undefined || randomPattern === null){
+				continue;
 			}
 
 			if(config.DebugOutput)
@@ -481,19 +580,30 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 				pmcSide = "Savage";
 				isPlayers = false;
 				let theBoss = genPattern.BossName;
-				let theBossSupport: BossSupport[];
-				let tempsupport: BossSupport;
+				let theBossSupport: BossSupport[] = [];
+				let myBossZones = this.getRandomStringArrayValue(Spawnpoints.getSpawns(map));
 				
-				for(let index in genPattern.Supports)
+				if(config.DebugOutput)
 				{
-					tempsupport = {
-						BossEscortType: genPattern.Supports[index].BossEscortType,
-						BossEscortAmount: genPattern.Supports[index].BossEscortAmount,
-						BossEscortDifficult: SWAG.diffProper[config.aiDifficulty.toLowerCase()]
-					}
-
-					theBossSupport.push(tempsupport);
+					logger.error(`Random Boss Zone: ${JSON.stringify(myBossZones)}`);
 				}
+					
+				
+				if (genPattern.Supports != null)
+				{
+					for(let index in genPattern.Supports)
+					{
+						let tempsupport = new BossSupport(
+							SWAG.roleCase[genPattern.Supports[index].BossEscortType],
+							SWAG.diffProper[config.aiDifficulty.toLowerCase()],
+							genPattern.Supports[index].BossEscortAmount
+						);
+						
+						logger.info(`SWAG: Boss Support: ${JSON.stringify(tempsupport)}`);
+						theBossSupport.push(tempsupport);
+					}
+				}
+				
 				//let aiSupportAmountTemp = Math.floor((aiAmountMultiplier * randomUtil.getInt(1, genPattern.botCounts[type])));
 				
 				if (genPattern.Time === undefined || genPattern.Time === null)
@@ -501,13 +611,15 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 					genPattern.Time = (customwavetimemin !== undefined ? customwavetimemin : wavetimemin);
 				}
 				
-				let mybosswave = new bosswave(SWAG.roleCase[theBoss], 100, "", false, SWAG.diffProper[config.aiDifficulty.toLowerCase()],
-				SWAG.diffProper[config.aiDifficulty.toLowerCase()], genPattern.BossEscortAmount, genPattern.Time, theBossSupport, genPattern.RandomTimeSpawn);
+				
+
+				let mybosswave = new bosswave(SWAG.roleCase[theBoss], 100, myBossZones, false, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[genPattern.BossEscortType],
+				SWAG.diffProper[config.aiDifficulty.toLowerCase()], genPattern.BossEscortAmount, genPattern.Time, "", "", theBossSupport, genPattern.RandomTimeSpawn);
 
 				if(config.DebugOutput)
-					logger.info(`wave#${wavenumalt} (boss): ${genPattern.BossName}: ${JSON.stringify(bosswave)}`)
+					logger.info(`wave#${wavenumalt} (boss): ${genPattern.BossName}: ${JSON.stringify(mybosswave)}`)
 
-				locations[map].base.BossLocationSpawn.push(bosswave);
+				locations[map].base.BossLocationSpawn.push(mybosswave);
 				return;
 			}
 		else{
@@ -542,7 +654,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 						"", pmcSide, SWAG.diffProper[config.aiDifficulty.toLowerCase()], SWAG.roleCase[genPattern.botTypes[type]], isPlayers);
 					if(config.DebugOutput)
 						logger.info(`wave#${wavenumalt} (scav): ${genPattern.botTypes[type]}: ${JSON.stringify(scavwave)}`)
-	
+					
 					locations[map].base.waves.push(scavwave);
 					continue;
 				}					
@@ -600,6 +712,9 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 				}
 			}
 		}
+
+		status = gamestate.clearedSpawns;
+
 	}
 }
 
@@ -638,21 +753,27 @@ class bosswave {
     BossZone: string;
     BossPlayer: boolean;
     BossDifficult: string;
-    BossEscortDifficult: string;
+	BossEscortType: string;
+	BossEscortDifficult: string;
 	BossEscortAmount: number;
 	Time: number;  //default -1 for instant?
+	TriggerId: string;
+	TriggerName: string;
 	Supports: BossSupport[];
     RandomTimeSpawn: boolean; // default false
 
-	constructor(BossName, BossChance, BossZone, BossPlayer, BossDifficult, BossEscortDifficult, BossEscortAmount, Time, Supports, RandomTimeSpawn) {
+	constructor(BossName, BossChance, BossZone, BossPlayer, BossDifficult, BossEscortType, BossEscortDifficult, BossEscortAmount, Time, TriggerId, TriggerName, Supports, RandomTimeSpawn) {
 		this.BossName = BossName;
 		this.BossChance = BossChance;
 		this.BossZone = BossZone;
 		this.BossPlayer = BossPlayer;
 		this.BossDifficult = BossDifficult;
+		this.BossEscortType = BossEscortType;
 		this.BossEscortDifficult = BossEscortDifficult;
 		this.BossEscortAmount = BossEscortAmount;
 		this.Time = Time;
+		this.TriggerId = TriggerId;
+		this.TriggerName = TriggerName;
 		this.Supports = Supports;
 		this.RandomTimeSpawn = RandomTimeSpawn;
 	}
@@ -678,3 +799,54 @@ class Pattern {
 	time_max: number;
 	specificTimeOnly: boolean;
 }
+
+
+class SpawnLocations {
+	private spawnLocations: { [key: string]: string[] };
+  
+	constructor() {
+	  this.spawnLocations = {};
+	}
+  
+	public getSpawns(mapName: string): string[] {
+	  return this.spawnLocations[mapName];
+	}
+  
+	public addSpawns(mapName: string, spawns: string[]): void {
+	  this.spawnLocations[mapName] = spawns;
+	}
+  }
+    
+   class SpawnPointParam {
+        Id: string;
+        Position: Position;
+        Rotation: number;
+        Sides: string[];
+        Categories: string[];
+        Infiltration: string;
+        DelayToCanSpawnSec: number;
+        ColliderParams: ColliderParams;
+        BotZoneName: string;
+    }
+
+	class Position {
+        x: number;
+        y: number;
+        z: number;
+    }
+
+	class ColliderParams {
+        _parent: string;
+        _props: Props;
+    }
+
+	class Center {
+        x: number;
+        y: number;
+        z: number;
+    }
+
+	class Props {
+        Center: Center;
+        Radius: number;
+    }
