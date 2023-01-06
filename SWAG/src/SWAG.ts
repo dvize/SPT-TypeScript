@@ -80,14 +80,17 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		"gifter": "gifter",
 		"bossknight": "bossKnight",
 		"followerbigpipe": "followerBigPipe",
-		"followerbirdeye": "followerBirdEye"
+		"followerbirdeye": "followerBirdEye",
+		"bosszryachiy": "bossZryachiy",
+		"followerzryachiy": "followerZryachiy"
 	}
 
 	public static pmcType: string[] = [
 		"sptbear",
 		"sptusec",
 		"cursedassault",
-		"pmcbot"
+		"pmcbot",
+		"assaultgroup"
 	]
 
 	public static scavType: string[] = [
@@ -104,6 +107,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		"followertagilla",
 		"followerbigpipe",
 		"followerbirdeye",
+		"followerzryachiy",
 		"sectantwarrior",
 		"gifter"
 	]
@@ -116,6 +120,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		"bosskojaniy",
 		"bosssanitar",
 		"bossknight",
+		"bosszryachiy",
 		"sectantpriest"
 	]
 
@@ -128,6 +133,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		"lighthouse",
 		"rezervbase",
 		"shoreline",
+		"tarkovstreets",
 		"woods"
 	]
 
@@ -152,31 +158,28 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
 		const staticRouterModService = container.resolve<StaticRouterModService>("StaticRouterModService");
 
-		staticRouterModService.registerStaticRouter(
-			`${modName}-/singleplayer/settings/raid/menu`,
+		
+		staticRouterModService.registerStaticRouter(`${modName}/singleplayer/settings/raid/endstate`,
 			[
 				{
-					url: "/singleplayer/settings/raid/menu",
+					url: "/singleplayer/settings/raid/endstate",
 					action: (url: string, info: any, sessionID: string, output: string): any => {
-						// Is this hideout already closed?
-						const locations = container.resolve<DatabaseServer>("DatabaseServer").getTables().locations;
 						if (status != gamestate.infoInitialized) {
 							SWAG.ClearDefaultSpawns();
-							SWAG.configureMaps(container);
+							SWAG.configureMaps();
 						}
 						return output;
 					}
 				}], "aki");
 
-		staticRouterModService.registerStaticRouter(
-			`${modName}-/client/locations`,
+		staticRouterModService.registerStaticRouter(`${modName}/client/locations`,
 			[
 				{
 					url: "/client/locations",
 					action: (url: string, info: any, sessionID: string, output: string): any => {
 						SWAG.ClearDefaultSpawns();
-						SWAG.configureMaps(container);
-						return container.resolve<LocationCallbacks>("LocationCallbacks").getLocationData(url, info, sessionID);
+						SWAG.configureMaps();
+						return output;
 					}
 				}], "aki");
 	}
@@ -286,7 +289,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		}
 	}
 
-	static configureMaps(container: DependencyContainer): void {
+	static configureMaps(): void {
 		if(config.DebugOutput)
 			logger.info(`SWAG: Generating Waves`)
 		// Uses it as variable for waves were generated (server restart, etc)
@@ -576,8 +579,10 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 							tempDifficulty,
 							genPattern.Supports[index].BossEscortAmount
 						);
-						
-						logger.info(`SWAG: Boss Support: ${JSON.stringify(tempsupport)}`);
+
+						if(config.DebugOutput)
+							logger.info(`SWAG: Boss Support: ${JSON.stringify(tempsupport)}`);
+
 						theBossSupport.push(tempsupport);
 					}
 				}
