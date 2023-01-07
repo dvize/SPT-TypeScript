@@ -2,6 +2,7 @@ import { IBotBase } from "@spt-aki/models/eft/common/tables/IBotBase";
 import { globalValues } from "./POOP";
 import { PoopDifficulty } from "./PoopDifficulty";
 import { HashUtil } from "@spt-aki/utils/HashUtil";
+import { config } from "process";
 
 export class LegendaryPlayer {
 
@@ -26,6 +27,8 @@ export class LegendaryPlayer {
 						newrole = globalValues.roleCase[newrole];
 						cachedOfType[cachedOfType.length - 1].Info.Settings.Role = newrole;
 						cachedOfType[cachedOfType.length - 1].Info.Side = "Savage";
+						
+						
 						globalValues.Logger.info(`POOP: Substituting ${key} with ${newrole}!`);
 						return cachedOfType.pop();
 					}
@@ -54,6 +57,7 @@ export class LegendaryPlayer {
 				let therecord = globalValues.progressRecord[sessionID];
 
 				//Logger.info(`therecord: ${globalValues.serialize(therecord)}`)
+				
 
 				if (therecord.deathStreak > 0) {
 					setLegendary = false;
@@ -61,7 +65,7 @@ export class LegendaryPlayer {
 					this.createLegendPlayer(sessionID, setLegendary);
 					return;
 				}
-				if (therecord.winStreak >= 1) //change this later back to 10
+				if (therecord.winStreak >= 10) //change this later back to 10
 				{
 					setLegendary = true;
 					globalValues.Logger.info(`Current Winstreak: ${this.serialize(therecord.winStreak)}`)
@@ -120,7 +124,28 @@ export class LegendaryPlayer {
 		}
 	}
 
-	static storeLegendinCache(bot: IBotBase): void {
+	static refreshLegendPlayerIds(playerprofile: IBotBase, sessionID: string): void {
+		
+		for(let item in playerprofile.Inventory.items)
+		{
+			playerprofile.Inventory.items[item]._id = globalValues.hashUtil.generate();
+		}
+
+		let newActIDBot = globalValues.hashUtil.generate();
+		globalValues.Logger.info(`newActIDBot: ${newActIDBot}`);
+		if (globalValues.legendaryFile[sessionID]) {
+			globalValues.legendaryFile[sessionID] = playerprofile;
+			globalValues.legendaryFile[sessionID].aid = newActIDBot;
+			globalValues.legendaryFile[sessionID]._id = "pmc"+newActIDBot;
+			globalValues.legendaryFile[sessionID].Info.Settings.Role;
+			globalValues.legendaryFile[sessionID].Info.Settings.BotDifficulty = "hard";
+			globalValues.Logger.info(`POOP: Refreshing Item Ids for Legendary Player`);
+			//Logger.info(`playerprofile stringified: ${JSON.stringify(playerprofile)}`)
+		}
+	}
+	
+
+	static storeLegendinCache(bot: IBotBase, sessionID: string): void {
 
 		globalValues.Logger.info(`in storeLegendinCache function`)
 		//determine if chance
@@ -128,6 +153,7 @@ export class LegendaryPlayer {
 		globalValues.Logger.info(`chance: ${chance}`);
 		if (chance) 
 		{
+			
 			//determine original side to store as sptBearnormal or sptUsecnormal
 			let newRole: string;
 			let cacheKey: string; 
@@ -149,6 +175,7 @@ export class LegendaryPlayer {
 			//Gen difficulties and then push
 			
 			bot.Info.Settings.BotDifficulty = `easy`;
+			this.refreshLegendPlayerIds(bot, sessionID);
 			botarray.push(bot);
 			cacheKey = `${bot.Info.Settings.Role}${bot.Info.Settings.BotDifficulty}`;
 			globalValues.Logger.info(`POOP cacheKey: ${cacheKey}`)
@@ -157,6 +184,7 @@ export class LegendaryPlayer {
 			botarray = [];
 
 			bot.Info.Settings.BotDifficulty = `normal`;
+			this.refreshLegendPlayerIds(bot, sessionID);
 			botarray.push(bot);
 			cacheKey = `${bot.Info.Settings.Role}${bot.Info.Settings.BotDifficulty}`;
 			globalValues.Logger.info(`POOP cacheKey: ${cacheKey}`)
@@ -165,6 +193,7 @@ export class LegendaryPlayer {
 			botarray = [];
 
 			bot.Info.Settings.BotDifficulty = `hard`;
+			this.refreshLegendPlayerIds(bot, sessionID);
 			botarray.push(bot);
 			cacheKey = `${bot.Info.Settings.Role}${bot.Info.Settings.BotDifficulty}`;
 			globalValues.Logger.info(`POOP cacheKey: ${cacheKey}`)

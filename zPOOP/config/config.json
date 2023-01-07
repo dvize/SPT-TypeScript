@@ -11,7 +11,8 @@
 			"bossknight", 
 			"bosskilla", 
 			"bossbully", 
-			"bosstagilla"
+			"bosstagilla",
+            "bosszryachiy"
 			],
         "changeBots": {
             "lowLevelAIs": [
@@ -33,12 +34,14 @@
                 "followerbully",
 				"followertagilla", 
 				"followerbirdeye", 
-				"followerbigpipe"
+				"followerbigpipe",
+                "followerzryachiy"
             ],
             "highLevelAIs": [
                 "assaultgroup",
                 "bear",
-                "usec"
+                "usec",
+                "exusec"
             ],
 			"bossLevelAIs": [
 				"bossbully", 

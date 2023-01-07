@@ -89,7 +89,9 @@ export class globalValues
 		"bossknight": "bossKnight",
 		"followerbigpipe": "followerBigPipe",
 		"followerbirdeye": "followerBirdEye",
-		"test": "test"
+		"test": "test",
+		"bosszryachiy": "bossZryachiy",
+		"followerzryachiy": "followerZryachiy"
 	}
 
 	public static pmcTypes: String[] = [
@@ -121,7 +123,8 @@ export class globalValues
 		"bosskilla",
 		"bosskojaniy",
 		"bosssanitar",
-		"bossknight"
+		"bossknight",
+		"bosszryachiy"
 	]
 
 	public static followerTypes: String[] = [
@@ -134,11 +137,12 @@ export class globalValues
 		"followersanitar",
 		"followertagilla",
 		"followerbigpipe",
-		"followerbirdeye"
+		"followerbirdeye",
+		"followerzryachiy"
 	]
 
-	public static locationNames: string[] = ["interchange", "bigmap", "rezervbase", "woods", "shoreline", "laboratory", "lighthouse", "factory4_day", "factory4_night"];
-	public static locationNamesVerbose: string[] = ["interchange", "customs", "reserve", "woods", "shoreline", "labs", "lighthouse", "factory", "factory"];
+	public static locationNames: string[] = ["interchange", "bigmap", "rezervbase", "woods", "shoreline", "laboratory", "lighthouse", "factory4_day", "factory4_night", "tarkovstreets"];
+	public static locationNamesVerbose: string[] = ["interchange", "customs", "reserve", "woods", "shoreline", "labs", "lighthouse", "factory", "factory", "tarkovstreets"];
 }
 
 class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
@@ -165,7 +169,7 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
 		{
 			//Start of Actual Raid (not in raid menu)
 			staticRouterModService.registerStaticRouter(`StaticAkiRaidStart${globalValues.modName}`, [{
-				url: "/client/match/offline/start",
+				url: "/client/raid/configuration",
 				action: (url, info, sessionId, output) => {
 	
 					//populate bot cache with legendary player on gamestart
@@ -175,7 +179,7 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
 						let tempbot: IBotBase = globalValues.legendaryFile[sessionId];
 		
 						globalValues.Logger.info(`Attempting to call storeLegendinCache()`);
-						LegendaryPlayer.storeLegendinCache(tempbot);
+						LegendaryPlayer.storeLegendinCache(tempbot, sessionId);
 					}
 
 					return output;
