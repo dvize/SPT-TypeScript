@@ -48,13 +48,13 @@ class Mod implements IPostDBLoadMod
 					for (let stat in config.stats){
 						item._props[stat] = config.stats[stat];
 					}	
-					logger.info(`EerieSilence: Setting full stats for ${itemname}`);
+					//logger.info(`EerieSilence: Setting full stats for ${itemname}`);
 				}
 				else {
 
 					item._props.Distortion = item._props.Distortion * config.distortion_Multiplier;
 					item._props.AmbientVolume = item._props.AmbientVolume * config.ambient_noise_reduction_multiplier;
-					logger.info(`EerieSilence: Setting custom Distortion and AmbientVolume for ${itemname}`);
+					//logger.info(`EerieSilence: Setting custom Distortion and AmbientVolume for ${itemname}`);
 				}
 				
 				
@@ -63,25 +63,25 @@ class Mod implements IPostDBLoadMod
 			//also if they item has DeafStrength Property
 			if (item._props.DeafStrength && item._parent == "5a341c4086f77401f2541505")
 			{
-				switch (config.maximum_helmet_deafness)
+				switch (config.maximum_helmet_deafness.toLowerCase())
 				{
-					case "High":
+					case "high":
 					{
 						item._props.DeafStrength = "High";
-						logger.info(`EerieSilence: Setting High DeafStrength for ${itemname}`);
+						//logger.info(`EerieSilence: Setting High DeafStrength for ${itemname}`);
 						break;
 					}
 					
-					case "Low": 
+					case "low": 
 					{
 							item._props.DeafStrength = "Low";
-							logger.info(`EerieSilence: Setting Low DeafStrength for ${itemname}`);
+							//logger.info(`EerieSilence: Setting Low DeafStrength for ${itemname}`);
 							break;
 					}
-					case "None": 
+					case "none": 
 					{
 							item._props.DeafStrength = "None";
-							logger.info(`EerieSilence: Setting None DeafStrength for ${itemname}`);
+							//logger.info(`EerieSilence: Setting None DeafStrength for ${itemname}`);
 							break;
 					}
 					default:
