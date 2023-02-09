@@ -3,7 +3,7 @@
     "version": "1.1.0",
     "main": "src/ModularNVG.js",
     "license": "NCSA",
-    "author": "jc980/Props",
+    "author": "jc980, Props",
     "akiVersion": "3.4.*",
 	    "scripts": {
         "setup": "npm i",
