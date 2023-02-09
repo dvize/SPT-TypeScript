@@ -88,13 +88,12 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 	public static pmcType: string[] = [
 		"sptbear",
 		"sptusec",
-		"cursedassault",
-		"pmcbot",
 		"assaultgroup"
 	]
 
 	public static scavType: string[] = [
 		"assault",
+		"cursedassault",
 		"exusec",
 		"marksman",
 		"followerbully",
@@ -109,7 +108,8 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		"followerbirdeye",
 		"followerzryachiy",
 		"sectantwarrior",
-		"gifter"
+		"gifter",
+		"pmcbot"
 	]
 		
 	public static bossType: string[] = [
