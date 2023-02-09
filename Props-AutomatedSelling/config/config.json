@@ -1,0 +1,18 @@
+{
+    "Containers": {
+		"Labels": [
+			"JunkSell", 
+			"OtherStuff",
+            "dollarStuff"
+			],
+        "Info1": "Use only euros, rubles, dollars (exact letters) in the order you want the labeled containers to return money.. eg. dollarStuff container returns items in dollars.",
+        "Currency": [
+            "rubles",
+            "euros",
+            "dollars"
+        ]
+    },
+    "Info2": "true if you want dynamic flea prices, false if you want book values.  If you use flea sometimes item doesn't sell.",
+    "UseDynamicFleaPrices": false
+    
+}
