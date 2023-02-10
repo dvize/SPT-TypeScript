@@ -9,11 +9,12 @@ import { JsonUtil } from "@spt-aki/utils/JsonUtil";
 import { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
 import { HashUtil } from "@spt-aki/utils/HashUtil";
 import { RagfairPriceService } from "@spt-aki/services/RagfairPriceService";
+import { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
 import { Item, Upd } from '@spt-aki/models/eft/common/tables/IItem';
 import { SaveServer } from '@spt-aki/servers/SaveServer';
-import { InventoryController } from '@spt-aki/controllers/InventoryController';
-import { Inventory } from '@spt-aki/models/eft/common/tables/IBotBase';
 import { ItemHelper } from "@spt-aki/helpers/ItemHelper";
+import { ITemplateItem } from '@spt-aki/models/eft/common/tables/ITemplateItem';
+import { LocaleService } from "@spt-aki/services/LocaleService";
 
 let Logger;
 let config;
@@ -26,17 +27,17 @@ let pmcData;
 let itemsModList;
 let saveServer: SaveServer;
 let itemHelper: ItemHelper;
+let databaseServer: DatabaseServer;
+let database;
+let localeService: LocaleService;
 
 const modName = "PAutoSell";
 let modFolder;
 
-class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
+class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 
 	preAkiLoad(container: DependencyContainer): void {
-		Logger = container.resolve("WinstonLogger")
-		ragfairPriceService = container.resolve("RagfairPriceService");
-		config = require("../config/config.json");
-
+		Logger = container.resolve("WinstonLogger");
 		let dir = __dirname;
 		let dirArray = dir.split("\\");
 		modFolder = (`${dirArray[dirArray.length - 4]}/${dirArray[dirArray.length - 3]}/${dirArray[dirArray.length - 2]}/`);
@@ -53,12 +54,11 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 				this.exchangeItems(url, info, sessionID, output);
 				return output;
 			}
-		}], "aki");  */
+		}], "aki");   */
 
 		//Raid Saving (End of raid)
 		staticRouterModService.registerStaticRouter(`StaticAkiRaidSave${modName}`, [{
 			url: "/raid/profile/save",
-			//url: "/client/match/offline/end",
 			action: (url, info, sessionID, output) => {
 				this.exchangeItems(url, info, sessionID, output);
 				return output;
@@ -66,18 +66,54 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 		}], "aki"); 
 	}
 
-	postAkiLoad(container: DependencyContainer): void {
+	postAkiLoad(container: DependencyContainer): void 
+	{
 		this.setupInitialValues(container);
-
 	}
 
-	setupInitialValues(container) {
+	setupInitialValues(container: DependencyContainer) {
+		
+		ragfairPriceService = container.resolve("RagfairPriceService");
+		config = require("../config/config.json");
 		Logger.info('PAutoSell: SetupInitialValues');
 		profileHelper = container.resolve("ProfileHelper");
 		hashUtil = container.resolve("HashUtil");
 		jsonUtil = container.resolve("JsonUtil");
 		saveServer = container.resolve("SaveServer");
 		itemHelper = container.resolve("ItemHelper");
+		databaseServer = container.resolve("DatabaseServer");
+		database = databaseServer.getTables().templates;
+		localeService = container.resolve("LocaleService");
+
+		this.giveTaggingAbility();
+	}
+
+	giveTaggingAbility() : void
+	{
+		Logger.info('PAutoSell: giveTaggingAbility');
+
+		let validContainerTypesList: string[] = [
+			"5795f317245977243854e041", //Common Container
+			"5448bf274bdc2dfc2f8b456a", //Portable Container
+			"5448e53e4bdc2d60728b4567" //Backpack
+		]
+		
+		let filteredItems = [];
+		//convert database.items to array and filter out items that are not in validContainerTypesList
+		filteredItems = Object.values(database.items).filter((itemtemp: ITemplateItem) => {
+			return validContainerTypesList.includes(itemtemp._parent);
+		});
+
+		//go through all items in filteredItems list and remove container restrictions
+		if (config.RemoveContainerRestriction) 
+		{
+			for (let i = 0; i < filteredItems.length; i++) 
+			{
+				let myItem = filteredItems[i];
+				myItem._props.Grids[0]._props.filters = [];
+				Logger.info(`PAutoSell: Removing Container Restriction from ${myItem._id} (${myItem._name})`);
+			}
+		}
 	}
 
 	//main Top function
@@ -89,6 +125,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 		pmcData = profileHelper.getPmcProfile(sessionId);
 		const items = pmcData.Inventory.items;
 		itemsModList = PAutoSell.clone(pmcData.Inventory.items);
+
 		//grab the containers list from config.containers.labels
 		let containers = [];
 		
@@ -112,9 +149,9 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 			
 			for (let i = 0; i < items.length; i++) {
 				let item = items[i];
-				Logger.error(`PAutoSell: Checking Item: ${itemHelper.getItemName(item._tpl)}`);
+				//Logger.error(`PAutoSell: Checking Item: ${PAutoSell.getItemName(item._tpl)}`);
 				if (item.parentId === container._id) {
-					Logger.info(`PAutoSell: Found Item in Container: ${itemHelper.getItemName(item._tpl)}`);
+					//Logger.info(`PAutoSell: Found Item in Container: ${PAutoSell.getItemName(item._tpl)}`);
 					//set the slot id of newitem to existing item slot id if it exists
 					if (!firstslotId){
 						//if item.slotId is not null or undefined and the item.slotId is main, or Pockets, or SecuredContainer, set it to the first slot
@@ -132,15 +169,15 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 					}
 					
 					//set the currency string var based off the current position in Config.Containers.Currency list
-					let tempname = itemHelper.getItemName(item._tpl);
-					Logger.info(`PAutoSell: Trying to Sell Item: ${tempname} , ID: ${item._id}`);
+					let tempname = PAutoSell.getItemName(item._tpl);
+					Logger.error(`PAutoSell: Trying to Sell Item: ${tempname} , ID: ${item._id}`);
 					this.sellItem(item, items, itemsModList);
 				}
 			}
 			
-			let currency = String(config.Containers.Currency[j]).toLowerCase();
+			let currency: string = config.Containers.Currency[j];
+			currency.toLowerCase();
 			PAutoSell.replaceCurrency(currency, moneyTotal, items, firstslotId, firstItemLocation, firstContainerId, itemsModList);
-			//Logger.info(`PAutoSell: Replaced Items with Currency`);
 		}
 
 		// need to replace the items in the profile with the new items
@@ -153,7 +190,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 
 	sellItem(item: Item, items: Item[], itemsModList) {
 		//get the price of the item
-		let price = PAutoSell.getPrice(item._tpl);
+		let price = PAutoSell.getPrice(item._tpl, items, item);
 		//get the stack of the item if it exists otherwise set it to 1
 		let stack = item.upd ? item.upd.StackObjectsCount ? item.upd.StackObjectsCount : 1 : 1;
 
@@ -168,9 +205,9 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 
 	//replace currency function based on string
 	static replaceCurrency(currency: string, moneyTotal: number, items: Item[], firstslotId: any, firstItemLocation: any, firstContainerId: any, itemsModList) {
-		
+		Logger.info(`PAutoSell: Replacing Currency: ${currency} , Total: ${moneyTotal}`)
 		//define new item to replace values in
-		let newItem: Item;
+		
 		let itemtpl: string;
 		let total: number;
 		let exchangeRate: number;
@@ -185,7 +222,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 				total = moneyTotal * exchangeRate;
 
 				itemtpl = "5449016a4bdc2d6f028b456f";
-				PAutoSell.addItemToPlayerInventory(items, newItem, itemtpl, firstItemLocation, firstslotId, firstContainerId, total, itemsModList);
+				PAutoSell.addItemToPlayerInventory(items, itemtpl, firstItemLocation, firstslotId, firstContainerId, total, itemsModList);
 				break;
 
 			case "dollars":
@@ -193,7 +230,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 				total = Math.floor(moneyTotal * exchangeRate);
 
 				itemtpl = "5696686a4bdc2da3298b456a";
-				PAutoSell.addItemToPlayerInventory(items, newItem, itemtpl, firstItemLocation, firstslotId, firstContainerId, total, itemsModList);
+				PAutoSell.addItemToPlayerInventory(items, itemtpl, firstItemLocation, firstslotId, firstContainerId, total, itemsModList);
 				break;
 
 			case "euros":
@@ -201,22 +238,46 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 				total = Math.floor(moneyTotal * exchangeRate);
 
 				itemtpl = "569668774bdc2da2298b4568";
-				PAutoSell.addItemToPlayerInventory(items, newItem, itemtpl, firstItemLocation, firstslotId, firstContainerId, total, itemsModList);
+				PAutoSell.addItemToPlayerInventory(items, itemtpl, firstItemLocation, firstslotId, firstContainerId, total, itemsModList);
 				break;
 				
 			case "default":
+				exchangeRate = 1;
+				total = moneyTotal * exchangeRate;
+
+				itemtpl = "5449016a4bdc2d6f028b456f";
+				PAutoSell.addItemToPlayerInventory(items, itemtpl, firstItemLocation, firstslotId, firstContainerId, total, itemsModList);
 				break;
 		}
 	
 	}
 
-	static getPrice(itemTpl: string): number
+	static getItemName(itemtpl: string) 
 	{
-		let price: number;
+		//return localeService.getLocaleDb().templates.items[itemtpl].Name;  //this is the old way of getting the name
+		return localeService.getLocaleDb()[`${itemtpl} Name`];  		//this is the new way of getting the name
+	}
+
+	static getPrice(itemTpl: string, items, item): number
+	{
+		let price: number = 0;
 
 		try{
-			price = ragfairPriceService.getFleaPriceForItem(itemTpl);
-			Logger.info(`PAutoSell: Price for item: ${itemTpl} is ${price}`);
+			//I think findandreturnchildren includes the original parent item as well.. wierd.
+			//price = ragfairPriceService.getFleaPriceForItem(itemTpl);
+			//Logger.info(`PAutoSell: Price for item: ${PAutoSell.getItemName(itemTpl)} is ${price}`);
+
+			let childIds = itemHelper.findAndReturnChildrenByItems(items, item._id);
+
+			//navigate through childIds and sum the price of each item to current price
+			for (let i = 0; i < childIds.length; i++) {
+				let childId = childIds[i];
+				let childItem = items.find(x => x._id === childId);
+				let childPrice = ragfairPriceService.getFleaPriceForItem(childItem._tpl);
+				price += childPrice;
+				Logger.info(`PAutoSell: Price for child item(s): ${PAutoSell.getItemName(childItem._tpl)} is ${childPrice}`);
+			}
+				
 		}
 		catch(e){
 			Logger.error(`PAutoSell: Error getting price for item: ${itemTpl}`);
@@ -226,12 +287,15 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 
 	}
 
-	static addItemToPlayerInventory(items: Item[], item: Item, itemtpl, firstItemLocation, firstslotId, firstContainerId, total, itemsModList) 
+	static addItemToPlayerInventory(items: Item[], itemtpl, firstItemLocation, firstslotId, firstContainerId, total, itemsModList) 
 	{
+		Logger.info(`PAutoSell: Adding Item to Player Inventory: ${PAutoSell.getItemName(itemtpl)} with money count of ${total}`);
+		let newItem: Item;
 		let idForItemToAdd: string = hashUtil.generate();
 		let upd: Upd = { StackObjectsCount: total };
+		
 		// push to final item array
-		item = {
+		newItem = {
 			_id: idForItemToAdd,
 			_tpl: itemtpl,
 			parentId: firstContainerId,
@@ -242,8 +306,8 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 
 		try{
 			//push to the profile data
-			itemsModList.push(item);
-			let tempname = itemHelper.getItemName(itemtpl);
+			itemsModList.push(newItem);
+			let tempname = PAutoSell.getItemName(itemtpl);
 			Logger.info(`PAutoSell: Adding Item to Player Inventory: ${tempname} with money count of ${total} and itemid of ${idForItemToAdd}`);
 		}
 		catch(e)
@@ -270,20 +334,9 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 				if (parentItemInventoryIndex > -1 && (item._tpl != "5857a8bc2459772bad15db29" && item._tpl != "55d7217a4bdc2d86028b456d" && item._tpl != "627a4e6b255f7527fb05a0f6"))
 				{
 					itemsModList.splice(parentItemInventoryIndex, 1);
-					Logger.info(`PAutoSell: Removing Item from Player Inventory: ${itemHelper.getItemName(item._tpl)} with itemid of ${item._id}`)
+					//Logger.info(`PAutoSell: Removing Item from Player Inventory: ${PAutoSell.getItemName(item._tpl)} with itemid of ${item._id}`)
 				}
 				
-				/* for (let childId of childIds)
-				{
-					// We expect that each inventory item and each insured item has unique "_id", respective "itemId".
-					// Therefore we want to use a NON-Greedy function and escape the iteration as soon as we find requested item.
-					let inventoryIndex = inventoryItems.findIndex(myitem2 => myitem2._id === childId);
-					if (inventoryIndex > -1)
-					{
-						inventoryItems.splice(inventoryIndex, 1);
-						Logger.info(`PAutoSell: Removing ChildItem from Player Inventory: ${itemHelper.getItemName(item._tpl)} with itemid of ${item._id}`)
-					}
-				} */
 				
 				const recursiveSplice = (childIds, itemsModList) => {
 					if (childIds.length === 0) return;
@@ -292,7 +345,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 					let inventoryIndex = itemsModList.findIndex(myitem2 => myitem2._id === childId);
 					if (inventoryIndex > -1) {
 						itemsModList.splice(inventoryIndex, 1);
-					  Logger.info(`PAutoSell: Removing ChildItem from Player Inventory: ${itemHelper.getItemName(item._tpl)} with itemid of ${item._id}`)
+					  //Logger.info(`PAutoSell: Removing ChildItem from Player Inventory: ${PAutoSell.getItemName(item._tpl)} with itemid of ${item._id}`)
 					}
 				  
 					return recursiveSplice(childIds, itemsModList);
