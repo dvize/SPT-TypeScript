@@ -13,13 +13,19 @@
             "dollars"
         ],
         "Info2": "Only enter a trader id if you want to use that trader to sell... otherwise it will use ragfair.",
+		"Info3": "valid values are the nicknames all in lowercase- prapor, peacekeeper, lighthousekeeper, mechanic, ragman", 
         "Trader": [
             "prapor",
-            "",
-            "therapist"
+            "therapist",
+            "peacekeeper"
         ]
     },
     "Info2": "True if you don't want regular container restrictions",
-    "RemoveContainerRestriction": true
+    "RemoveContainerRestriction": true,
+    "IgnoreFollowingItemTPLInContainers": [
+        "5449016a4bdc2d6f028b456f",
+        "5696686a4bdc2da3298b456a", 
+        "569668774bdc2da2298b4568"
+    ]
     
 }

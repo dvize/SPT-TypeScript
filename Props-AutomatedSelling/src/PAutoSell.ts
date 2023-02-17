@@ -174,6 +174,22 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 				let item = items[i];
 				//Logger.error(`PAutoSell: Checking Item: ${PAutoSell.getItemName(item._tpl)}`);
 				if (item.parentId === container._id) {
+					//if the item._tpl(lowercase) is in the config.containers.IgnoreFollowingItemTPLInContainers list (lowercase), continue the loop without doing anything else
+					const ignoreList = config.IgnoreFollowingItemTPLInContainers;
+					let found = false;
+
+					for (let i = 0; i < ignoreList.length; i++) {
+					if (ignoreList[i].toLowerCase() === item._tpl.toLowerCase()) {
+						found = true;
+						break;
+					}
+					}
+
+					//continue to next item in the outer for loop if found is true
+					if (found) {
+					continue;
+					}
+					
 					//Logger.info(`PAutoSell: Found Item in Container: ${PAutoSell.getItemName(item._tpl)}`);
 					//set the slot id of newitem to existing item slot id if it exists
 					if (!firstslotId){
@@ -206,7 +222,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 			//if there is a trader associated with this container, add selling to the history of the trader
 			if(config.Containers.Trader[elementTracker])
 			{
-				let mytrader = traderHelper.getTrader(traderKey[config.Containers.Trader[elementTracker]], sessionId);
+				let mytrader = traderHelper.getTrader(traderKey[config.Containers.Trader[elementTracker].toLowerCase()], sessionId);
 				let newexchangerate = 0;
 				 // set current sale sum
 				 Logger.info(`PAutoSell: Converting to Trader Currency is ${mytrader.currency}`);
@@ -327,7 +343,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 		//check if config.Containers.Trader[elementTracker] has a value that is not null, undefined or ""
 		if (config.Containers.Trader[elementTracker]) 
 		{
-			let trader = traderHelper.getTrader(traderKey[config.Containers.Trader[elementTracker]], sessionId);
+			let trader = traderHelper.getTrader(traderKey[config.Containers.Trader[elementTracker].toLowerCase()], sessionId);
 			Logger.info(`PAutoSell: Trader Found for Container: ${trader.nickname}`);
 
 			price = traderHelper.getRawItemPrice(pmcData, item);
