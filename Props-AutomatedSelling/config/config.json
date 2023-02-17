@@ -6,14 +6,20 @@
 			"case euros",
             "case dollars"
 			],
-        "Info1": "Use only euros, rubles, dollars (exact letters) in the order you want the labeled containers to return money.. eg. dollarStuff container returns items in dollars.",
+        "Info1": "Use only euros, roubles, dollars (exact letters) in the order you want the labeled containers to return money.. eg. dollarStuff container returns items in dollars.",
         "Currency": [
             "roubles",
             "euros",
             "dollars"
+        ],
+        "Info2": "Only enter a trader id if you want to use that trader to sell... otherwise it will use ragfair.",
+        "Trader": [
+            "prapor",
+            "",
+            "therapist"
         ]
     },
     "Info2": "True if you don't want regular container restrictions",
-    "RemoveContainerRestriction": "true"
+    "RemoveContainerRestriction": true
     
 }
