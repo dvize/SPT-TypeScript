@@ -2,6 +2,7 @@
 	"aiDifficulty": "normal",
 	"aiAmount": "normal",
 	"bossChance": 2,
+	"skipOtherWavesIfBossWaveSelected": true,
 	"waveLimit": 5,
 	"WaveTimerMinInSeconds": 120,
 	"WaveTimerMaxInSeconds": 240,
@@ -12,5 +13,5 @@
 		"Bosses": true,
 		"TriggeredWaves": true
 	},
-	"DebugOutput": false
+	"DebugOutput": true
 }

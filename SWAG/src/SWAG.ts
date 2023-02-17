@@ -33,6 +33,8 @@ let bossChance;
 let aiAmountMultiplier;
 let Spawnpoints: SpawnLocations;
 let status: gamestate;
+let bossSpawnedInCurrentMap: boolean;
+
 
 type JSONValue =
 	| string
@@ -87,8 +89,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
 	public static pmcType: string[] = [
 		"sptbear",
-		"sptusec",
-		"assaultgroup"
+		"sptusec"
 	]
 
 	public static scavType: string[] = [
@@ -109,7 +110,8 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 		"followerzryachiy",
 		"sectantwarrior",
 		"gifter",
-		"pmcbot"
+		"pmcbot",
+		"assaultgroup"
 	]
 		
 	public static bossType: string[] = [
@@ -302,10 +304,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 			// logger.info(`locations: ${locations}`);
 
 			if (this.validMaps.includes(map_name)) {
-				if(config.DebugOutput){ 
-					logger.info(`========================================`);
-					logger.error(`SWAG: Generate PMC Pattern: ${map}`);
-				}
 				
 				if(config.RandomSoloPatternFilePerMap){
 					let choice = randomUtil.getArrayValue(["pmc", "scav", "boss"]);
@@ -317,15 +315,35 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 					}
 				}
 				else{
-
-					SWAG.genWaveManager(pmcpattern, map, "pmc");
-					if(config.DebugOutput)
-						logger.error(`SWAG: Generate Boss Pattern: ${map}`)
+					bossSpawnedInCurrentMap = false;
+					if(config.DebugOutput){ 
+						logger.info(`========================================`);
+						logger.error(`SWAG: Generate Boss Pattern: ${map}`);
+					}
 					SWAG.genWaveManager(bosspattern, map, "boss");
+					
+					// if boss wave is selected, skip other waves
+					if(config.skipOtherWavesIfBossWaveSelected && bossSpawnedInCurrentMap)
+					{
+						if(config.DebugOutput)
+						{
+							logger.error(`SWAG: Skipping Other PMC & SCAV as Boss Wave Selected On: ${map}`)
+							logger.info(`========================================`);
+
+						}
+						continue;
+					}
+						
+					// i took a poop and realized i was doing this wrong.  needs no changes
+					if(config.DebugOutput)
+						logger.error(`SWAG: Generate PMC Pattern: ${map}`)
+					SWAG.genWaveManager(pmcpattern, map, "pmc");
+
 					if(config.DebugOutput)
 						logger.error(`SWAG: Generate Scav Pattern: ${map}`)
 					SWAG.genWaveManager(scavpattern, map, "scav");
-	
+					
+					
 					//logger.info(`waves: ${JSON.stringify(locations[map].base.waves, null, `\t`)}`);
 					if(config.DebugOutput)
 						logger.info(`========================================`);
@@ -600,6 +618,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 					logger.info(`wave#${wavenumalt} (boss): ${genPattern.BossName}: ${JSON.stringify(mybosswave)}`)
 
 				locations[map].base.BossLocationSpawn.push(mybosswave);
+				bossSpawnedInCurrentMap = true;
 				return;
 			}
 		else{
