@@ -377,8 +377,18 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 					let childId = childIds[i];
 					let childItem = items.find(x => x._id === childId);
 					let childPrice = traderHelper.getRawItemPrice(pmcData, childItem);
+					if (Number.isNaN(childPrice) || childPrice == undefined || childPrice == null){
+						childPrice = ragfairPriceService.getFleaPriceForItem(childItem._tpl);
+						if(childPrice == undefined || childPrice == null){
+							childPrice = 1;
+						}
+						Logger.info(`PAutoSell: Using Ragfair Price for child item since NaN: ${PAutoSell.getItemName(childItem._tpl)} is ${childPrice}`)
+					}
+					else{
+						Logger.info(`PAutoSell: Trader Price for child item(s): ${PAutoSell.getItemName(childItem._tpl)} is ${childPrice}`);
+					}
+
 					price += childPrice;
-					Logger.info(`PAutoSell: Trader Price for child item(s): ${PAutoSell.getItemName(childItem._tpl)} is ${childPrice}`);
 				}
 					
 			}
