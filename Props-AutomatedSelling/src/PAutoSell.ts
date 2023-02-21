@@ -34,8 +34,9 @@ let database;
 let localeService: LocaleService;
 let tradeHelper: TradeHelper;
 let traderHelper: TraderHelper;
-let elementTracker: number;
 let moneyTotalExchanged: number;
+let containers;
+let actualElement: number;
 
 const modName = "PAutoSell";
 let modFolder;
@@ -137,7 +138,8 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 	}
 
 	//main Top function
-	exchangeItems(url, info, sessionId, output) {
+	exchangeItems(url, info, sessionId, output) 
+	{
 		//use save server to set items in profile
 		saveServer.saveProfile(sessionId);
 		saveServer.loadProfile(sessionId);
@@ -147,10 +149,10 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 		itemsModList = PAutoSell.clone(pmcData.Inventory.items);
 
 		//grab the containers list from config.containers.labels
-		let containers = [];
+		containers = [];
 		
-		for (let k = 0; k < items.length; k++) {
-			const myContainer = items[k];
+		for (let contA = 0; contA < items.length; contA++) {
+			const myContainer = items[contA];
 			if (myContainer.upd && myContainer.upd.Tag && myContainer.upd.Tag.Name) {
 				if (config.Containers.Labels.map(label => label.toLowerCase()).includes(myContainer.upd.Tag.Name.toLowerCase())) {
 				Logger.info(`PAutoSell: Found Tagged Container: ${myContainer.upd.Tag.Name}`);
@@ -159,27 +161,42 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 			}
 		}
 		
+		//peacekeperp 0 and therapist container 1
 		//for each item.parent_id where it matches the _id in the container list, sell the item with its associated currency
-		for (let j = 0; j < containers.length; j++) {
-			let container = containers[j];
+		for (let currentContainerPlace = 0; currentContainerPlace < containers.length; currentContainerPlace++) 
+		{
+			let currentContainer = containers[currentContainerPlace];
 			moneyTotal = 0;
 			moneyTotalExchanged = 0;
-			elementTracker = j;
 			let firstslotId;
 			let firstItemLocation;
 			let firstContainerId;
 			
+			//loop through all the config.containers.labels and set the actualElement to the current container
+			for (let i = 0; i < config.Containers.Labels.length; i++)
+			{
+				if (config.Containers.Labels[i].toLowerCase() === currentContainer.upd.Tag.Name.toLowerCase())
+				{
+					actualElement = i;
+				}
+			}
+
 			
-			for (let i = 0; i < items.length; i++) {
+			for (let i = 0; i < items.length; i++) 
+			{
 				let item = items[i];
 				//Logger.error(`PAutoSell: Checking Item: ${PAutoSell.getItemName(item._tpl)}`);
-				if (item.parentId === container._id) {
+				//its detecting if the parent_id of the item is the same as the _id of the container. But 
+				if (item.parentId === currentContainer._id) {
+
+					Logger.info(`item.parentId: ${item.parentId} currentContainer._id: ${currentContainer._id}`);
+
 					//if the item._tpl(lowercase) is in the config.containers.IgnoreFollowingItemTPLInContainers list (lowercase), continue the loop without doing anything else
 					const ignoreList = config.IgnoreFollowingItemTPLInContainers;
 					let found = false;
 
-					for (let i = 0; i < ignoreList.length; i++) {
-					if (ignoreList[i].toLowerCase() === item._tpl.toLowerCase()) {
+					for (let it = 0; it < ignoreList.length; it++) {
+					if (ignoreList[it].toLowerCase() === item._tpl.toLowerCase()) {
 						found = true;
 						break;
 					}
@@ -204,25 +221,28 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 					}
 					
 					if(!firstContainerId){
-						firstContainerId = container._id;
+						firstContainerId = currentContainer._id;
 					}
 					
 					//set the currency string var based off the current position in Config.Containers.Currency list
 					let tempname = PAutoSell.getItemName(item._tpl);
 					Logger.error(`PAutoSell: Trying to Sell Item: ${tempname} , ID: ${item._id}`);
-					this.sellItem(item, items, itemsModList, sessionId);
+					this.sellItem(item, items, itemsModList, sessionId, actualElement);
 				}
 			}
 			
-			let currency: string = config.Containers.Currency[j];
+			let currency: string = config.Containers.Currency[actualElement];
 			currency.toLowerCase();
 
 			PAutoSell.replaceCurrency(currency, moneyTotal, items, firstslotId, firstItemLocation, firstContainerId, itemsModList);
 
 			//if there is a trader associated with this container, add selling to the history of the trader
-			if(config.Containers.Trader[elementTracker])
+			if(config.Containers.Trader[actualElement] != null && config.Containers.Trader[actualElement] != "")
 			{
-				let mytrader = traderHelper.getTrader(traderKey[config.Containers.Trader[elementTracker].toLowerCase()], sessionId);
+				Logger.info(`PAutoSell: actualElement is ${actualElement}`);
+				Logger.info(`PAutoSell: config.Containers.Trader[actualElement] is ${config.Containers.Trader[actualElement]}`);
+				Logger.info(`PAutoSell: traderKey[config.Containers.Trader[actualElement].toLowerCase()] is ${traderKey[config.Containers.Trader[actualElement].toLowerCase()]}`);
+				let mytrader = traderHelper.getTrader(traderKey[config.Containers.Trader[actualElement].toLowerCase()], sessionId);
 				let newexchangerate = 0;
 				 // set current sale sum
 				 Logger.info(`PAutoSell: Converting to Trader Currency is ${mytrader.currency}`);
@@ -266,9 +286,9 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 		
 	}
 
-	sellItem(item: Item, items: Item[], itemsModList, sessionId: string) {
+	sellItem(item: Item, items: Item[], itemsModList, sessionId: string, actualElement) {
 		//get the price of the item
-		let price = PAutoSell.getPrice(item._tpl, items, item, sessionId);
+		let price = PAutoSell.getPrice(item._tpl, items, item, sessionId, actualElement);
 		//get the stack of the item if it exists otherwise set it to 1
 		let stack = item.upd ? item.upd.StackObjectsCount ? item.upd.StackObjectsCount : 1 : 1;
 
@@ -336,28 +356,36 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 		return localeService.getLocaleDb()[`${itemtpl} Name`];  		//this is the new way of getting the name
 	}
 
-	static getPrice(itemTpl: string, items, item, sessionId): number
+	static getPrice(itemTpl: string, items, item, sessionId, actualElement): number
 	{
 		let price: number = 0;
 
-		//check if config.Containers.Trader[elementTracker] has a value that is not null, undefined or ""
-		if (config.Containers.Trader[elementTracker]) 
+		//check if config.Containers.Trader[actualElement] has a value that is not null, undefined or ""
+		if (config.Containers.Trader[actualElement] != null && config.Containers.Trader[actualElement] != undefined && config.Containers.Trader[actualElement] != "") 
 		{
-			let trader = traderHelper.getTrader(traderKey[config.Containers.Trader[elementTracker].toLowerCase()], sessionId);
-			Logger.info(`PAutoSell: Trader Found for Container: ${trader.nickname}`);
+			try
+			{
+				let childIds = itemHelper.findAndReturnChildrenByItems(items, item._id);
 
-			price = traderHelper.getRawItemPrice(pmcData, item);
-			Logger.info(`PAutoSell: Package price for item(s): ${PAutoSell.getItemName(item._tpl)} is ${price}`);
-			
-			//let childIds = itemHelper.findAndReturnChildrenByItems(items, item._id);
+				let trader = traderHelper.getTrader(traderKey[config.Containers.Trader[actualElement].toLowerCase()], sessionId);
+				Logger.info(`PAutoSell: Trader Found for Container: ${trader.nickname}`);
 
-			/* for (let i = 0; i < childIds.length; i++) {
-				let childId = childIds[i];
-				let childItem = items.find(x => x._id === childId);
-				let childPrice =
-				price += childPrice;
+				//price = traderHelper.getRawItemPrice(pmcData, item);
+				//Logger.info(`PAutoSell: Package price for item(s): ${PAutoSell.getItemName(item._tpl)} is ${price}`);
 				
-			} */
+				for (let i = 0; i < childIds.length; i++) {
+					let childId = childIds[i];
+					let childItem = items.find(x => x._id === childId);
+					let childPrice = traderHelper.getRawItemPrice(pmcData, childItem);
+					price += childPrice;
+					Logger.info(`PAutoSell: Trader Price for child item(s): ${PAutoSell.getItemName(childItem._tpl)} is ${childPrice}`);
+				}
+					
+			}
+			catch(e){
+				Logger.error(`PAutoSell: Error getting price for item: ${itemTpl}`);
+				Logger.error(e);
+			}
 
 		}
 		else {
@@ -374,7 +402,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 						let childItem = items.find(x => x._id === childId);
 						let childPrice = ragfairPriceService.getFleaPriceForItem(childItem._tpl);
 						price += childPrice;
-						Logger.info(`PAutoSell: Price for child item(s): ${PAutoSell.getItemName(childItem._tpl)} is ${childPrice}`);
+						Logger.info(`PAutoSell: RagFair Price for child item(s): ${PAutoSell.getItemName(childItem._tpl)} is ${childPrice}`);
 					}
 						
 				}
