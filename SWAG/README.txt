@@ -2,14 +2,14 @@
 
 This refactor serves the following purposes:
 
-    Fix pmc pattern wave generation. Pmc waves were not being spawned into maps because they were being assigned a BotSide of Usec or Bear. There were no spawn points defined for bots that include those sides. Changing this to Savage resolves this issue. The server has code that will correct this side to be the correct pmc side when the bot data is requested.
-    Fix issues with generated waves not being applied on the first raid. Added the wave generation method to postDBLoad
-    Removed hook for client/game/locations found that it was redundant and no longer needed after applying wave generation in postDBLoad
-    Leverage more of the defined types for AKI and strongly typed everything. Greatly improves debugging and maintainability
-    Bring more native JS features and coding standards into the project, simplifying some loops and logic
-    Simplify logic for parsing open zones
-    Move globals into members of the SWAG class. I found it was very confusing reading the code and trying to figure out if a variable was a global vs parameter vs locally defined variable. This should making identifying globals much more intuitive
-    All original functionality that existed prior to the refactor still exist. The goal was just to attempt to bring the project into a better state to improve upon
+- Fix pmc pattern wave generation. Pmc waves were not being spawned into maps because they were being assigned a BotSide of Usec or Bear. There were no spawn points defined for bots that include those sides. Changing this to Savage resolves this issue. The server has code that will correct this side to be the correct pmc side when the bot data is requested.
+- Fix issues with generated waves not being applied on the first raid. Added the wave generation method to postDBLoad
+- Removed hook for client/game/locations found that it was redundant and no longer needed after applying wave generation in postDBLoad
+- Leverage more of the defined types for AKI and strongly typed everything. Greatly improves debugging and maintainability
+- Bring more native JS features and coding standards into the project, simplifying some loops and logic
+- Simplify logic for parsing open zones
+- Move globals into members of the SWAG class. I found it was very confusing reading the code and trying to figure out if a variable was a global vs parameter vs locally defined variable. This should making identifying globals much more intuitive
+- All original functionality that existed prior to the refactor still exist. The goal was just to attempt to bring the project into a better state to improve upon
 
 
 
