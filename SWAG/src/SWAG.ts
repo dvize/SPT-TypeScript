@@ -31,7 +31,6 @@ let botHelper: BotHelper;
 let randomUtil: RandomUtil;
 
 let config: ClassDef.SWAGConfig;
-let bossChance;
 let bossSpawnedInCurrentMap: boolean;
 let SpawnPoints: string;
 const customPatterns: Record<string, ClassDef.GroupPattern> = {};
@@ -40,7 +39,7 @@ type LocationName = keyof Omit<ILocations, "base">;
 type SpawnZonesByLocation = Record<LocationName, string[]>;
 
 class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
-  public static roleCase = {
+  public static roleCase: object = {
     assault: "assault",
     exusec: "exUsec",
     marksman: "marksman",
@@ -282,7 +281,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     //read BossGroups and see if value Random, OnlySpawnOnce, or BotZone is set and set local values
     for (let boss of mapBosses) {
       const groupRandom: boolean = boss.RandomTimeSpawn;
-      const groupOnlySpawnOnce: boolean = boss.OnlySpawnOnce;
 
       //if groupRandom is true, push group to RandomGroups, otherwise push to StaticGroups
       if (groupRandom) {
@@ -291,10 +289,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
         StaticBossGroups.push(boss);
       }
 
-      //if groupOnlySpawnOnce is true, push group to AlreadySpawnedGroups
-      if (groupOnlySpawnOnce) {
-        AlreadySpawnedBossGroups.push(boss);
-      }
     }
 
     //if RandomGroups is not empty, set up bot spawning for random groups
@@ -511,7 +505,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     if (boss.Supports != null) {
       for (let escort of boss.Supports) {
         escort.BossEscortDifficult =
-          SWAG.diffProper[config.aiDifficulty.toLowerCase()];
+          [SWAG.diffProper[config.aiDifficulty.toLowerCase()]];
       }
     }
 
@@ -537,6 +531,8 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     if (StaticGroupSpawnOnce) {
       if (AlreadySpawnedGroups.includes(group)) {
         return;
+      } else {
+        AlreadySpawnedGroups.push(group);
       }
     }
 
@@ -570,8 +566,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     //read support bots if not null, set the difficulty to match config
     if (boss.Supports != null) {
       for (let escort of boss.Supports) {
-        escort.BossEscortDifficult =
-          SWAG.diffProper[config.aiDifficulty.toLowerCase()];
+        escort.BossEscortDifficult = [SWAG.diffProper[config.aiDifficulty.toLowerCase()]];
       }
     }
 
@@ -629,10 +624,10 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     globalmap: string
   ): BossLocationSpawn {
     const wave: BossLocationSpawn = {
-      BossName: SWAG.roleCase[boss.BossName],
-      BossChance: boss.BossChance,
+      BossName: SWAG.roleCase[boss.BossName.toLowerCase()],
+      BossChance: boss.BossChance ?? 100,
       BossZone:
-        RandomBossGroupBotZone != null
+        !!RandomBossGroupBotZone
           ? RandomBossGroupBotZone
           : this.getRandomStringArrayValue(SWAG.mappedSpawns[globalmap]),
       BossPlayer: false,
