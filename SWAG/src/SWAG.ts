@@ -174,6 +174,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     SWAG.SetConfigCaps();
     SWAG.ReadAllPatterns();
     SWAG.StoreOpenZones();
+    SWAG.ClearDefaultSpawns();
     SWAG.ConfigureMaps();
   }
 
