@@ -225,7 +225,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       const temppattern = require(`${dirpath}/config/patterns/${file}`);
       const tempname = file.split(".")[0];
       //parse the json and push it to the customPatterns array
-      logger.debug(temppattern);
+
       customPatterns[tempname] = temppattern;
 
       logger.info("SWAG: Loaded Pattern: " + tempname);
