@@ -1,0 +1,82 @@
+[
+	{
+		"MapName": "bigmap",
+		"MapGroups":[
+			{
+				"Name": "Group1",
+				"Bots": [
+					{
+						"BotType": "assault",
+						"MaxBotCount": 5
+					},
+					{
+						"BotType": "sniper",
+						"MaxBotCount": 5
+					}
+				],
+				"Time_min": null,
+				"Time_max": null,
+				"RandomTimeSpawn": true,
+				"OnlySpawnOnce": true,
+				"BotZone": null
+			},
+			{
+				"Name": "Group2",
+				"Bots": [
+					{
+						"BotType": "assault",
+						"MaxBotCount": 5
+					},
+					{
+						"BotType": "sniper",
+						"MaxBotCount": 5
+					}
+				],
+				"Time_min": null,
+				"Time_max": null,
+				"RandomTimeSpawn": true,
+				"OnlySpawnOnce": true,
+				"BotZone": "dormitory"
+			}
+		],
+		"MapBosses":[
+			{
+				"Name": "Goon Squad Trio",
+				"BossName": "bossknight",
+				"BossEscortType": "exusec",
+				"BossEscortAmount": "2",
+				"Time": -1,
+				"Supports": [
+					{
+					"BossEscortType": "followerbigpipe",
+					"BossEscortAmount": "1"
+					},
+					{
+					"BossEscortType": "followerbirdeye",
+					"BossEscortAmount": "1"
+					},
+					{
+					"BossEscortType": "followergluharscout",
+					"BossEscortAmount": "0"
+					}
+				],
+				"RandomTimeSpawn": true,
+				"OnlySpawnOnce": true,
+				"BossZone": "dormitory"
+			},
+			{
+				"Name": "Boss Pat 1",
+				"BossName": "bosskilla",
+				"BossEscortType": "exusec",
+				"BossEscortAmount": "2",
+				"Time": -1,
+				"Supports": null,
+				"RandomTimeSpawn": true,
+				"OnlySpawnOnce": true,
+				"BossZone": "dormitory"
+			}
+		]
+
+
+	}
+]
