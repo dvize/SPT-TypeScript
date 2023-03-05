@@ -1,4 +1,35 @@
-export class Wave {
+import { BossLocationSpawn, WildSpawnType } from "@spt-aki/models/eft/common/ILocationBase";
+
+export interface SWAGConfig {
+	aiDifficulty: "normal" | "easy" | "hard" | "impossible" | "random";
+	aiAmount: "low" | "asonline" | "medium" | "high" | "horde";
+	RandomWaveCount: number;
+	BossWaveCount: number;
+	SkipOtherBossWavesIfBossWaveSelected: boolean;
+	WaveTimerMinSec: number;
+	WaveTimerMaxSec: number;
+	maxBotCap: {
+	  factory: number;
+	  customs: number;
+	  woods: number;
+	  shoreline: number;
+	  lighthouse: number;
+	  reservebase: number;
+	  interchange: number;
+	  laboratory: number;
+	  tarkovstreets: number;
+	};
+	maxBotPerZone: number;
+	UseDefaultSpawns: {
+	  Waves: boolean;
+	  Bosses: boolean;
+	  TriggeredWaves: boolean;
+	};
+	DebugOutput: boolean;
+	bossChance: number;
+  }
+  
+  export class Wave {
 	number: number;
 	time_min: number;
 	time_max: number;
@@ -7,103 +38,80 @@ export class Wave {
 	SpawnPoints: string; // always botZone
 	BotSide: string; //Savage
 	BotPreset: string; //easy, hard
-	WildSpawnType: string; // assault
+	WildSpawnType: WildSpawnType; // assault
 	isPlayers: boolean;
-
-	constructor() {
-
-	}
-
-}
-
-export class BossWave {
-	BossName: string;
-    BossChance: number;
-    BossZone: string;
-    BossPlayer: boolean;
-    BossDifficult: string;
-	BossEscortType: string;
-	BossEscortDifficult: string;
-	BossEscortAmount: string;
-	Time: number;  //default -1 for instant?
-	// TriggerId: string;
-	// TriggerName: string;
-	Supports: BossSupport[];
-    RandomTimeSpawn: boolean; // default false
-    OnlySpawnOnce: boolean;
-
-	constructor() {
-	}
-}
-
-export class BossSupport {
+  
+	constructor() {}
+  }
+  
+  export interface BossPattern extends BossLocationSpawn {
+	OnlySpawnOnce?: boolean;
+  }
+  
+  export class BossSupport {
 	BossEscortType: string;
 	BossEscortDifficult: string[];
 	BossEscortAmount: number;
-
+  
 	constructor(BossEscortType, BossEscortDifficult, BossEscortAmount) {
-		this.BossEscortType = BossEscortType;
-		this.BossEscortDifficult = BossEscortDifficult;
-		this.BossEscortAmount = BossEscortAmount;
+	  this.BossEscortType = BossEscortType;
+	  this.BossEscortDifficult = BossEscortDifficult;
+	  this.BossEscortAmount = BossEscortAmount;
 	}
-}
-
-export class Bot 
-{
+  }
+  
+  export class Bot {
 	BotType: string;
 	MaxBotCount: number;
-}
-
-export class GroupPattern 
-{
+  }
+  
+  export class GroupPattern {
 	Name: string;
 	Bots: Bot[];
 	Time_min: number;
 	Time_max: number;
-	RandomTimeSpawn: boolean;
-	OnlySpawnOnce: boolean;
 	BotZone: string;
-}
-
-export class MapWrapper
-{
+	RandomTimeSpawn?: boolean;
+	OnlySpawnOnce?: boolean;
+  }
+  
+  export class MapWrapper {
 	MapName: string;
 	MapGroups: GroupPattern[];
-    MapBosses: BossWave[];
-}
-    
-export class SpawnPointParam {
-        Id: string;
-        Position: Position;
-        Rotation: number;
-        Sides: string[];
-        Categories: string[];
-        Infiltration: string;
-        DelayToCanSpawnSec: number;
-        ColliderParams: ColliderParams;
-        BotZoneName: string;
-    }
-
-    export class Position {
-        x: number;
-        y: number;
-        z: number;
-    }
-
-    export class ColliderParams {
-        _parent: string;
-        _props: Props;
-    }
-
-    export class Center {
-        x: number;
-        y: number;
-        z: number;
-    }
-
-    export class Props {
-        Center: Center;
-        Radius: number;
-    }
-
-    
+	MapBosses: BossPattern[];
+  }
+  
+  export class SpawnPointParam {
+	Id: string;
+	Position: Position;
+	Rotation: number;
+	Sides: string[];
+	Categories: string[];
+	Infiltration: string;
+	DelayToCanSpawnSec: number;
+	ColliderParams: ColliderParams;
+	BotZoneName: string;
+  }
+  
+  export class Position {
+	x: number;
+	y: number;
+	z: number;
+  }
+  
+  export class ColliderParams {
+	_parent: string;
+	_props: Props;
+  }
+  
+  export class Center {
+	x: number;
+	y: number;
+	z: number;
+  }
+  
+  export class Props {
+	Center: Center;
+	Radius: number;
+  }
+  
