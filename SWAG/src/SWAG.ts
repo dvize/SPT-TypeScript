@@ -40,7 +40,7 @@ type LocationName = keyof Omit<ILocations, "base">;
 type SpawnZonesByLocation = Record<LocationName, string[]>;
 
 class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
-  public static roleCase: object = {
+  public static roleCase = {
     assault: "assault",
     exusec: "exUsec",
     marksman: "marksman",

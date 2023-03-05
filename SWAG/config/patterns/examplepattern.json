@@ -10,7 +10,7 @@
             "MaxBotCount": 5
           },
           {
-            "BotType": "sniper",
+            "BotType": "marksman",
             "MaxBotCount": 5
           }
         ],
@@ -28,7 +28,7 @@
             "MaxBotCount": 5
           },
           {
-            "BotType": "sniper",
+            "BotType": "marksman",
             "MaxBotCount": 5
           }
         ],
