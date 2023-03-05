@@ -6,12 +6,9 @@ import { ILogger } from "@spt-aki/models/spt/utils/ILogger";
 import { StaticRouterModService } from "@spt-aki/services/mod/staticRouter/StaticRouterModService";
 import { RandomUtil } from "@spt-aki/utils/RandomUtil";
 import { JsonUtil } from "@spt-aki/utils/JsonUtil";
-import { BotHelper } from "@spt-aki/helpers/BotHelper";
 import {
   BossLocationSpawn,
-  BossSupport,
   ILocationBase,
-  Wave,
 } from "@spt-aki/models/eft/common/ILocationBase";
 import { ConfigTypes } from "@spt-aki/models/enums/ConfigTypes";
 import { IBotConfig } from "@spt-aki/models/spt/config/IBotConfig";
@@ -27,12 +24,9 @@ let botConfig: IBotConfig;
 let databaseServer: DatabaseServer;
 let locations: ILocations;
 let savedLocations;
-let botHelper: BotHelper;
 let randomUtil: RandomUtil;
 
 let config: ClassDef.SWAGConfig;
-let bossSpawnedInCurrentMap: boolean;
-let SpawnPoints: string;
 const customPatterns: Record<string, ClassDef.GroupPattern> = {};
 
 type LocationName = keyof Omit<ILocations, "base">;
@@ -162,13 +156,9 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     botConfig = configServer.getConfig<IBotConfig>(ConfigTypes.BOT);
     databaseServer = container.resolve<DatabaseServer>("DatabaseServer");
     locations = databaseServer.getTables().locations;
-    botHelper = container.resolve<BotHelper>("BotHelper");
     randomUtil = container.resolve<RandomUtil>("RandomUtil");
 
     config = require(`../config/config.json`);
-
-    // TODO: This is currently unused!
-    bossChance = config.bossChance;
 
     SWAG.SetConfigCaps();
     SWAG.ReadAllPatterns();
@@ -244,11 +234,9 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
         const mapBosses: ClassDef.BossPattern[] = mapWrapper.MapBosses;
 
         //if mapName is not the same as the globalmap, skip. otherwise if all or matches, continue
-        if (mapName != globalmap && mapName != "all") {
-          continue;
+        if (mapName === globalmap || mapName === "all") {
+          SWAG.SetUpGroups(mapGroups, mapBosses, globalmap);
         }
-
-        SWAG.SetUpGroups(mapGroups, mapBosses, globalmap);
       }
     });
   }
@@ -333,30 +321,12 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   ): void {
     //read a random group from RandomGroups
     const randomGroup = randomUtil.getArrayValue(RandomGroups);
-    const RandomGroupSpawnOnce: boolean = randomGroup.OnlySpawnOnce;
-    const RandomGroupBotZone: string = randomGroup.BotZone;
 
-    //if RandomGroupSpawnOnce is true, push group to AlreadySpawnedGroups and spawn individual bots
-    if (RandomGroupSpawnOnce) {
-      SWAG.SpawnRandomBots(
-        randomGroup,
-        globalmap,
-        RandomGroupBotZone,
-        RandomGroupSpawnOnce,
-        AlreadySpawnedGroups
-      );
-      AlreadySpawnedGroups.push(randomGroup);
-    }
-    //if RandomGroupSpawnOnce is false, spawn individual bots
-    else {
-      SWAG.SpawnRandomBots(
-        randomGroup,
-        globalmap,
-        RandomGroupBotZone,
-        RandomGroupSpawnOnce,
-        AlreadySpawnedGroups
-      );
-    }
+    SWAG.SpawnRandomBots(
+      randomGroup,
+      globalmap,
+      AlreadySpawnedGroups
+    );
   }
 
   static SetUpRandomBosses(
@@ -366,30 +336,12 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   ): void {
     //read a random group from RandomBossGroups
     const randomBossGroup = randomUtil.getArrayValue(RandomBossGroups);
-    const RandomBossGroupSpawnOnce: boolean = randomBossGroup.OnlySpawnOnce;
-    const RandomBossGroupBotZone: string = randomBossGroup.BossZone;
 
-    //if RandomGroupSpawnOnce is true, push group to AlreadySpawnedGroups and spawn individual bots
-    if (RandomBossGroupSpawnOnce) {
-      SWAG.SpawnRandomBosses(
-        randomBossGroup,
-        globalmap,
-        RandomBossGroupBotZone,
-        RandomBossGroupSpawnOnce,
-        AlreadySpawnedBossGroups
-      );
-      AlreadySpawnedBossGroups.push(randomBossGroup);
-    }
-    //if RandomGroupSpawnOnce is false, spawn individual bots
-    else {
-      SWAG.SpawnRandomBosses(
-        randomBossGroup,
-        globalmap,
-        RandomBossGroupBotZone,
-        RandomBossGroupSpawnOnce,
-        AlreadySpawnedBossGroups
-      );
-    }
+    SWAG.SpawnRandomBosses(
+      randomBossGroup,
+      globalmap,
+      AlreadySpawnedBossGroups
+    );
   }
 
   static SetUpStaticBots(
@@ -399,30 +351,11 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   ): void {
     //read StaticGroups and set local values
     for (let group of StaticGroups) {
-      const StaticGroupSpawnOnce: boolean = group.OnlySpawnOnce;
-      const StaticGroupBotZone: string = group.BotZone;
-
-      //if StaticGroupSpawnOnce is true, push group to AlreadySpawnedGroups and spawn individual bots
-      if (StaticGroupSpawnOnce) {
-        SWAG.SpawnStaticBots(
-          group,
-          globalmap,
-          StaticGroupBotZone,
-          StaticGroupSpawnOnce,
-          AlreadySpawnedGroups
-        );
-        AlreadySpawnedGroups.push(group);
-      }
-      //if StaticGroupSpawnOnce is false, spawn individual bots
-      else {
-        SWAG.SpawnStaticBots(
-          group,
-          globalmap,
-          StaticGroupBotZone,
-          StaticGroupSpawnOnce,
-          AlreadySpawnedGroups
-        );
-      }
+      SWAG.SpawnStaticBots(
+        group,
+        globalmap,
+        AlreadySpawnedGroups
+      );
     }
   }
 
@@ -433,53 +366,31 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   ): void {
     //read StaticBossGroups and set local values
     for (let boss of StaticBossGroups) {
-      let StaticBossGroupSpawnOnce: boolean = boss.OnlySpawnOnce;
-      let StaticBossGroupBotZone: string = boss.BossZone;
-
-      //if StaticGroupSpawnOnce is true, push group to AlreadySpawnedGroups and spawn individual bots
-      if (StaticBossGroupSpawnOnce) {
-        SWAG.SpawnStaticBosses(
-          boss,
-          globalmap,
-          StaticBossGroupBotZone,
-          StaticBossGroupSpawnOnce,
-          AlreadySpawnedBossGroups
-        );
-        AlreadySpawnedBossGroups.push(boss);
-      }
-      //if StaticGroupSpawnOnce is false, spawn individual bots
-      else {
-        SWAG.SpawnStaticBosses(
-          boss,
-          globalmap,
-          StaticBossGroupBotZone,
-          StaticBossGroupSpawnOnce,
-          AlreadySpawnedBossGroups
-        );
-      }
+      SWAG.SpawnStaticBosses(
+        boss,
+        globalmap,
+        AlreadySpawnedBossGroups
+      );
     }
   }
 
   static SpawnRandomBots(
     group: ClassDef.GroupPattern,
     globalmap: LocationName,
-    RandomGroupBotZone: string,
-    RandomGroupSpawnOnce: boolean,
     AlreadySpawnedGroups: ClassDef.GroupPattern[]
   ): void {
-    //check to see if RandomGroupSpawnOnce is true, if so, check to see if group is already spawned
-    if (RandomGroupSpawnOnce) {
-      if (AlreadySpawnedGroups.includes(group)) {
-        return;
-      }
+    //check to see if OnlySpawnOnce is true, if so, check to see if group is already spawned
+    if (group.OnlySpawnOnce && AlreadySpawnedGroups.includes(group)) {
+      return;
     }
+
+    AlreadySpawnedGroups.push(group);
 
     //read group and create wave from individual bots but same timing and location if RandomGroupBotZone is not null
     for (let bot of group.Bots) {
       let wave: ClassDef.Wave = SWAG.ConfigureBotWave(
         group,
         bot,
-        RandomGroupBotZone,
         globalmap
       );
 
@@ -490,30 +401,19 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   static SpawnRandomBosses(
     boss: ClassDef.BossPattern,
     globalmap: LocationName,
-    RandomBossGroupBotZone: string,
-    RandomBossGroupSpawnOnce: boolean,
     AlreadySpawnedBossGroups: ClassDef.BossPattern[]
   ): void {
+
     //check to see if RandomBossGroupSpawnOnce is true, if so, check to see if group is already spawned
-    if (RandomBossGroupSpawnOnce) {
-      if (AlreadySpawnedBossGroups.includes(boss)) {
-        return;
-      }
+    if (boss.OnlySpawnOnce && AlreadySpawnedBossGroups.includes(boss)) {
+      return;
     }
 
-    //read support bots if not null, set the difficulty to match config
-    if (boss.Supports != null) {
-      for (let escort of boss.Supports) {
-        escort.BossEscortDifficult =
-          [SWAG.diffProper[config.aiDifficulty.toLowerCase()]];
-      }
-    }
-
+    AlreadySpawnedBossGroups.push(boss);
+  
     //read group and create wave from individual boss but same timing and location if RandomBossGroupBotZone is not null
-
     let wave: BossLocationSpawn = SWAG.ConfigureBossWave(
       boss,
-      RandomBossGroupBotZone,
       globalmap
     );
 
@@ -523,25 +423,20 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   static SpawnStaticBots(
     group: ClassDef.GroupPattern,
     globalmap: LocationName,
-    StaticGroupBotZone: string,
-    StaticGroupSpawnOnce: boolean,
     AlreadySpawnedGroups: ClassDef.GroupPattern[]
   ): void {
-    //check to see if StaticGroupSpawnOnce is true, if so, check to see if group is already spawned
-    if (StaticGroupSpawnOnce) {
-      if (AlreadySpawnedGroups.includes(group)) {
-        return;
-      } else {
-        AlreadySpawnedGroups.push(group);
-      }
-    }
+    //check to see if OnlySpawnOnce is true, if so, check to see if group is already spawned
+    if (group.OnlySpawnOnce && AlreadySpawnedGroups.includes(group)) {
+      return;
+    } 
+  
+    AlreadySpawnedGroups.push(group);
 
     //read group and create wave from individual bots but same timing and location if StaticGroupBotZone is not null
     for (let bot of group.Bots) {
       const wave: ClassDef.Wave = SWAG.ConfigureBotWave(
         group,
         bot,
-        StaticGroupBotZone,
         globalmap
       );
 
@@ -552,29 +447,20 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   static SpawnStaticBosses(
     boss: ClassDef.BossPattern,
     globalmap: LocationName,
-    StaticBossGroupBotZone: string,
-    StaticBossGroupSpawnOnce: boolean,
     AlreadySpawnedBossGroups: ClassDef.BossPattern[]
   ): void {
     //check to see if StaticBossGroupSpawnOnce is true, if so, check to see if group is already spawned
-    if (StaticBossGroupSpawnOnce) {
+    if (boss.OnlySpawnOnce) {
       if (AlreadySpawnedBossGroups.includes(boss)) {
         return;
       }
-    }
 
-    //read support bots if not null, set the difficulty to match config
-    if (boss.Supports != null) {
-      for (let escort of boss.Supports) {
-        escort.BossEscortDifficult = [SWAG.diffProper[config.aiDifficulty.toLowerCase()]];
-      }
+      AlreadySpawnedBossGroups.push(boss);
     }
 
     //read group and create wave from individual boss but same timing and location if StaticBossGroupBotZone is not null
-
     const wave: BossLocationSpawn = SWAG.ConfigureBossWave(
       boss,
-      StaticBossGroupBotZone,
       globalmap
     );
 
@@ -584,12 +470,12 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   static ConfigureBotWave(
     group: ClassDef.GroupPattern,
     bot: ClassDef.Bot,
-    StaticGroupBotZone: string,
     globalmap: string
   ): ClassDef.Wave {
     let wave: ClassDef.Wave = new ClassDef.Wave();
     wave.number = null;
     wave.WildSpawnType = SWAG.roleCase[bot.BotType.toLowerCase()];
+    // TODO: Calculate time_min/max using if group.RandomTimeSpawn is true
     wave.time_min = group.Time_min;
     wave.time_max = group.Time_max;
     wave.slots_min = 1;
@@ -601,38 +487,39 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     );
     wave.BotPreset = SWAG.diffProper[config.aiDifficulty.toLowerCase()];
     wave.SpawnPoints =
-      StaticGroupBotZone != null
-        ? StaticGroupBotZone
+      !!group.BotZone
+        ? group.BotZone
         : this.getRandomStringArrayValue(SWAG.mappedSpawns[globalmap]);
 
     //set manually to Savage as supposedly corrects when bot data is requested
     wave.BotSide = "Savage";
 
     //verify if its a pmcType and set isPlayers to true if it is
-    if (SWAG.pmcType.includes(bot.BotType.toLowerCase())) {
-      wave.isPlayers = true;
-    } else {
-      wave.isPlayers = false;
-    }
+    wave.isPlayers = SWAG.pmcType.includes(bot.BotType.toLowerCase());
 
     return wave;
   }
 
   static ConfigureBossWave(
     boss: BossLocationSpawn,
-    RandomBossGroupBotZone: string,
     globalmap: string
   ): BossLocationSpawn {
+    //read support bots if defined, set the difficulty to match config
+    boss?.Supports?.forEach(escort => {
+      escort.BossEscortDifficult = [SWAG.diffProper[config.aiDifficulty.toLowerCase()]];
+      escort.BossEscortType = SWAG.roleCase[escort.BossEscortType.toLowerCase()];
+    })
+
     const wave: BossLocationSpawn = {
       BossName: SWAG.roleCase[boss.BossName.toLowerCase()],
       BossChance: boss.BossChance ?? 100,
       BossZone:
-        !!RandomBossGroupBotZone
-          ? RandomBossGroupBotZone
+        !!boss.BossZone
+          ? boss.BossZone
           : this.getRandomStringArrayValue(SWAG.mappedSpawns[globalmap]),
       BossPlayer: false,
       BossDifficult: SWAG.diffProper[config.aiDifficulty.toLowerCase()],
-      BossEscortType: boss.BossEscortType,
+      BossEscortType: SWAG.roleCase[boss.BossEscortType.toLowerCase()],
       BossEscortDifficult: SWAG.diffProper[config.aiDifficulty.toLowerCase()],
       BossEscortAmount: boss.BossEscortAmount,
       Time: boss.Time,
@@ -641,7 +528,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       TriggerId: "",
       TriggerName: "",
     };
-
+    logger.warning(wave);
     return wave;
   }
 
