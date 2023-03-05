@@ -26,7 +26,6 @@ export interface SWAGConfig {
 	  TriggeredWaves: boolean;
 	};
 	DebugOutput: boolean;
-	bossChance: number;
   }
   
   export class Wave {
@@ -46,18 +45,6 @@ export interface SWAGConfig {
   
   export interface BossPattern extends BossLocationSpawn {
 	OnlySpawnOnce?: boolean;
-  }
-  
-  export class BossSupport {
-	BossEscortType: string;
-	BossEscortDifficult: string[];
-	BossEscortAmount: number;
-  
-	constructor(BossEscortType, BossEscortDifficult, BossEscortAmount) {
-	  this.BossEscortType = BossEscortType;
-	  this.BossEscortDifficult = BossEscortDifficult;
-	  this.BossEscortAmount = BossEscortAmount;
-	}
   }
   
   export class Bot {

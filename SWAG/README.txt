@@ -1,4 +1,7 @@
 
+
+
+
 Instructions (In Game Settings - General Knowledge)
 -----------------------------------------
 Each generated wave would have this range in which it could appear.
