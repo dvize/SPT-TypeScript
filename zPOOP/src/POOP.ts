@@ -165,28 +165,6 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
 			}
 		}], "aki");
 
-		if (globalValues.config.enableLegendaryPlayerMode)
-		{
-			//Start of Actual Raid (not in raid menu)
-			staticRouterModService.registerStaticRouter(`StaticAkiRaidStart${globalValues.modName}`, [{
-				url: "/client/raid/configuration",
-				action: (url, info, sessionId, output) => {
-	
-					//populate bot cache with legendary player on gamestart
-					if (globalValues.legendaryFile[sessionId]) 
-					{
-						globalValues.Logger.info(`Legendary Player Mode: Legendary Player Found for SessionID: ${sessionId}`);
-						let tempbot: IBotBase = globalValues.legendaryFile[sessionId];
-		
-						globalValues.Logger.info(`Attempting to call storeLegendinCache()`);
-						LegendaryPlayer.storeLegendinCache(tempbot, sessionId);
-					}
-
-					return output;
-				}
-			}], "aki");
-		}
-
 		//Game start
 		staticRouterModService.registerStaticRouter(`StaticAkiGameStart${globalValues.modName}`, [{
 			url: "/client/game/start",
@@ -262,9 +240,6 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
 
 		LegendaryPlayer.recordWinLoss(url, info, sessionId)
 
-		if (globalValues.config.enableLegendaryPlayerMode) {
-			LegendaryPlayer.legendaryPlayerCheck(sessionId)
-		}
 		//delete database.globals.config.genVals
 		return output
 	}
