@@ -10,7 +10,7 @@ SWAG now includes the following features:
 
 2. Boss spawns stay the same format.  The only new edition is assigning a BossZone (OpenZone)
 
-3. Ability to define Maps in which the patterns take affect (specific map names or all)
+3. Ability to define Maps in which the patterns take effect (specific map names or all)
 	valid maps or options for this MapName are:
 	- all
 	- bigmap
@@ -105,6 +105,28 @@ Valid bot types to use:
 "followerbigpipe"
 "followerbirdeye"
 "followerZryachiy"
+
+Valid Open Zones to use:
+Open Zones for bigmap: ZoneBrige,ZoneCrossRoad,ZoneDormitory,ZoneGasStation,ZoneFactoryCenter,ZoneFactorySide,ZoneOldAZS,ZoneBlockPost,ZoneBlockPost,ZoneTankSquare,ZoneWade,ZoneCustoms
+
+Open Zones for factory4_day: BotZone
+
+Open Zones for factory4_night:
+
+Open Zones for interchange: ZoneCenter,ZoneCenterBot,ZoneOLI,ZoneIDEA,ZoneRoad,ZoneIDEAPark,ZoneGoshan,ZonePowerStation,ZoneTrucks,ZoneOLIPark
+
+Open Zones for laboratory: BotZoneFloor1,BotZoneFloor2
+
+Open Zones for lighthouse: Zone_Containers,Zone_Rocks,Zone_Chalet,Zone_Village,Zone_Bridge,Zone_OldHouse,Zone_LongRoad,Zone_DestroyedHouse,Zone_Island
+
+Open Zones for rezervbase: ZoneRailStrorage,ZonePTOR1,ZonePTOR2,ZoneBarrack,ZoneBunkerStorage,ZoneSubStorage
+
+Open Zones for shoreline: ZoneSanatorium1,ZoneSanatorium2,ZoneIsland,ZoneGasStation,ZoneMeteoStation,ZonePowerStation,ZoneBusStation,ZoneRailWays,ZonePort,ZoneForestTruck,ZoneForestSpawn
+
+Open Zones for tarkovstreets: ZoneSW01,ZoneConstruction,ZoneCarShowroom,ZoneCinema,ZoneFactory,ZoneHotel_1,ZoneHotel_2,ZoneConcordia_1,ZoneConcordiaParking
+
+Open Zones for woods: ZoneClearVill,ZoneHouse,ZoneScavBase2,ZoneHouse,ZoneWoodCutter,ZoneBigRocks,ZoneRoad,ZoneHighRocks,ZoneMiniHouse,ZoneBigRocks
+
 
 pmgconfig example: 
 
