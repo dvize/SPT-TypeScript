@@ -7,8 +7,9 @@ import { StaticRouterModService } from "@spt-aki/services/mod/staticRouter/Stati
 import { RandomUtil } from "@spt-aki/utils/RandomUtil";
 import { JsonUtil } from "@spt-aki/utils/JsonUtil";
 import {
-  BossLocationSpawn,
-  ILocationBase,
+BossLocationSpawn,
+ILocationBase,
+Wave,
 } from "@spt-aki/models/eft/common/ILocationBase";
 import { ConfigTypes } from "@spt-aki/models/enums/ConfigTypes";
 import { IBotConfig } from "@spt-aki/models/spt/config/IBotConfig";
@@ -123,6 +124,11 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     town: [],
   };
 
+  public static randomWaveTimer = {
+    time_min: 0,
+    time_max: 0
+  };
+
   preAkiLoad(container: DependencyContainer): void {
     const staticRouterModService = container.resolve<StaticRouterModService>(
       "StaticRouterModService"
@@ -224,6 +230,11 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
   //This is the main top level function
   static ConfigureMaps(): void {
+
+    // Configure random wave timer
+    SWAG.randomWaveTimer.time_min = config.WaveTimerMinSec;
+    SWAG.randomWaveTimer.time_max = config.WaveTimerMaxSec;
+
     // read all customPatterns and push them to the locations table
     Object.keys(locations).forEach((globalmap: LocationName) => {
       for (let pattern in customPatterns) {
@@ -237,8 +248,22 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
         if (mapName === globalmap || mapName === "all") {
           SWAG.SetUpGroups(mapGroups, mapBosses, globalmap);
         }
+
+        config.DebugOutput && logger.warning(`Waves for ${globalmap} : ${JSON.stringify(locations[globalmap].base?.waves)}`);
       }
     });
+  }
+
+  /**
+   * Groups can be marked random with the RandomTimeSpawn. groups that dont have a time_max or time_min will also be considered random
+   * @param group 
+   * @returns 
+   */
+  static isGroupRandom(group: ClassDef.GroupPattern) {
+    const isRandomMin = group.Time_min === null || group.Time_min === undefined;
+    const isRandomMax = group.Time_max === null || group.Time_max === undefined;
+
+    return group.RandomTimeSpawn || isRandomMax || isRandomMin
   }
 
   static SetUpGroups(
@@ -256,7 +281,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
     //read mapGroups and see if value Random, OnlySpawnOnce, or BotZone is set and set local values
     for (let group of mapGroups) {
-      const groupRandom: boolean = group.RandomTimeSpawn;
+      const groupRandom = SWAG.isGroupRandom(group);
 
       //if groupRandom is true, push group to RandomGroups, otherwise push to StaticGroups
       if (groupRandom) {
@@ -322,7 +347,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     //read a random group from RandomGroups
     const randomGroup = randomUtil.getArrayValue(RandomGroups);
 
-    SWAG.SpawnRandomBots(
+    SWAG.SpawnBots(
       randomGroup,
       globalmap,
       AlreadySpawnedGroups
@@ -337,7 +362,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     //read a random group from RandomBossGroups
     const randomBossGroup = randomUtil.getArrayValue(RandomBossGroups);
 
-    SWAG.SpawnRandomBosses(
+    SWAG.SpawnBosses(
       randomBossGroup,
       globalmap,
       AlreadySpawnedBossGroups
@@ -351,7 +376,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   ): void {
     //read StaticGroups and set local values
     for (let group of StaticGroups) {
-      SWAG.SpawnStaticBots(
+      SWAG.SpawnBots(
         group,
         globalmap,
         AlreadySpawnedGroups
@@ -366,7 +391,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   ): void {
     //read StaticBossGroups and set local values
     for (let boss of StaticBossGroups) {
-      SWAG.SpawnStaticBosses(
+      SWAG.SpawnBosses(
         boss,
         globalmap,
         AlreadySpawnedBossGroups
@@ -374,31 +399,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     }
   }
 
-  static SpawnRandomBots(
-    group: ClassDef.GroupPattern,
-    globalmap: LocationName,
-    AlreadySpawnedGroups: ClassDef.GroupPattern[]
-  ): void {
-    //check to see if OnlySpawnOnce is true, if so, check to see if group is already spawned
-    if (group.OnlySpawnOnce && AlreadySpawnedGroups.includes(group)) {
-      return;
-    }
-
-    AlreadySpawnedGroups.push(group);
-
-    //read group and create wave from individual bots but same timing and location if RandomGroupBotZone is not null
-    for (let bot of group.Bots) {
-      let wave: ClassDef.Wave = SWAG.ConfigureBotWave(
-        group,
-        bot,
-        globalmap
-      );
-
-      locations[globalmap].base.waves.push(wave);
-    }
-  }
-
-  static SpawnRandomBosses(
+  static SpawnBosses(
     boss: ClassDef.BossPattern,
     globalmap: LocationName,
     AlreadySpawnedBossGroups: ClassDef.BossPattern[]
@@ -410,7 +411,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     }
 
     AlreadySpawnedBossGroups.push(boss);
-  
+
     //read group and create wave from individual boss but same timing and location if RandomBossGroupBotZone is not null
     let wave: BossLocationSpawn = SWAG.ConfigureBossWave(
       boss,
@@ -420,7 +421,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     locations[globalmap].base.BossLocationSpawn.push(wave);
   }
 
-  static SpawnStaticBots(
+  static SpawnBots(
     group: ClassDef.GroupPattern,
     globalmap: LocationName,
     AlreadySpawnedGroups: ClassDef.GroupPattern[]
@@ -429,12 +430,12 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     if (group.OnlySpawnOnce && AlreadySpawnedGroups.includes(group)) {
       return;
     } 
-  
+
     AlreadySpawnedGroups.push(group);
 
     //read group and create wave from individual bots but same timing and location if StaticGroupBotZone is not null
     for (let bot of group.Bots) {
-      const wave: ClassDef.Wave = SWAG.ConfigureBotWave(
+      const wave: Wave = SWAG.ConfigureBotWave(
         group,
         bot,
         globalmap
@@ -444,58 +445,42 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     }
   }
 
-  static SpawnStaticBosses(
-    boss: ClassDef.BossPattern,
-    globalmap: LocationName,
-    AlreadySpawnedBossGroups: ClassDef.BossPattern[]
-  ): void {
-    //check to see if StaticBossGroupSpawnOnce is true, if so, check to see if group is already spawned
-    if (boss.OnlySpawnOnce) {
-      if (AlreadySpawnedBossGroups.includes(boss)) {
-        return;
-      }
-
-      AlreadySpawnedBossGroups.push(boss);
-    }
-
-    //read group and create wave from individual boss but same timing and location if StaticBossGroupBotZone is not null
-    const wave: BossLocationSpawn = SWAG.ConfigureBossWave(
-      boss,
-      globalmap
-    );
-
-    locations[globalmap].base.BossLocationSpawn.push(wave);
-  }
 
   static ConfigureBotWave(
     group: ClassDef.GroupPattern,
     bot: ClassDef.Bot,
     globalmap: string
-  ): ClassDef.Wave {
-    let wave: ClassDef.Wave = new ClassDef.Wave();
-    wave.number = null;
-    wave.WildSpawnType = SWAG.roleCase[bot.BotType.toLowerCase()];
-    // TODO: Calculate time_min/max using if group.RandomTimeSpawn is true
-    wave.time_min = group.Time_min;
-    wave.time_max = group.Time_max;
-    wave.slots_min = 1;
-    wave.slots_max = Math.floor(
-      bot.MaxBotCount *
-        SWAG.aiAmountProper[
-          config.aiAmount ? config.aiAmount.toLowerCase() : "asonline"
-        ]
-    );
-    wave.BotPreset = SWAG.diffProper[config.aiDifficulty.toLowerCase()];
-    wave.SpawnPoints =
-      !!group.BotZone
-        ? group.BotZone
-        : this.getRandomStringArrayValue(SWAG.mappedSpawns[globalmap]);
+  ): Wave {
+    const isRandom = SWAG.isGroupRandom(group);
 
-    //set manually to Savage as supposedly corrects when bot data is requested
-    wave.BotSide = "Savage";
+    const wave: Wave = {
+      number: null,
+      WildSpawnType: SWAG.roleCase[bot.BotType.toLowerCase()],
+      time_min: isRandom ? SWAG.randomWaveTimer.time_min : group.Time_min,
+      time_max: isRandom ? SWAG.randomWaveTimer.time_max : group.Time_max,
+      slots_min: 1,
+      slots_max: Math.floor(
+        bot.MaxBotCount *
+          SWAG.aiAmountProper[
+            config.aiAmount ? config.aiAmount.toLowerCase() : "asonline"
+          ]
+      ),
+      BotPreset: SWAG.diffProper[config.aiDifficulty.toLowerCase()],
+      SpawnPoints:
+        !!group.BotZone
+          ? group.BotZone
+          : randomUtil.getStringArrayValue(SWAG.mappedSpawns[globalmap]),
+      //set manually to Savage as supposedly corrects when bot data is requested
+      BotSide: "Savage",
+      //verify if its a pmcType and set isPlayers to true if it is
+      isPlayers: SWAG.pmcType.includes(bot.BotType.toLowerCase()),
+    };
 
-    //verify if its a pmcType and set isPlayers to true if it is
-    wave.isPlayers = SWAG.pmcType.includes(bot.BotType.toLowerCase());
+    // If the wave has a random time, increment the wave timer counts
+    if (isRandom) {
+      SWAG.randomWaveTimer.time_min += config.WaveTimerMinSec;
+      SWAG.randomWaveTimer.time_max += config.WaveTimerMaxSec;
+    }
 
     return wave;
   }
@@ -516,7 +501,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       BossZone:
         !!boss.BossZone
           ? boss.BossZone
-          : this.getRandomStringArrayValue(SWAG.mappedSpawns[globalmap]),
+          : randomUtil.getStringArrayValue(SWAG.mappedSpawns[globalmap]),
       BossPlayer: false,
       BossDifficult: SWAG.diffProper[config.aiDifficulty.toLowerCase()],
       BossEscortType: SWAG.roleCase[boss.BossEscortType.toLowerCase()],
@@ -528,6 +513,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       TriggerId: "",
       TriggerName: "",
     };
+
     logger.warning(wave);
     return wave;
   }
@@ -536,10 +522,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-
-  static getRandomStringArrayValue(array: string[]): string {
-    return array[Math.floor(Math.random() * array.length)];
   }
 
   static ClearDefaultSpawns(): void {
