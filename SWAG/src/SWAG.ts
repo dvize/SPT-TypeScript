@@ -212,7 +212,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
       //SWAG.mappedSpawns[map] = openZones;
 
-      logger.info("SWAG: Open Zones on " + map + ": " + JSON.stringify(SWAG.mappedSpawns[map]));
+      //logger.info("SWAG: Open Zones on " + map + ": " + JSON.stringify(SWAG.mappedSpawns[map]));
     }
   }
 
