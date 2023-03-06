@@ -1,6 +1,6 @@
 {
     "name": "Simple Wave AI Generator (SWAG)",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "main": "src/SWAG.js",
     "license": "MIT",
     "author": "Props",

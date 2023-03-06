@@ -232,10 +232,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   //This is the main top level function
   static ConfigureMaps(): void {
 
-    // Configure random wave timer
-    SWAG.randomWaveTimer.time_min = config.WaveTimerMinSec;
-    SWAG.randomWaveTimer.time_max = config.WaveTimerMaxSec;
-
     // read all customPatterns and push them to the locations table
     Object.keys(locations).forEach((globalmap: LocationName) => {
       for (let pattern in customPatterns) {
@@ -251,6 +247,10 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
         //if mapName is not the same as the globalmap, skip. otherwise if all or matches, continue
         if (mapName === globalmap || mapName === "all") {
           config.DebugOutput && logger.warning(`Configuring ${globalmap}`);
+
+          // Configure random wave timer.. needs to be reset each map
+          SWAG.randomWaveTimer.time_min = config.WaveTimerMinSec;
+          SWAG.randomWaveTimer.time_max = config.WaveTimerMaxSec;
 
           SWAG.SetUpGroups(mapGroups, mapBosses, globalmap);
         }
@@ -495,7 +495,9 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
     // If the wave has a random time, increment the wave timer counts
     if (isRandom) {
-      SWAG.randomWaveTimer.time_min += config.WaveTimerMinSec;
+
+      //wave time increment is getting bigger each wave. Fix this by adding maxtimer to min timer
+      SWAG.randomWaveTimer.time_min += config.WaveTimerMaxSec;
       SWAG.randomWaveTimer.time_max += config.WaveTimerMaxSec;
     }
 
