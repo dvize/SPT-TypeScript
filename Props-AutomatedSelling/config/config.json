@@ -1,4 +1,5 @@
 {
+    "PriceMultiplier": 1.0,
     "Containers": {
 		"Info": "Name these labels to what your tagged containers in-game are. label 1  uses currency 1 below.. etc",
 		"Labels": [
