@@ -175,19 +175,19 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
   static SetConfigCaps(): void {
     //Set Max Bot Caps
-    botConfig.maxBotCap["factory"] = config.maxBotCap["factory"];
-    botConfig.maxBotCap["customs"] = config.maxBotCap["customs"];
-    botConfig.maxBotCap["interchange"] = config.maxBotCap["interchange"];
-    botConfig.maxBotCap["shoreline"] = config.maxBotCap["shoreline"];
-    botConfig.maxBotCap["woods"] = config.maxBotCap["woods"];
-    botConfig.maxBotCap["reserve"] = config.maxBotCap["reserve"];
-    botConfig.maxBotCap["laboratory"] = config.maxBotCap["laboratory"];
-    botConfig.maxBotCap["lighthouse"] = config.maxBotCap["lighthouse"];
-    botConfig.maxBotCap["tarkovstreets"] = config.maxBotCap["tarkovstreets"];
+    botConfig.maxBotCap["factory"] = config.MaxBotCap["factory"];
+    botConfig.maxBotCap["customs"] = config.MaxBotCap["customs"];
+    botConfig.maxBotCap["interchange"] = config.MaxBotCap["interchange"];
+    botConfig.maxBotCap["shoreline"] = config.MaxBotCap["shoreline"];
+    botConfig.maxBotCap["woods"] = config.MaxBotCap["woods"];
+    botConfig.maxBotCap["reserve"] = config.MaxBotCap["reserve"];
+    botConfig.maxBotCap["laboratory"] = config.MaxBotCap["laboratory"];
+    botConfig.maxBotCap["lighthouse"] = config.MaxBotCap["lighthouse"];
+    botConfig.maxBotCap["tarkovstreets"] = config.MaxBotCap["tarkovstreets"];
 
     //Set Max Bots Per Zone Per Map
     for (let map in locations) {
-      locations[map].MaxBotPerZone = config.maxBotPerZone;
+      locations[map].MaxBotPerZone = config.MaxBotPerZone;
     }
 
     logger.info("SWAG: Config/Bot Caps Set");
@@ -413,6 +413,12 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     AlreadySpawnedBossGroups.push(boss);
 
     //read group and create wave from individual boss but same timing and location if RandomBossGroupBotZone is not null
+
+    //check chance against randomint100 to see if boss should spawn from config.bossChance
+    if (SWAG.getRandIntInclusive(0,100) > config.BossChance) {
+      return;
+    }
+
     let wave: BossLocationSpawn = SWAG.ConfigureBossWave(
       boss,
       globalmap
@@ -514,7 +520,9 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       TriggerName: "",
     };
 
-    logger.warning(wave);
+    if(config.DebugOutput)
+      logger.warning(JSON.stringify(wave));
+    
     return wave;
   }
 
