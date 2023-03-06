@@ -7,8 +7,8 @@
 	"SkipOtherBossWavesIfBossWaveSelected": true,
 	"WaveTimerMinSec": 60, 
 	"WaveTimerMaxSec": 120,
-	"bossChance": 25,
-	"maxBotCap":{
+	"BossChance": 25,
+	"MaxBotCap":{
 		"factory": 10,
         "customs": 15,
         "woods": 15,
@@ -19,7 +19,7 @@
         "laboratory": 15,
         "tarkovstreets": 18
 	},
-	"maxBotPerZone": 8,
+	"MaxBotPerZone": 8,
 	"UseDefaultSpawns": {
 		"Waves": true,
 		"Bosses": true,

@@ -1,15 +1,32 @@
-
-
-
-
-Instructions (In Game Settings - General Knowledge)
+Instructions (Feature Set)
 -----------------------------------------
-Each generated wave would have this range in which it could appear.
-You can use different difficulties in the raid menu, spawns will be set appropriately.
-You can use different AI Amounts in the raid menu (like horde mode), and botCounts you set in the respective configs will be multiplied at this rate:
+SWAG now includes the following features:
 
-Note: i don't think it takes effect until 2nd raid as bots are generated before you get to raid menu.
-same with difficulty, the bots are generated before you get to raid menu so it will take effect 2nd raid.
+1. Bots may be grouped together to spawn and settings may be defined that affect the whole group.
+	- Spawn Time (min and max)
+	- Specify if the Whole Group Randomly Spawns (won't be same time obviously)
+	- Specify if the Whole Group is only allowed to spawn once in a Random Pick (If RandomTimeSpawn is set to true)
+	- Specify a BotZone (OpenZone) that the whole group will spawn in.
+
+2. Boss spawns stay the same format.  The only new edition is assigning a BossZone (OpenZone)
+
+3. Ability to define Maps in which the patterns take effect (specific map names or all)
+	valid maps or options for this MapName are:
+	- all
+	- bigmap
+    - factory4_day
+    - factory4_night
+    - interchange
+    - laboratory
+    - lighthouse
+    - rezervbase
+    - shoreline
+    - tarkovstreets
+    - woods
+
+4. Create as many pattern files with as many names as you want as long as you follow the template format.
+	- This will give you the freedom to organize your spawns however you like or even
+	define map specific versions if you want.
 
 
 Instructions (Config.json)
@@ -28,18 +45,27 @@ aiDifficulty: sets only the bots from this spawner (does not effect the default)
 aiAmount: multiplies the random amount selected from a types botcount (in a pmcconfig or bossconfig or scavconfig)
 
 	"low": aiAmountMultiplier = 0.5
-	"medium": aiAmountMultiplier = 1.0
-	"high": aiAmountMultiplier = 2.5
-	"horde": aiAmountMultiplier = 5.0
+	"medium": aiAmountMultiplier = 1
+	"high": aiAmountMultiplier = 2
+	"horde": aiAmountMultiplier = 4
 
-"RandomSoloFilePerMap" : Makes it that instead of picking from all patterns it will choose one pattern file to use for a raid randomly.  so you either get all pmcs, all scavs, or all boss waves for a raid.
+"RandomWaveCount": set the number of waves to spawn in which the RandomTimeSpawn has been set to true.
+Keep in mind that patterns are not separated by files anymore..SWAG will read them all in.
+So SWAG will choose RandomWaveCount of spawns from all pattern files.  If RandomTimeSpawn is 
+set to false, it counts as a static/always spawn so it will spawn regardless of whatever is random.
 
+"SkipOtherBossWavesIfBossWaveSelected": It will skip all other waves related to Random Boss Generation 
+if this is set to true.  If you set bosses up with specific times then it will still spawn those regardless.
 
-"waveLimit": set the number of waves to spawn.  It will randomly select a pattern from each (pmc, boss, scav) and generate this amount of waves.  
-	If a pattern is made up of multiple types, it will break it up into multiple waves because you can only generate a wave of one type.
+"WaveTimerMinSec": set the minimum number of seconds for each Random Wave to be generated.
 
-"WaveTimerMinInSeconds": set the minimum number of seconds for each wave to be generated.
-"WaveTimerMaxInSeconds": set the maximum number of seconds for each wave to be generated.
+"WaveTimerMaxSec": set the maximum number of seconds for each Random Wave to be generated.
+
+"BossChance": The chance that a Random Boss Wave has to spawn.
+
+"MaxBotCap": The maximum amount of bots allowed and configurable at the map level.
+
+"MaxBotPerZone":  allows you to specify the cap on the amount of bots allowed in an Open Zone.
 
 "UseDefaultSpawns": {
 	"Waves": true,
@@ -47,8 +73,7 @@ aiAmount: multiplies the random amount selected from a types botcount (in a pmcc
 	"TriggeredWaves": true
 		
 This is self explanatory.  either clear the spawns that are existing or don't
-this only generate waves though so bosses will not have escorts and triggeredWaves will not be generated 
-(best to keep default for these).
+TriggeredWaves will not be generated (best to keep default for these unless you know what you doing).
 
 
 Instructions (pmcconfig.json or others)
@@ -67,6 +92,7 @@ Valid bot types to use:
 "bossgluhar"
 "bosskilla"
 "bosssanitar"
+"bossZryachiy"
 "followerbully"
 "followergluharassault"
 "followergluharscout"
@@ -78,82 +104,73 @@ Valid bot types to use:
 "bossknight"
 "followerbigpipe"
 "followerbirdeye"
+"followerZryachiy"
+
+Valid Open Zones to use:
+Open Zones for bigmap: ZoneBrige,ZoneCrossRoad,ZoneDormitory,ZoneGasStation,ZoneFactoryCenter,ZoneFactorySide,ZoneOldAZS,ZoneBlockPost,ZoneBlockPost,ZoneTankSquare,ZoneWade,ZoneCustoms
+
+Open Zones for factory4_day: BotZone
+
+Open Zones for factory4_night:
+
+Open Zones for interchange: ZoneCenter,ZoneCenterBot,ZoneOLI,ZoneIDEA,ZoneRoad,ZoneIDEAPark,ZoneGoshan,ZonePowerStation,ZoneTrucks,ZoneOLIPark
+
+Open Zones for laboratory: BotZoneFloor1,BotZoneFloor2
+
+Open Zones for lighthouse: Zone_Containers,Zone_Rocks,Zone_Chalet,Zone_Village,Zone_Bridge,Zone_OldHouse,Zone_LongRoad,Zone_DestroyedHouse,Zone_Island
+
+Open Zones for rezervbase: ZoneRailStrorage,ZonePTOR1,ZonePTOR2,ZoneBarrack,ZoneBunkerStorage,ZoneSubStorage
+
+Open Zones for shoreline: ZoneSanatorium1,ZoneSanatorium2,ZoneIsland,ZoneGasStation,ZoneMeteoStation,ZonePowerStation,ZoneBusStation,ZoneRailWays,ZonePort,ZoneForestTruck,ZoneForestSpawn
+
+Open Zones for tarkovstreets: ZoneSW01,ZoneConstruction,ZoneCarShowroom,ZoneCinema,ZoneFactory,ZoneHotel_1,ZoneHotel_2,ZoneConcordia_1,ZoneConcordiaParking
+
+Open Zones for woods: ZoneClearVill,ZoneHouse,ZoneScavBase2,ZoneHouse,ZoneWoodCutter,ZoneBigRocks,ZoneRoad,ZoneHighRocks,ZoneMiniHouse,ZoneBigRocks
 
 
 pmgconfig example: 
 
-	[
-		{
-			"Name": "Raiders of the Lost Cock",
-			"botTypes": [
-				"assaultgroup",
-				"assaultgroup",
-				"assaultgroup"
-			],
-			"botCounts": [2, 1, 2],
-			"time_min": -1,
-			"time_max": -1,
-			"specificTimeOnly": "false"
-		},
-		{
-			"Name": "its a bear party",
-			"botTypes": [
-				"sptbear"
-			],
-			"botCounts": [4],
-			"time_min": "",
-			"time_max": "",
-			"specificTimeOnly": "false"
-		}
-	]
-
-we have a json file here. if you want to add a pattern, copy the exact layout for a pattern and then paste it below.
-
-	[
-		{
-			"Name": "Raiders of the Lost Cock",
-			"botTypes": [
-				"assaultgroup",
-				"assaultgroup",
-				"assaultgroup"
-			],
-			"botCounts": [2, 1, 2],
-			"time_min": -1,
-			"time_max": -1,
-			"specificTimeOnly": "false"
-		},
-		{
-			"Name": "its a bear party",
-			"botTypes": [
-				"sptbear"
-			],
-			"botCounts": [4],
-			"time_min": "",
-			"time_max": "",
-			"specificTimeOnly": "false"
-		},									<----- add a comma since we added a row
-		{
-			"Name": "its a usec party",		<--- make a unique name for this file.
-			"botTypes": [					
-				"sptusec",					<---- for each new  type, add quotes and a comma except for last
-				"sptusec"
-			],
-			"botCounts": [4, 4],			<---- if you have more than one botType, you must have a botcount
-			"time_min": "",							that matches each type. it will be in desc order and bot
-			"time_max": "",							count left-> right
-			"specificTimeOnly": "false"
-		},
-	]
-
-New Features:
-
-To set a specific time for a wave (don't mess up this combo or error)
-	time_min = fill this in (time in seconds), it should be a number that replaces the quotations.
-	time_max = fill this in (time in seconds), it should be a number that replaces the quotations.
-	specificTimeOnly  set this true 
-
-If you set time_min = -1 and time_max = -1 that is an instant spawn.
-
+[
+  {
+    "MapName": "bigmap",
+    "MapGroups": [
+      {
+        "Name": "Group1",
+        "Bots": [
+          {
+            "BotType": "assault",
+            "MaxBotCount": 5
+          },
+          {
+            "BotType": "marksman",
+            "MaxBotCount": 5
+          }
+        ],
+        "Time_min": 10,
+        "Time_max": 20,
+        "RandomTimeSpawn": true,				//if RandomTimeSpawn is set.. time doesn't matter
+        "OnlySpawnOnce": true,
+        "BotZone": null
+      },
+      {
+        "Name": "Group2",						//Name whatever you want.
+        "Bots": [								//notice bots has brackets [] and more curly braces
+          {										//inside to separate bot types. Comma on each one
+            "BotType": "sptbear",				//except the last curly brace
+            "MaxBotCount": 5
+          },
+          {
+            "BotType": "sptusec",
+            "MaxBotCount": 5
+          }
+        ],
+        "Time_min": 10,
+        "Time_max": 20,
+        "RandomTimeSpawn": true,				//notice commas after each one except last entry
+        "OnlySpawnOnce": true,
+        "BotZone": "ZoneDormitory"				//if no BotZone specified a random one is picked.
+      }
+    ]
 
 
 Boss Patterns
@@ -186,11 +203,11 @@ Example:
 		}
 	]
 		
-		Name: unique name in teh boss file. It can match other pattern files if you want to spawn together.
+		Name: Name for you to organize however
 		
 		BossName: grab that from list of bots above
 		
-		bossEscortType must match the supports given (at least i think.. i haven't experimented but they could end up killing eachother then)..
+		BossEscortType must match the supports given (at least i think.. i haven't experimented but they could end up killing eachother then)..
 		
 		BossEscortAmount: should match the number of support and their escort amounts.  Notice all though there are 3 supports the sum of the bossescortamount adds up to the BossEscortAmount listed above.
 		

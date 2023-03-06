@@ -1,0 +1,63 @@
+[
+    {
+      "MapName": "factory4_day",
+      "MapGroups": [
+        {
+          "Name": "PMCs",
+          "Bots": [
+            {
+              "BotType": "sptbear",
+              "MaxBotCount": 3
+            },
+            {
+              "BotType": "sptusec",
+              "MaxBotCount": 3
+            }
+          ],
+          "Time_min": 30,
+          "Time_max": 60,
+          "RandomTimeSpawn": false,
+          "OnlySpawnOnce": true,
+          "BotZone": null
+        }
+      ],
+      "MapBosses": [
+        {
+          "Name": "Goon Squad Trio",
+          "BossName": "bossknight",
+          "BossEscortType": "exusec",
+          "BossEscortAmount": "2",
+          "Time": -1,
+          "Supports": [
+            {
+              "BossEscortType": "followerbigpipe",
+              "BossEscortAmount": "1"
+            },
+            {
+              "BossEscortType": "followerbirdeye",
+              "BossEscortAmount": "1"
+            },
+            {
+              "BossEscortType": "followergluharscout",
+              "BossEscortAmount": "0"
+            }
+          ],
+          "RandomTimeSpawn": true,
+          "OnlySpawnOnce": true,
+          "BossZone": null
+        },
+        {
+          "Name": "Boss Pat 1",
+          "BossName": "bosskilla",
+          "BossEscortType": "exusec",
+          "BossEscortAmount": "2",
+          "Time": -1,
+          "Supports": null,
+          "RandomTimeSpawn": true,
+          "OnlySpawnOnce": true,
+          "BossZone": null
+        }
+      ]
+    }
+  ]
+  
