@@ -28,21 +28,6 @@ export interface SWAGConfig {
 	DebugOutput: boolean;
   }
   
-  export class Wave {
-	number: number;
-	time_min: number;
-	time_max: number;
-	slots_min: number;
-	slots_max: number;
-	SpawnPoints: string; // always botZone
-	BotSide: string; //Savage
-	BotPreset: string; //easy, hard
-	WildSpawnType: WildSpawnType; // assault
-	isPlayers: boolean;
-  
-	constructor() {}
-  }
-  
   export interface BossPattern extends BossLocationSpawn {
 	OnlySpawnOnce?: boolean;
   }
