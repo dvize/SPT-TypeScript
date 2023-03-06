@@ -250,13 +250,12 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
         //if mapName is not the same as the globalmap, skip. otherwise if all or matches, continue
         if (mapName === globalmap || mapName === "all") {
-          if(config.DebugOutput) 
-            logger.warning(`Configuring ${globalmap}`);
+          config.DebugOutput && logger.warning(`Configuring ${globalmap}`);
 
           SWAG.SetUpGroups(mapGroups, mapBosses, globalmap);
         }
 
-        config.DebugOutput && logger.warning(`Waves for ${globalmap} : ${JSON.stringify(locations[globalmap].base?.waves)}`);
+        //config.DebugOutput && logger.warning(`Waves for ${globalmap} : ${JSON.stringify(locations[globalmap].base?.waves)}`);
       }
     });
   }
@@ -426,8 +425,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
     //check make sure BossWaveSpawnedOnceAlready = true and config.SkipOtherBossWavesIfBossWaveSelected = true
     if (BossWaveSpawnedOnceAlready && config.SkipOtherBossWavesIfBossWaveSelected) {
-      if(config.DebugOutput)
-        logger.info("SWAG: Skipping boss spawn as one spawned already")
+      config.DebugOutput && logger.info("SWAG: Skipping boss spawn as one spawned already")
       return;
     }
 
@@ -501,8 +499,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       SWAG.randomWaveTimer.time_max += config.WaveTimerMaxSec;
     }
 
-    if(config.DebugOutput)
-      logger.info("SWAG: Configured bot wave: " + JSON.stringify(wave));
+    config.DebugOutput && logger.info("SWAG: Configured Bot Wave: " + JSON.stringify(wave));
 
     return wave;
   }
@@ -539,8 +536,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       TriggerName: "",
     };
 
-    if(config.DebugOutput)
-      logger.warning(JSON.stringify(wave));
+    config.DebugOutput && logger.warning("SWAG: Configured Boss Wave: " + JSON.stringify(wave));
     
     return wave;
   }
