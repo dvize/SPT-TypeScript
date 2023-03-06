@@ -5,10 +5,11 @@ export interface SWAGConfig {
 	aiAmount: "low" | "asonline" | "medium" | "high" | "horde";
 	RandomWaveCount: number;
 	BossWaveCount: number;
+	BossChance: number;
 	SkipOtherBossWavesIfBossWaveSelected: boolean;
 	WaveTimerMinSec: number;
 	WaveTimerMaxSec: number;
-	maxBotCap: {
+	MaxBotCap: {
 	  factory: number;
 	  customs: number;
 	  woods: number;
@@ -19,7 +20,7 @@ export interface SWAGConfig {
 	  laboratory: number;
 	  tarkovstreets: number;
 	};
-	maxBotPerZone: number;
+	MaxBotPerZone: number;
 	UseDefaultSpawns: {
 	  Waves: boolean;
 	  Bosses: boolean;
