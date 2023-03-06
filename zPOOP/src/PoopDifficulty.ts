@@ -534,7 +534,10 @@ export class PoopDifficulty
 			PoopDifficulty.changeStat("MIN_DAMAGE_SCARE", [20, 30, 40, 50, 60, 70], difficulty, botCat)
 			botCat.MIN_DAMAGE_SCARE = botCat.MIN_DAMAGE_SCARE * 10
 			botCat.WILL_PERSUE_AXEMAN = false;
-			botCat.CHANCE_SHOOT_WHEN_WARN_PLAYER_100 = 100.0
+
+			//hopefully this fixeds when you play as scav and they attack you
+			botCat.CHANCE_SHOOT_WHEN_WARN_PLAYER_100 = 0.0
+
 			//Test this. I assume it means "Heal below this percent", but who knows, it could be flipped around.
 			//It does seem to be "Heal below this percent". Good.
 			PoopDifficulty.changeStat("PART_PERCENT_TO_HEAL", [0.70, 0.75, 0.80, 0.85, 0.90, 0.95], difficulty, botCat)
