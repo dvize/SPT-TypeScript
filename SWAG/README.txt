@@ -107,25 +107,16 @@ Valid bot types to use:
 "followerZryachiy"
 
 Valid Open Zones to use:
-Open Zones for bigmap: ZoneBrige,ZoneCrossRoad,ZoneDormitory,ZoneGasStation,ZoneFactoryCenter,ZoneFactorySide,ZoneOldAZS,ZoneBlockPost,ZoneBlockPost,ZoneTankSquare,ZoneWade,ZoneCustoms
-
-Open Zones for factory4_day: BotZone
-
-Open Zones for factory4_night:
-
-Open Zones for interchange: ZoneCenter,ZoneCenterBot,ZoneOLI,ZoneIDEA,ZoneRoad,ZoneIDEAPark,ZoneGoshan,ZonePowerStation,ZoneTrucks,ZoneOLIPark
-
-Open Zones for laboratory: BotZoneFloor1,BotZoneFloor2
-
-Open Zones for lighthouse: Zone_Containers,Zone_Rocks,Zone_Chalet,Zone_Village,Zone_Bridge,Zone_OldHouse,Zone_LongRoad,Zone_DestroyedHouse,Zone_Island
-
-Open Zones for rezervbase: ZoneRailStrorage,ZonePTOR1,ZonePTOR2,ZoneBarrack,ZoneBunkerStorage,ZoneSubStorage
-
-Open Zones for shoreline: ZoneSanatorium1,ZoneSanatorium2,ZoneIsland,ZoneGasStation,ZoneMeteoStation,ZonePowerStation,ZoneBusStation,ZoneRailWays,ZonePort,ZoneForestTruck,ZoneForestSpawn
-
-Open Zones for tarkovstreets: ZoneSW01,ZoneConstruction,ZoneCarShowroom,ZoneCinema,ZoneFactory,ZoneHotel_1,ZoneHotel_2,ZoneConcordia_1,ZoneConcordiaParking
-
-Open Zones for woods: ZoneClearVill,ZoneHouse,ZoneScavBase2,ZoneHouse,ZoneWoodCutter,ZoneBigRocks,ZoneRoad,ZoneHighRocks,ZoneMiniHouse,ZoneBigRocks
+on bigmap: ZoneBlockPost, ZoneOldAZS , ZoneWade, ZoneBrige, ZoneTankSquare, ZoneScavBase, ZoneGasStation, ZoneFactoryCenter, ZoneCrossRoad, ZoneDormitory, ZoneCustoms, ZoneFactorySide
+on factory4_day: BotZone
+on factory4_night: BotZone
+on interchange: ZoneCenter, ZoneCenterBot,ZoneGoshan, ZoneOLI, ZoneTrucks, ZonePowerStation, ZoneIDEA, ZoneIDEAPark, ZoneRoad, ZoneOLIPark
+on laboratory: BotZoneFloor2, BotZoneFloor1, BotZoneGate1, BotZoneGate2, BotZoneBasement
+on lighthouse: Zone_LongRoad, Zone_TreatmentContainers, Zone_Island, Zone_RoofContainers, Zone_DestroyedHouse, Zone_Chalet, Zone_Village, Zone_Containers, Zone_TreatmentBeach, Zone_TreatmentRocks, Zone_Rocks, Zone_Bridge, Zone_Blockpost, Zone_RoofRocks, Zone_RoofBeach, Zone_Hellicopter
+on rezervbase: ZoneRailStrorage, ZoneSubCommand, ZoneBarrack, ZonePTOR2, ZoneSubStorage, ZonePTOR1, ZoneBunkerStorage
+on shoreline: ZoneGasStation, ZonePort, ZoneMeteoStation, ZoneSanatorium1, ZonePowerStation, ZoneStartVillage, ZoneSanatorium2, ZoneForestTruck, ZoneForestSpawn, ZoneBunker, ZonePassFar, ZoneTunnel, ZonePassClose, ZoneGreenHouses, ZoneIsland, ZoneForestGasStation, ZoneBusStation, ZoneRailWays]
+on tarkovstreets: ZoneSW01, ZoneConstruction, ZoneCarShowroom, ZoneCinema, ZoneFactory, ZoneHotel_1, ZoneHotel_2, ZoneConcordia_1, ZoneColumn
+on woods: ZoneClearVill, ZoneScavBase2, ZoneRedHouse, ZoneBrokenVill, ZoneRoad, ZoneHouse, ZoneBigRocks, ZoneWoodCutter, ZoneMiniHouse, ZoneHighRocks
 
 
 pmgconfig example: 

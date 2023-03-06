@@ -1,5 +1,4 @@
 {
-    "disableAllAIChanges": false,
 	"enableAutomaticDifficulty": true,
 	"enableLegendaryPlayerMode": true,
     "aiChanges": {
@@ -14,52 +13,9 @@
 			"bosstagilla",
             "bosszryachiy"
 			],
-        "changeBots": {
-            "lowLevelAIs": [
-                "assault",
-				"marksman", 
-				"cursedassault"
-            ],
-            "midLevelAIs": [
-				"sectantpriest", 
-				"sectantwarrior",
-                "pmcbot",
-				"exusec",
-                "followergluharassault",
-                "followergluharscout",
-                "followergluharsecurity",
-                "followergluharsnipe",
-                "followerkojaniy",
-                "followersanitar",
-                "followerbully",
-				"followertagilla", 
-				"followerbirdeye", 
-				"followerbigpipe",
-                "followerzryachiy"
-            ],
-            "highLevelAIs": [
-                "assaultgroup",
-                "bear",
-                "usec",
-                "exusec"
-            ],
-			"bossLevelAIs": [
-				"bossbully", 
-				"bossgluhar", 
-				"bosskilla", 
-				"bosskojaniy", 
-				"bosssanitar", 
-				"bosstagilla", 
-				"bossknight"
-            ]
+        "roguesNeutralToUsecs": false
         },
-        "overallAIDifficultyMod": -0.5,
-        "lowLevelAIDifficultyMod_Neg3_3": 0,
-        "midLevelAIDifficultyMod_Neg3_3": 1.15,
-        "highLevelAIDifficultyMod_Neg3_3": 2.65,
-
-        "Note": "These are the MAIN values for adjusting difficulty. If you want an easier or harder time overall, increase or decrease these. For details on these or any other entries, please check the readme."
-    },
+    "overallAIDifficultyMod": -0.5,
     "overallDifficultyMultipliers": {
         "aiAimSpeedMult": 1,
         "aiShotSpreadMult": 1,
@@ -77,11 +33,7 @@
         "grenadeThrowRangeMult": 1,
         "allowAimAtHead": true,
         "allowGrenades": true,
-        "changeHeadHPValues": false,
-        "setTheseBotsToDefaultPlayerHPBeforeMultsAreUsed": [
-            "botnameshere",
-            "seperatethemwithcommas"
-        ]
+        "changeHeadHPValues": false
     },
 	"allowHealthTweaks":{
 		"enabled": false,
@@ -100,10 +52,6 @@
         "bosses": true,
         "rogues": true,
         "followers": true
-    },
-    "spawnChanges": {
-        "controlOptions": {
-            "roguesNeutralToUsecs": false
-        }
     }
+
 }

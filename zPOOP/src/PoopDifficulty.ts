@@ -1,137 +1,10 @@
 import { DependencyContainer } from "tsyringe";
 import { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
 import { globalValues} from "./POOP";
+import {}
 
 export class PoopDifficulty
 {
-    static changeOverallDifficulty(locations, accuracyCoef, scatteringCoef, gainSightCoef, marksmanCoef, visibleDistCoef) {
-		for (let mapName in locations) {
-			if (mapName != "base") {
-				let map = locations[mapName]
-
-				//Maybe round this afterwards. Might cause problems if it's not rounded?
-				map.base.BotLocationModifier.AccuracySpeed = 1 / Math.sqrt(accuracyCoef)
-
-				map.base.BotLocationModifier.Scattering = scatteringCoef
-				map.base.BotLocationModifier.GainSight = gainSightCoef
-				//-Trying something new, since Reserve seems a little out of whack if they're just set directly. Multiplying the maps's base value by the config modifier. For most maps this should be the exact same, but it may improve Reserve.
-				// map.base.BotLocationModifier.AccuracySpeed = map.base.BotLocationModifier.AccuracySpeed * accuracyCoef
-				// map.base.BotLocationModifier.Scattering = map.base.BotLocationModifier.Scattering * scatteringCoef
-				// map.base.BotLocationModifier.GainSight = map.base.BotLocationModifier.GainSight * 
-				map.base.BotLocationModifier.MarksmanAccuratyCoef = map.base.BotLocationModifier.MarksmanAccuratyCoef * marksmanCoef
-				map.base.BotLocationModifier.VisibleDistance = visibleDistCoef
-				//Not all maps have this value. Is it even used?
-				map.base.BotLocationModifier.MagnetPower = 100
-				map.base.BotLocationModifier.DistToPersueAxemanCoef = 0.7
-				map.base.BotLocationModifier.DistToSleep = 350
-				map.base.BotLocationModifier.DistToActivate = 330
-				//Weird stuff going on with reserve. Variables need extra tweaking?
-				if (["rezervbase"].includes(mapName)) {
-					//map.base.BotLocationModifier.AccuracySpeed = map.base.BotLocationModifier.AccuracySpeed * (1/0.6)
-					map.base.BotLocationModifier.AccuracySpeed = map.base.BotLocationModifier.AccuracySpeed * 1.45
-					map.base.BotLocationModifier.Scattering = map.base.BotLocationModifier.Scattering * 1.075
-					//map.base.BotLocationModifier.GainSight = map.base.BotLocationModifier.GainSight * (1/1.3)
-
-				}
-				if (["interchange"].includes(mapName)) {
-					map.base.BotLocationModifier.Scattering /= 0.8
-					//map.base.BotLocationModifier.GainSight = map.base.BotLocationModifier.GainSight * (1/1.3)
-
-				}
-				//This should probably be done for Woods as well.
-				if (["woods"].includes(mapName)) {
-					map.base.BotLocationModifier.AccuracySpeed = map.base.BotLocationModifier.AccuracySpeed * 1.45
-					//map.base.BotLocationModifier.AccuracySpeed = map.base.BotLocationModifier.AccuracySpeed * 1.4
-					map.base.BotLocationModifier.Scattering = map.base.BotLocationModifier.Scattering * 1.1
-					//map.base.BotLocationModifier.Scattering = map.base.BotLocationModifier.Scattering * 1.2
-				}
-				map.base.BotLocationModifier.AccuracySpeed *= 0.45
-				map.base.BotLocationModifier.Scattering *= 0.5
-				//	console.log(mapName)
-				//	console.log(map.base.BotLocationModifier)
-			}
-		}
-	}
-
-    static changeForAllDifficulties(mainBot, diffVar, diffMod, botName) {
-		for (let i in diffVar)
-			diffVar[i] = (diffVar[i] * 1) + diffMod + globalValues.config.aiChanges.overallAIDifficultyMod
-		//Cycle through all four difficulties for the given bot type, and assign them their difficulty number
-		let botDiff = mainBot.difficulty.easy
-		PoopDifficulty.changeAI(mainBot, botDiff, diffVar[0], "easy")
-		botDiff = mainBot.difficulty.normal
-		PoopDifficulty.changeAI(mainBot, botDiff, diffVar[1], "normal")
-		botDiff = mainBot.difficulty.hard
-		PoopDifficulty.changeAI(mainBot, botDiff, diffVar[2], "hard")
-		botDiff = mainBot.difficulty.impossible
-		PoopDifficulty.changeAI(mainBot, botDiff, diffVar[3], "impossible")
-	}
-
-    //All actual assignment of difficulty values has been moved into this function
-	static setDifficulty(scavDiffMod, PMCDiffMod, raiderDiffMod, gluharRaiderDiffMod, minionDiffMod) {
-
-		let diffSet;
-		let diffMod;
-
-		if (!globalValues.database.bots.types.assaultgroup)
-		globalValues.database.bots.types.assaultgroup = PoopDifficulty.clone(globalValues.botTypes.pmcbot);
-
-            PoopDifficulty.generateDifficultyLevels(scavDiffMod, PMCDiffMod, raiderDiffMod, gluharRaiderDiffMod, minionDiffMod)
-
-		if (!globalValues.config.disableAllAIChanges) {
-			for (let aiTypes in globalValues.config.aiChanges.changeBots)
-				for (let botIndex in globalValues.config.aiChanges.changeBots[aiTypes]) {
-					if (globalValues.botTypes[globalValues.config.aiChanges.changeBots[aiTypes][botIndex].toLowerCase()]) {
-						let botName = globalValues.config.aiChanges.changeBots[aiTypes][botIndex].toLowerCase()
-						let bot = globalValues.botTypes[botName]
-						bot.difficulty = globalValues.database.globals.config.FinsDifficultyLevels[aiTypes]
-					}
-				}
-
-				globalValues.Logger.info("POOP: AI difficulty changes complete.")
-		}
-
-		//Do this after all the AI changes, to make sure this one sticks
-		if (!globalValues.config.disableAllAIChanges) {
-			//PoopDifficulty.setPMCHostility()
-			PoopDifficulty.checkTalking(globalValues.config, globalValues.botTypes)
-
-			if (globalValues.advAIConfig.Enabled == true)
-				PoopDifficulty.applyAdvancedAIConfig(globalValues.advAIConfig, globalValues.botTypes)
-		}
-		PoopDifficulty.roundAllBotStats(globalValues.botTypes)
-
-		PoopDifficulty.applySkills(globalValues.botTypes, globalValues.Logger)
-	}
-
-    static applyAdvancedAIConfig(advAIConfig, botTypes) {
-		for (let settingCat in advAIConfig.AI_setting_categories)
-			for (let botGroup in advAIConfig.AI_setting_categories[settingCat].setting_multipliers)
-				for (let settingName of advAIConfig.AI_setting_categories[settingCat].setting_names)
-					for (let botName of advAIConfig.bot_Categories[botGroup])
-					PoopDifficulty.changeSettingByName(botTypes[botName], settingName, advAIConfig.AI_setting_categories[settingCat].setting_multipliers[botGroup], true)
-	}
-
-    static generateDifficultyLevels(scavDiffMod, PMCDiffMod, raiderDiffMod, gluharRaiderDiffMod, minionDiffMod) {
-		let diffSet;
-		let diffMod;
-		globalValues.database.globals.config.FinsDifficultyLevels = {}
-		for (let aiTypes in globalValues.config.aiChanges.changeBots) {
-			globalValues.database.bots.types[aiTypes] = PoopDifficulty.clone(globalValues.botTypes.pmcbot)
-			let bot = globalValues.database.bots.types[aiTypes]
-			let botName = aiTypes
-			if (aiTypes == "lowLevelAIs") { diffSet = [3, 3, 3, 3]; diffMod = scavDiffMod }
-			else if (aiTypes == "midLevelAIs") { diffSet = [4, 4, 4, 4]; diffMod = raiderDiffMod }
-			else if (aiTypes == "highLevelAIs") { diffSet = [5, 5, 5, 5]; diffMod = PMCDiffMod }
-			else if (aiTypes == "bossLevelAIs") { diffSet = [6.5, 6.5, 6.5, 6.5]; diffMod = Math.max(PMCDiffMod, raiderDiffMod, scavDiffMod) }
-			else
-				console.log(`${aiTypes} is being overwritten for some reason?`) //Should never appear if things are working properly.
-                PoopDifficulty.changeForAllDifficulties(bot, diffSet, diffMod, botName)
-			// database.bots.types[aiTypes] = PoopDifficulty.clone(database.bots.types[aiTypes].difficulty)
-			globalValues.database.globals.config.FinsDifficultyLevels[aiTypes] = PoopDifficulty.clone(globalValues.database.bots.types[aiTypes].difficulty)
-			delete globalValues.database.bots.types[aiTypes]
-		}
-	}
 
     static changeAI(mainBot, botDiff, difficulty, diffSetting) {
 		for (let category in botDiff)
@@ -534,7 +407,15 @@ export class PoopDifficulty
 			PoopDifficulty.changeStat("MIN_DAMAGE_SCARE", [20, 30, 40, 50, 60, 70], difficulty, botCat)
 			botCat.MIN_DAMAGE_SCARE = botCat.MIN_DAMAGE_SCARE * 10
 			botCat.WILL_PERSUE_AXEMAN = false;
-			botCat.CHANCE_SHOOT_WHEN_WARN_PLAYER_100 = 100.0
+
+			//hopefully this fixeds when you play as scav and they attack you
+			// globalValues.scavTypes, globalValues.bossTypes, globalValues.followerTypes if botName is not in those lists, then don't apply this
+
+			if(globalValues.scavTypes.indexOf(botName) == -1 && globalValues.bossTypes.indexOf(botName) == -1 && globalValues.followerTypes.indexOf(botName) == -1){
+				botCat.CHANCE_SHOOT_WHEN_WARN_PLAYER_100 = 0.0
+				botCat.FRIENDLY_BOT_TYPES.push("assault");
+			}
+
 			//Test this. I assume it means "Heal below this percent", but who knows, it could be flipped around.
 			//It does seem to be "Heal below this percent". Good.
 			PoopDifficulty.changeStat("PART_PERCENT_TO_HEAL", [0.70, 0.75, 0.80, 0.85, 0.90, 0.95], difficulty, botCat)
@@ -907,25 +788,9 @@ export class PoopDifficulty
 		}
 	}
 
+
     static clone(data: any) {
 		return JSON.parse(JSON.stringify(data));
-	}
-
-    static difficultyFunctions(locations, config, botTypes, BotConfig, database, Logger, advAIConfig, baseAI) {
-		PoopDifficulty.fillEmptyDifficultySlots(botTypes, BotConfig)
-		// PoopDifficulty.swapBearUsecConfig(botNameSwaps.bear, botNameSwaps.usec)
-
-		//Change the core AI values. Check if any bots are set to be quiet
-		PoopDifficulty.changeCoreAI(database, config)
-		let accuracyCoef = 1//config.overallDifficultyMultipliers.aiAimSpeedMult
-		let scatteringCoef = 1//config.overallDifficultyMultipliers.aiShotSpreadMult
-		let gainSightCoef = 1//config.overallDifficultyMultipliers.aiVisionSpeedMult
-		let marksmanCoef = config.overallDifficultyMultipliers.sniperBotAccuracyMult
-		let visibleDistCoef = 1//config.overallDifficultyMultipliers.visibleDistanceMult
-		PoopDifficulty.changeOverallDifficulty(locations, accuracyCoef, scatteringCoef, gainSightCoef * 0.5, marksmanCoef, visibleDistCoef)
-		//This is now done on game start
-		PoopDifficulty.setDifficulty(globalValues.config.aiChanges.lowLevelAIDifficultyMod_Neg3_3, globalValues.config.aiChanges.highLevelAIDifficultyMod_Neg3_3, globalValues.config.aiChanges.midLevelAIDifficultyMod_Neg3_3,
-			globalValues.config.aiChanges.midLevelAIDifficultyMod_Neg3_3, globalValues.config.aiChanges.midLevelAIDifficultyMod_Neg3_3);
 	}
 
     static setRogueNeutral(botTypes, config) {
@@ -935,22 +800,6 @@ export class PoopDifficulty
 			botTypes.exusec.difficulty.normal.Mind.DEFAULT_ENEMY_USEC = false
 			botTypes.exusec.difficulty.hard.Mind.DEFAULT_ENEMY_USEC = true
 			botTypes.exusec.difficulty.impossible.Mind.DEFAULT_ENEMY_USEC = true
-		}
-	}
-
-    static adjustDifficulty(url, info, sessionId) {
-		if (globalValues.config.enableAutomaticDifficulty && globalValues.progressRecord[sessionId]) {
-			let PMC = globalValues.profileHelper.getPmcProfile(sessionId)
-			// console.log(PMC)
-
-			let LLD = globalValues.config.aiChanges.lowLevelAIDifficultyMod_Neg3_3
-			let MLD = globalValues.config.aiChanges.midLevelAIDifficultyMod_Neg3_3 - LLD
-			let HLD = globalValues.config.aiChanges.highLevelAIDifficultyMod_Neg3_3 - LLD
-			LLD = globalValues.progressRecord[sessionId].diffMod
-			MLD += globalValues.progressRecord[sessionId].diffMod
-			HLD += globalValues.progressRecord[sessionId].diffMod
-
-			PoopDifficulty.setDifficulty(LLD, HLD, MLD, MLD, MLD);
 		}
 	}
 
