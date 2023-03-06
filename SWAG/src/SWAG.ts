@@ -198,11 +198,21 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     for (let map in locations) {
       const baseobj: ILocationBase = locations[map].base;
 
-      const openZones = baseobj?.OpenZones?.split(",").filter(
-        (name) => !name.includes("Snipe")
-      );
+      baseobj?.SpawnPointParams?.forEach((spawn) => {
 
-      SWAG.mappedSpawns[map] = openZones;
+        //check spawn for open zones and if it doesn't exist add to end of array
+        if (spawn?.BotZoneName && !SWAG.mappedSpawns[map].includes(spawn.BotZoneName) && !spawn.BotZoneName.includes("Snipe")) {
+          SWAG.mappedSpawns[map].push(spawn.BotZoneName);
+        }
+      });
+
+      // const openZones = baseobj?.OpenZones?.split(",").filter(
+      //   (name) => !name.includes("Snipe")
+      // );
+
+      //SWAG.mappedSpawns[map] = openZones;
+
+      logger.info("SWAG: Open Zones on " + map + ": " + JSON.stringify(SWAG.mappedSpawns[map]));
     }
   }
 
