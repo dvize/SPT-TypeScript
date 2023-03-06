@@ -26,6 +26,7 @@ let databaseServer: DatabaseServer;
 let locations: ILocations;
 let savedLocations;
 let randomUtil: RandomUtil;
+let BossWaveSpawnedOnceAlready: boolean;
 
 let config: ClassDef.SWAGConfig;
 const customPatterns: Record<string, ClassDef.GroupPattern> = {};
@@ -244,8 +245,14 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
         const mapGroups: ClassDef.GroupPattern[] = mapWrapper.MapGroups;
         const mapBosses: ClassDef.BossPattern[] = mapWrapper.MapBosses;
 
+        //reset the bossWaveSpawnedOnceAlready flag
+        BossWaveSpawnedOnceAlready = false;
+
         //if mapName is not the same as the globalmap, skip. otherwise if all or matches, continue
         if (mapName === globalmap || mapName === "all") {
+          if(config.DebugOutput) 
+            logger.warning(`Configuring ${globalmap}`);
+
           SWAG.SetUpGroups(mapGroups, mapBosses, globalmap);
         }
 
@@ -412,13 +419,19 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
     AlreadySpawnedBossGroups.push(boss);
 
-    //read group and create wave from individual boss but same timing and location if RandomBossGroupBotZone is not null
-
     //check chance against randomint100 to see if boss should spawn from config.bossChance
     if (SWAG.getRandIntInclusive(0,100) > config.BossChance) {
       return;
     }
 
+    //check make sure BossWaveSpawnedOnceAlready = true and config.SkipOtherBossWavesIfBossWaveSelected = true
+    if (BossWaveSpawnedOnceAlready && config.SkipOtherBossWavesIfBossWaveSelected) {
+      if(config.DebugOutput)
+        logger.info("SWAG: Skipping boss spawn as one spawned already")
+      return;
+    }
+
+    //read group and create wave from individual boss but same timing and location if RandomBossGroupBotZone is not null
     let wave: BossLocationSpawn = SWAG.ConfigureBossWave(
       boss,
       globalmap
@@ -488,6 +501,9 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       SWAG.randomWaveTimer.time_max += config.WaveTimerMaxSec;
     }
 
+    if(config.DebugOutput)
+      logger.info("SWAG: Configured bot wave: " + JSON.stringify(wave));
+
     return wave;
   }
 
@@ -500,6 +516,9 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       escort.BossEscortDifficult = [SWAG.diffProper[config.aiDifficulty.toLowerCase()]];
       escort.BossEscortType = SWAG.roleCase[escort.BossEscortType.toLowerCase()];
     })
+
+    //set bossWaveSpawnedOnceAlready to true if not already
+    BossWaveSpawnedOnceAlready = true;
 
     const wave: BossLocationSpawn = {
       BossName: SWAG.roleCase[boss.BossName.toLowerCase()],
