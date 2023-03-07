@@ -261,7 +261,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
         //if mapName is not the same as the globalmap, skip. otherwise if all or matches, continue
         if (mapName === globalmap || mapName === "all") {
-          config.DebugOutput && logger.warning(`Configuring ${globalmap ? globalmap : "all"}`);
+          config.DebugOutput && logger.warning(`Configuring ${globalmap}`);
 
           // Configure random wave timer.. needs to be reset each map
           SWAG.randomWaveTimer.time_min = config.WaveTimerMinSec;
