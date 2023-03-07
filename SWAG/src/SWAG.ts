@@ -136,10 +136,10 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     );
 
     staticRouterModService.registerStaticRouter(
-      `${modName}/singleplayer/settings/raid/endstate`,
+      `${modName}/client/match/offline/end`,
       [
         {
-          url: "/singleplayer/settings/raid/endstate",
+          url: "/client/match/offline/end",
           action: (
             url: string,
             info: any,
@@ -532,7 +532,9 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
     const wave: BossLocationSpawn = {
       BossName: SWAG.roleCase[boss.BossName.toLowerCase()],
-      BossChance: boss.BossChance ?? 100,
+      // If we are configuring a boss wave, we have already passed an internal check to add the wave based off the bossChance.
+      // Set the bossChance to guarntee the added boss wave is spawned
+      BossChance: 100, 
       BossZone:
         !!boss.BossZone
           ? boss.BossZone
