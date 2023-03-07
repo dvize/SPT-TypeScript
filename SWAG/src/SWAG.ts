@@ -200,10 +200,10 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   static GetOpenZones(map: LocationName): string[] {
     const baseobj: ILocationBase = locations[map]?.base;
 
-    // Get all OpenZones defined in the base obj that do not include sniper zones
-    const foundOpenZones = baseobj?.OpenZones?.split(",").filter(
-      (name) => !name.includes("Snipe")
-    ) ?? [];
+    // Get all OpenZones defined in the base obj that do not include sniper zones. Need to filter for empty strings as well.
+    const foundOpenZones = baseobj?.OpenZones?.split(",")
+      .filter((name) => !name.includes("Snipe"))
+      .filter((name) => name.trim() !== "") ?? [];
 
     // Sometimes there are zones in the SpawnPointParams that arent listed in the OpenZones, parse these and add them to the list of zones
     baseobj?.SpawnPointParams?.forEach((spawn) => {
@@ -212,9 +212,10 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
         foundOpenZones.push(spawn.BotZoneName);
       }
     });
-
+    
+    //logger.info(`SWAG: Open Zones(${map}): ${JSON.stringify(foundOpenZones)}`);
     return foundOpenZones;
-    //logger.info("SWAG: Open Zones on " + map + ": " + JSON.stringify(SWAG.mappedSpawns[map]));
+
   }
 
   static ReadAllPatterns(): void {
@@ -243,8 +244,11 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   //This is the main top level function
   static ConfigureMaps(): void {
 
-    // read all customPatterns and push them to the locations table
-    Object.keys(locations).forEach((globalmap: LocationName) => {
+    // read all customPatterns and push them to the locations table. Invalid maps were being read, those should be filteredout as it causes an error when
+    // assigning an openzone to a map that doesn't exist (base)
+    Object.keys(locations).filter(
+      (name) => this.validMaps.includes(name)
+    ).forEach((globalmap: LocationName) => {
       for (let pattern in customPatterns) {
         //read mapWrapper in pattern and set its values to be used locally
         const mapWrapper: ClassDef.MapWrapper = customPatterns[pattern][0];
@@ -257,7 +261,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
         //if mapName is not the same as the globalmap, skip. otherwise if all or matches, continue
         if (mapName === globalmap || mapName === "all") {
-          config.DebugOutput && logger.warning(`Configuring ${globalmap}`);
+          config.DebugOutput && logger.warning(`Configuring ${globalmap ? globalmap : "all"}`);
 
           // Configure random wave timer.. needs to be reset each map
           SWAG.randomWaveTimer.time_min = config.WaveTimerMinSec;
@@ -497,7 +501,9 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       SpawnPoints:
         !!group.BotZone
           ? group.BotZone
-          : randomUtil.getStringArrayValue(SWAG.savedLocationData[globalmap].openZones),
+          : (SWAG.savedLocationData[globalmap].openZones && SWAG.savedLocationData[globalmap].openZones.length > 0 
+            ? randomUtil.getStringArrayValue(SWAG.savedLocationData[globalmap].openZones) 
+            : ""),
       //set manually to Savage as supposedly corrects when bot data is requested
       BotSide: "Savage",
       //verify if its a pmcType and set isPlayers to true if it is
@@ -538,7 +544,9 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       BossZone:
         !!boss.BossZone
           ? boss.BossZone
-          : randomUtil.getStringArrayValue(SWAG.savedLocationData[globalmap].openZones),
+          : (SWAG.savedLocationData[globalmap].openZones && SWAG.savedLocationData[globalmap].openZones.length > 0 
+            ? randomUtil.getStringArrayValue(SWAG.savedLocationData[globalmap].openZones) 
+            : ""),
       BossPlayer: false,
       BossDifficult: SWAG.diffProper[config.aiDifficulty.toLowerCase()],
       BossEscortType: SWAG.roleCase[boss.BossEscortType.toLowerCase()],
