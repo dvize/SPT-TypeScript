@@ -17,6 +17,8 @@ import { ILocations } from "@spt-aki/models/spt/server/ILocations";
 import { ConfigServer } from "@spt-aki/servers/ConfigServer";
 import * as ClassDef from "./ClassDef";
 
+import config from "../config/config.json";
+
 const modName = "SWAG";
 let logger: ILogger;
 let jsonUtil: JsonUtil;
@@ -24,15 +26,13 @@ let configServer: ConfigServer;
 let botConfig: IBotConfig;
 let databaseServer: DatabaseServer;
 let locations: ILocations;
-let savedLocations;
 let randomUtil: RandomUtil;
 let BossWaveSpawnedOnceAlready: boolean;
 
-let config: ClassDef.SWAGConfig;
 const customPatterns: Record<string, ClassDef.GroupPattern> = {};
 
 type LocationName = keyof Omit<ILocations, "base">;
-type SpawnZonesByLocation = Record<LocationName, string[]>;
+type LocationBackupData = Record<LocationName,  { waves: Wave[], BossLocationSpawn: BossLocationSpawn[], openZones: string[] } | undefined>;
 
 class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   public static roleCase: object = {
@@ -104,25 +104,25 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     horde: 4,
   };
 
-  public static mappedSpawns: SpawnZonesByLocation = {
-    factory4_day: [],
-    factory4_night: [],
-    bigmap: [],
-    interchange: [],
-    laboratory: [],
-    lighthouse: [],
-    rezervbase: [],
-    shoreline: [],
-    tarkovstreets: [],
-    woods: [],
-
+  public static savedLocationData: LocationBackupData = {
+    factory4_day: undefined,
+    factory4_night: undefined,
+    bigmap: undefined,
+    interchange: undefined,
+    laboratory: undefined,
+    lighthouse: undefined,
+    rezervbase: undefined,
+    shoreline: undefined,
+    tarkovstreets: undefined,
+    woods: undefined,
+  
     // unused
-    develop: [],
-    hideout: [],
-    privatearea: [],
-    suburbs: [],
-    terminal: [],
-    town: [],
+    develop: undefined,
+    hideout: undefined,
+    privatearea: undefined,
+    suburbs: undefined,
+    terminal: undefined,
+    town: undefined,
   };
 
   public static randomWaveTimer = {
@@ -165,11 +165,8 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     locations = databaseServer.getTables().locations;
     randomUtil = container.resolve<RandomUtil>("RandomUtil");
 
-    config = require(`../config/config.json`);
-
     SWAG.SetConfigCaps();
     SWAG.ReadAllPatterns();
-    SWAG.StoreOpenZones();
     SWAG.ClearDefaultSpawns();
     SWAG.ConfigureMaps();
   }
@@ -194,26 +191,30 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     logger.info("SWAG: Config/Bot Caps Set");
   }
 
-  static StoreOpenZones(): void {
-    for (let map in locations) {
-      const baseobj: ILocationBase = locations[map].base;
+  /**
+   * Returns all available OpenZones specified in location.base.OpenZones as well as any OpenZone found in the SpawnPointParams.
+   * Filters out all sniper zones
+   * @param map 
+   * @returns 
+   */
+  static GetOpenZones(map: LocationName): string[] {
+    const baseobj: ILocationBase = locations[map]?.base;
 
-      baseobj?.SpawnPointParams?.forEach((spawn) => {
+    // Get all OpenZones defined in the base obj that do not include sniper zones
+    const foundOpenZones = baseobj?.OpenZones?.split(",").filter(
+      (name) => !name.includes("Snipe")
+    ) ?? [];
 
-        //check spawn for open zones and if it doesn't exist add to end of array
-        if (spawn?.BotZoneName && !SWAG.mappedSpawns[map].includes(spawn.BotZoneName) && !spawn.BotZoneName.includes("Snipe")) {
-          SWAG.mappedSpawns[map].push(spawn.BotZoneName);
-        }
-      });
+    // Sometimes there are zones in the SpawnPointParams that arent listed in the OpenZones, parse these and add them to the list of zones
+    baseobj?.SpawnPointParams?.forEach((spawn) => {
+      //check spawn for open zones and if it doesn't exist add to end of array
+      if (spawn?.BotZoneName && !foundOpenZones.includes(spawn.BotZoneName) && !spawn.BotZoneName.includes("Snipe")) {
+        foundOpenZones.push(spawn.BotZoneName);
+      }
+    });
 
-      // const openZones = baseobj?.OpenZones?.split(",").filter(
-      //   (name) => !name.includes("Snipe")
-      // );
-
-      //SWAG.mappedSpawns[map] = openZones;
-
-      //logger.info("SWAG: Open Zones on " + map + ": " + JSON.stringify(SWAG.mappedSpawns[map]));
-    }
+    return foundOpenZones;
+    //logger.info("SWAG: Open Zones on " + map + ": " + JSON.stringify(SWAG.mappedSpawns[map]));
   }
 
   static ReadAllPatterns(): void {
@@ -476,7 +477,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   static ConfigureBotWave(
     group: ClassDef.GroupPattern,
     bot: ClassDef.Bot,
-    globalmap: string
+    globalmap: LocationName
   ): Wave {
     const isRandom = SWAG.isGroupRandom(group);
 
@@ -496,7 +497,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       SpawnPoints:
         !!group.BotZone
           ? group.BotZone
-          : randomUtil.getStringArrayValue(SWAG.mappedSpawns[globalmap]),
+          : randomUtil.getStringArrayValue(SWAG.savedLocationData[globalmap].openZones),
       //set manually to Savage as supposedly corrects when bot data is requested
       BotSide: "Savage",
       //verify if its a pmcType and set isPlayers to true if it is
@@ -518,7 +519,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
   static ConfigureBossWave(
     boss: BossLocationSpawn,
-    globalmap: string
+    globalmap: LocationName
   ): BossLocationSpawn {
     //read support bots if defined, set the difficulty to match config
     boss?.Supports?.forEach(escort => {
@@ -535,7 +536,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       BossZone:
         !!boss.BossZone
           ? boss.BossZone
-          : randomUtil.getStringArrayValue(SWAG.mappedSpawns[globalmap]),
+          : randomUtil.getStringArrayValue(SWAG.savedLocationData[globalmap].openZones),
       BossPlayer: false,
       BossDifficult: SWAG.diffProper[config.aiDifficulty.toLowerCase()],
       BossEscortType: SWAG.roleCase[boss.BossEscortType.toLowerCase()],
@@ -560,20 +561,22 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   }
 
   static ClearDefaultSpawns(): void {
-    if (!savedLocations) {
-      savedLocations = jsonUtil.clone(locations);
-    }
-
-    for (const mapName in locations) {
-      const map = mapName.toLowerCase();
+    let map: keyof ILocations;
+    for (map in locations) {
       if (map === "base" || map === "hideout") {
         continue;
       }
 
+      // Save a backup of the wave data and the BossLocationSpawn to use when restoring defaults on raid end. Store openzones in this data as well
+      if (!SWAG.savedLocationData[map]) {
+        const locationBase = locations[map].base;
+        SWAG.savedLocationData[map] = { waves: locationBase.waves, BossLocationSpawn: locationBase.BossLocationSpawn, openZones: this.GetOpenZones(map) };
+      }
+
       // Reset Database, Cringe  -- i stole this code from LUA
-      locations[map].base.waves = [...savedLocations[map].base.waves];
+      locations[map].base.waves = [...SWAG.savedLocationData[map].waves];
       locations[map].base.BossLocationSpawn = [
-        ...savedLocations[map].base.BossLocationSpawn,
+        ...SWAG.savedLocationData[map].BossLocationSpawn,
       ];
 
       //Clear bots spawn
