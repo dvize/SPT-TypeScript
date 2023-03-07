@@ -172,13 +172,14 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   }
 
   static SetConfigCaps(): void {
-    //Set Max Bot Caps
-    botConfig.maxBotCap["factory"] = config.MaxBotCap["factory"];
-    botConfig.maxBotCap["customs"] = config.MaxBotCap["customs"];
+    //Set Max Bot Caps.. these names changed
+    botConfig.maxBotCap["factory4_day"] = config.MaxBotCap["factory"];
+    botConfig.maxBotCap["factory4_night"] = config.MaxBotCap["factory"];
+    botConfig.maxBotCap["bigmap"] = config.MaxBotCap["customs"];
     botConfig.maxBotCap["interchange"] = config.MaxBotCap["interchange"];
     botConfig.maxBotCap["shoreline"] = config.MaxBotCap["shoreline"];
     botConfig.maxBotCap["woods"] = config.MaxBotCap["woods"];
-    botConfig.maxBotCap["reserve"] = config.MaxBotCap["reserve"];
+    botConfig.maxBotCap["rezervbase"] = config.MaxBotCap["reserve"];
     botConfig.maxBotCap["laboratory"] = config.MaxBotCap["laboratory"];
     botConfig.maxBotCap["lighthouse"] = config.MaxBotCap["lighthouse"];
     botConfig.maxBotCap["tarkovstreets"] = config.MaxBotCap["tarkovstreets"];
