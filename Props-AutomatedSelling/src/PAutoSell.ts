@@ -300,11 +300,11 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 		if (item.parentId == "5485a8684bdc2da71d8b4567")
 		{
 			Logger.info(`PAutoSell: Found Ammo, not multiplying by stack size`);
-			moneyTotal +=  price * config.PriceMultiplier;
+			moneyTotal +=  Math.floor(price * config.PriceMultiplier);
 		}
 		else
 		{
-			moneyTotal += price * stack * config.PriceMultiplier;
+			moneyTotal += Math.floor(price * stack * config.PriceMultiplier);
 		}
 		
 		Logger.info(`PAutoSell: moneyTotal: ${moneyTotal}`);
