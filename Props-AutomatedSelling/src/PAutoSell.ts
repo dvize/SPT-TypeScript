@@ -296,8 +296,17 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 		//remove the item from the pmcInventory
 		PAutoSell.removeItemFromPlayerInventory(items, item, itemsModList);
 
-		// add price * stack to moneyTotal
-		moneyTotal +=  price * stack;
+		// add price * stack to moneyTotal unless it is ammo
+		if (item.parentId == "5485a8684bdc2da71d8b4567")
+		{
+			Logger.info(`PAutoSell: Found Ammo, not multiplying by stack size`);
+			moneyTotal +=  price * config.PriceMultiplier;
+		}
+		else
+		{
+			moneyTotal += price * stack * config.PriceMultiplier;
+		}
+		
 		Logger.info(`PAutoSell: moneyTotal: ${moneyTotal}`);
 	}
 
@@ -376,7 +385,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 				for (let i = 0; i < childIds.length; i++) {
 					let childId = childIds[i];
 					let childItem = items.find(x => x._id === childId);
-					let childPrice = traderHelper.getRawItemPrice(pmcData, childItem);
+					let childPrice = traderHelper.getHighestTraderPriceRouble(childItem._tpl);
 					if (Number.isNaN(childPrice) || childPrice == undefined || childPrice == null){
 						childPrice = ragfairPriceService.getFleaPriceForItem(childItem._tpl);
 						if(childPrice == undefined || childPrice == null){
