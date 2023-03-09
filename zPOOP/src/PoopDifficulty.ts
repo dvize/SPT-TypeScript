@@ -13,10 +13,14 @@ export class POOPDifficulty
 		gv.logger.info("POOP: Setting Rogue Neutral to USECs")
 		//Rogues will only *ever* use exusec behaviour, so it's appropriate to flip the switch here. If they become a behaviour option, this will have to default to true if behaviour is enabled.
 		if (gv.config.AIChanges.RoguesNeutralToUsecs) {
-			gv.botTypes[RoleCase["exusec"]].difficulty.easy.Mind.DEFAULT_ENEMY_USEC = true
-			gv.botTypes[RoleCase["exusec"]].difficulty.normal.Mind.DEFAULT_ENEMY_USEC = false
-			gv.botTypes[RoleCase["exusec"]].difficulty.hard.Mind.DEFAULT_ENEMY_USEC = true
-			gv.botTypes[RoleCase["exusec"]].difficulty.impossible.Mind.DEFAULT_ENEMY_USEC = true
+
+			//loop through POOPClassDef.RogueTypes and set the difficulty.easy.Mind.DEFAULT_ENEMY_USEC values
+			for (let rogue in RogueTypes) {
+				gv.botTypes[rogue].difficulty.easy.Mind.DEFAULT_ENEMY_USEC = false;
+				gv.botTypes[rogue].difficulty.normal.Mind.DEFAULT_ENEMY_USEC = false;
+				gv.botTypes[rogue].difficulty.hard.Mind.DEFAULT_ENEMY_USEC = false;
+				gv.botTypes[rogue].difficulty.impossible.Mind.DEFAULT_ENEMY_USEC = false;
+			}
 		}
 	}
 
@@ -50,48 +54,23 @@ export class POOPDifficulty
 	{
 		//need to make sure difficulty settings don't override this
 
-		gv.logger.info("POOP: Disabling Talking");		
-		//read the values from config then loop through bots and if it fits the criteria, set the value to false
-		let scavs = gv.config.AIChanges.AllowBotsToTalk.Scavs;
-		let pmcs = gv.config.AIChanges.AllowBotsToTalk.PMCs;
-		let raiders = gv.config.AIChanges.AllowBotsToTalk.Raiders;
-		let rogues = gv.config.AIChanges.AllowBotsToTalk.Rogues;
-		let bosses = gv.config.AIChanges.AllowBotsToTalk.Bosses;
-		let followers = gv.config.AIChanges.AllowBotsToTalk.Followers;
-
-		for (let botName in gv.botTypes)
-		{
-			if(!scavs && ScavTypes.includes(botName))
-				gv.botTypes[botName].difficulty.easy.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.normal.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.hard.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.impossible.Mind.CAN_TALK = false;
-			if(!pmcs && PmcTypes.includes(botName))
-				gv.botTypes[botName].difficulty.easy.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.normal.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.hard.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.impossible.Mind.CAN_TALK = false;
-			if(!raiders && RaiderTypes.includes(botName))
-				gv.botTypes[botName].difficulty.easy.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.normal.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.hard.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.impossible.Mind.CAN_TALK = false;
-			if(!rogues && RogueTypes.includes(botName))	
-				gv.botTypes[botName].difficulty.easy.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.normal.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.hard.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.impossible.Mind.CAN_TALK = false;
-			if(!bosses && BossTypes.includes(botName))	
-				gv.botTypes[botName].difficulty.easy.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.normal.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.hard.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.impossible.Mind.CAN_TALK = false;
-			if(!followers && FollowerTypes.includes(botName))
-				gv.botTypes[botName].difficulty.easy.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.normal.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.hard.Mind.CAN_TALK = false;
-				gv.botTypes[botName].difficulty.impossible.Mind.CAN_TALK = false;
-		}
+		const botTypes = [
+			{ types: ScavTypes, name: "Scavs" },
+			{ types: PmcTypes, name: "PMCs" },
+			{ types: RaiderTypes, name: "Raiders" },
+			{ types: RogueTypes, name: "Rogues" },
+			{ types: BossTypes, name: "Bosses" },
+			{ types: FollowerTypes, name: "Followers" }
+		  ];
+		  const config = gv.config.AIChanges.AllowBotsToTalk;
+		  
+		  for (let { types, name } of botTypes) {
+			if (!config[name]) {
+			  for (let botName in gv.botTypes) {
+				if (types.includes(botName)) {
+				  for (let difficulty of ["easy", "normal", "hard", "impossible"]) {
+					gv.botTypes[botName].difficulty[difficulty].Mind.CAN_TALK = false;
+				  }}}}
+			}
 	}
-
 }

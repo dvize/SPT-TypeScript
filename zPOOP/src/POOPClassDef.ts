@@ -65,18 +65,20 @@ export interface POOPConfig {
   
   export const RoleCase: Record<string, string> = {
     assault: "assault",
-    exusec: "exUsec",
-    marksman: "marksman",
-    pmcbot: "pmcBot",
-    sectantpriest: "sectantPriest",
-    sectantwarrior: "sectantWarrior",
     assaultgroup: "assaultGroup",
+    bear: "bear",
     bossbully: "bossBully",
-    bosstagilla: "bossTagilla",
     bossgluhar: "bossGluhar",
     bosskilla: "bossKilla",
+    bossknight: "bossKnight",
     bosskojaniy: "bossKojaniy",
     bosssanitar: "bossSanitar",
+    bosstagilla: "bossTagilla",
+    bosszryachiy: "bossZryachiy",
+    cursedassault: "cursedAssault",
+    exusec: "exUsec",
+    followerbigpipe: "followerBigPipe",
+    followerbirdeye: "followerBirdEye",
     followerbully: "followerBully",
     followergluharassault: "followerGluharAssault",
     followergluharscout: "followerGluharScout",
@@ -85,20 +87,16 @@ export interface POOPConfig {
     followerkojaniy: "followerKojaniy",
     followersanitar: "followerSanitar",
     followertagilla: "followerTagilla",
-    cursedassault: "cursedAssault",
-    usec: "usec",
-    bear: "bear",
+    followerzryachiy: "followerZryachiy",
+    gifter: "gifter",
+    marksman: "marksman",
+    pmcbot: "pmcBot",
+    sectantpriest: "sectantPriest",
+    sectantwarrior: "sectantWarrior",
     sptbear: "sptBear",
     sptusec: "sptUsec",
-    bosstest: "bossTest",
-    followertest: "followerTest",
-    gifter: "gifter",
-    bossknight: "bossKnight",
-    followerbigpipe: "followerBigPipe",
-    followerbirdeye: "followerBirdEye",
-    bosszryachiy: "bossZryachiy",
-    followerzryachiy: "followerZryachiy",
-};
+    usec: "usec"
+}
 
 
 export const PmcTypes: string[] = [
@@ -122,19 +120,21 @@ export const ScavTypes: string[] = [
 ]
 
 export const BossTypes: string[] = [
-    "sectantpriest",
-    "sectantwarrior",
     "bossbully",
-    "bosstagilla",
     "bossgluhar",
     "bosskilla",
+    "bossknight",
     "bosskojaniy",
     "bosssanitar",
-    "bossknight",
-    "bosszryachiy"
+    "bosstagilla",
+    "bosszryachiy",
+    "sectantpriest",
+    "sectantwarrior"
 ]
 
 export const FollowerTypes: string[] = [
+    "followerbigpipe",
+    "followerbirdeye",
     "followerbully",
     "followergluharassault",
     "followergluharscout",
@@ -143,21 +143,19 @@ export const FollowerTypes: string[] = [
     "followerkojaniy",
     "followersanitar",
     "followertagilla",
-    "followerbigpipe",
-    "followerbirdeye",
     "followerzryachiy"
 ]
 
 export const LocationNames: string[] = [
-    "interchange", 
     "bigmap", 
-    "rezervbase", 
-    "woods", 
-    "shoreline", 
-    "laboratory", 
-    "lighthouse", 
     "factory4_day", 
     "factory4_night", 
-    "tarkovstreets"
+    "interchange", 
+    "laboratory", 
+    "lighthouse", 
+    "rezervbase", 
+    "shoreline", 
+    "tarkovstreets",
+    "woods"
 ]
   
