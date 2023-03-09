@@ -1,11 +1,13 @@
 import { IBotBase } from "@spt-aki/models/eft/common/tables/IBotBase";
 import { GlobalValues as gv} from "./GlobalValuesModule";
 import { POOPDifficulty as pd} from "./POOPDifficulty";
+import { progressRecord } from "./POOPClassDef";
 import { HashUtil } from "@spt-aki/utils/HashUtil";
 import * as crypto from 'crypto';
 import { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
 import { Difficulties } from "@spt-aki/models/eft/common/tables/IBotType";
 import { Item } from "@spt-aki/models/eft/common/tables/IItem";
+import { SideEffect } from '../types/models/eft/common/tables/IItem';
 
 export class LegendaryPlayer {
 
@@ -30,27 +32,68 @@ export class LegendaryPlayer {
 			//loop through the difficulty array and create 2 bots for each difficulty 
 			for (let i = 0; i < difficultyArray.length; i++) {
 				let difficulty = difficultyArray[i];
-				let bot = this.CreateBot(player);
-				bot.Info.Settings.Difficulty = difficulty;
-				bot.Info.Settings.Role = "Savage";
-				bot.Info.Side = "Savage";
+				let bot = this.CreateBot(player, difficulty);
 				botarray.push(bot);
 				botarray.push(bot);
-			}
 
-			//generate the key as it is a string value of player.info.side + player.info.settings.difficulty
-			let key = player.Info.Settings.Role + player.Info.Settings.Difficulty;
-			//push the botarray into the botgenerationcache using storemethod
-			gv.botGenerationCacheService.storeBots(player.Info.Side, botarray);
+				//generate the key as it is a string value of player.info.side + player.info.settings.difficulty
+				let key = bot.Info.Settings.Role + bot.Info.Settings.BotDifficulty;
+
+				//push the botarray into the botgenerationcache using storemethod
+				gv.botGenerationCacheService.storeBots(key, botarray);
+			}
 		}
+	}
+
+	static CheckLegendaryPlayer(SessionID: string){
+		//check if progressfile has consecutivesuccesful raids over const legendwinmin
+		let progressFile: progressRecord = this.ReadFileEncrypted(`${gv.modFolder}/donottouch/progress.json`);
+		if (progressFile == null) {
+            gv.logger.info(`Progress file not found, creating new file`);
+			this.CreateProgressFile(0, 0, 0);
+		}
+
+		let winMinimum: number = gv.legendWinMin;
+		let successRaids: number = progressFile.successfulConsecutiveRaids;
+        let failedRaids: number = progressFile.failedConsecutiveRaids;
+        let runThroughs: number = progressFile.runThroughs;
+
+		//if win minimum is reached, update legendary player file
+        if (successRaids >= winMinimum) {
+            gv.logger.info(`POOP: Updating with ${successRaids} successful raids, ${failedRaids} failed raids, and ${runThroughs} runthroughs`);
+            this.CreateProgressFile(successRaids, failedRaids, runThroughs);
+        }
 
 
 	}
 
-	static CreateBot(player: IPmcData): IBotBase
+    static CreateProgressFile(successful: number, failed: number, runthroughs: number){
+        let progressFile: progressRecord = {
+            successfulConsecutiveRaids: successful,
+            failedConsecutiveRaids: failed,
+            runThroughs: runthroughs
+        }
+        this.SaveToFileEncrypted(progressFile, `${gv.modFolder}/donottouch/progress.json`);
+    }
+
+	static CreateBot(player: IPmcData, difficulty: string): IBotBase
 	{
-		let bot: IBotBase = player;
+		let bot: IBotBase = this.clone(player);
 		this.PreparePlayerStashIDs(bot.Inventory.items);
+		bot.aid = gv.hashUtil.generate();
+		bot._id = "pmc"+bot.aid;
+		bot.Info.Settings.BotDifficulty = difficulty;
+		if(bot.Info.Side.toLowerCase() == "usec")
+		{
+			bot.Info.Settings.Role = "sptusec";
+		}
+		else if(bot.Info.Side.toLowerCase() == "bear")
+		{
+			bot.Info.Settings.Role = "sptbear";
+		}
+
+		//does bot side need to be savage to fix pmc spawn?
+		bot.Info.Side = "Savage";
 		return bot;
 	}
 

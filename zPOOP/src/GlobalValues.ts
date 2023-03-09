@@ -14,7 +14,8 @@ import { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
 import { HashUtil } from "@spt-aki/utils/HashUtil";
 import { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
 import { ILogger } from "@spt-aki/models/spt/utils/ILogger";
-import { POOPConfig } from './POOPClassDef';
+import { POOPConfig, progressRecord } from './POOPClassDef';
+import { ILocationBase } from '@spt-aki/models/eft/common/ILocationBase';
 
 export class GlobalValues
 {
@@ -25,21 +26,23 @@ export class GlobalValues
 	public static botConfig: IBotConfig;
 	public static database: any;
 	public static databaseServer: DatabaseServer;
-	public static locations: any;
+	public static locations: ILocationBase;
 	public static botTypes: IBotType[];
 	public static modFolder: string;
 	public static baseAIDifficulty: IBotBase;
 	public static config: POOPConfig;
 	public static inRaidConfig: IInRaidConfig;
-	public static progressRecord: any;
+	public static progressRecord: progressRecord;
+	public static sessionID: string;
 	public static botGenerationCacheService: BotGenerationCacheService;
-	public static legendaryFile: any;
+	public static legendaryFile: IPmcData;
 	public static ScavAltRolesPickList: string[];
-	public static globalScavRaid: boolean;
 	public static modName: string = "POOP";
 	public static hashUtil: HashUtil;
 	public static randomUtil: RandomUtil;
 	public static jsonUtil: JsonUtil;
+
+ 	public static legendWinMin: number = 10;
 
     static clone(data: any) {
 		return JSON.parse(JSON.stringify(data));

@@ -57,6 +57,12 @@ export interface POOPConfig {
     difficulty: Difficulties;
   }
   
+  export interface progressRecord{
+    successfulConsecutiveRaids: number;
+    failedConsecutiveRaids: number;
+    runThroughs: number;
+  }
+  
   export const RoleCase: Record<string, string> = {
     assault: "assault",
     exusec: "exUsec",

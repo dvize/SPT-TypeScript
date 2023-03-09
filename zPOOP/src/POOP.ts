@@ -12,7 +12,7 @@ import { IBotConfig } from "@spt-aki/models/spt/config/IBotConfig";
 import { IInRaidConfig } from "@spt-aki/models/spt/config/IInraidConfig";
 import { Difficulty, Difficulties } from '@spt-aki/models/eft/common/tables/IBotType';
 import { Overrides } from "./Overrides";
-import { LegendaryPlayer as lp } from "./legendaryPlayer";
+import { LegendaryPlayer as lp } from "./LegendaryPlayer";
 
 class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
 
@@ -25,11 +25,21 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
 		const dynamicRouterModService = container.resolve<DynamicRouterModService>("DynamicRouterModService");
 		const staticRouterModService = container.resolve<StaticRouterModService>("StaticRouterModService");
 
+
+		//On Profile Selected (Set gv.SessionID)
+		staticRouterModService.registerStaticRouter(`${gv.modName}:ProfileSelected`, [{
+			url: "/client/game/profile/select",
+			action: (url, info, sessionId, output) => {
+				gv.sessionID = sessionId;
+				return output
+			}
+		}], "aki");
+
 		//Raid Saving (End of raid)
-		staticRouterModService.registerStaticRouter(`StaticAkiRaidSave${gv.modName}`, [{
+		staticRouterModService.registerStaticRouter(`${gv.modName}:RaidSaved`, [{
 			url: "/raid/profile/save",
 			action: (url, info, sessionId, output) => {
-				this.onRaidSave(url, info, sessionId, output);
+				Overrides.onRaidSave(url, info, sessionId, output);
 				return output
 			}
 		}], "aki");
@@ -84,21 +94,23 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
 		gv.botConfig = gv.configServer.getConfig<IBotConfig>(ConfigTypes.BOT);
 		gv.inRaidConfig = gv.configServer.getConfig<IInRaidConfig>(ConfigTypes.IN_RAID);
 
-		//Load Progress File
-		gv.progressRecord = lp.ReadFileEncrypted(gv.modFolder + "\\donottouch\\progress.json");
-		gv.legendaryFile = lp.ReadFileEncrypted(gv.modFolder + "\\donottouch\\legendary.json");
+		//Load Progress File and log issue if it doesn't exist
+		try {
+			gv.progressRecord = lp.ReadFileEncrypted(gv.modFolder + "/donottouch/progress.json");
+		} catch (error) {
+			gv.logger.info("POOP: Progress file not found.");
+		}
+
+		//Load Legendary File and log issue if it doesn't exist
+		try {
+			gv.legendaryFile = lp.ReadFileEncrypted(gv.modFolder + "/donottouch/legendary.json");
+		} catch (error) {
+			gv.logger.info("POOP: Legendary file not found.");
+		}
 
 	}
 
-	//All functions that need to be run when the route "/raid/profile/save" is used should go in here, as config-reliant conditionals can't be used on the initial load function
-	onRaidSave(url, info, sessionId, output) {
-		gv.logger.info('POOP: onRaidSave')
-
-		//LegendaryPlayer.recordWinLoss(url, info, sessionId)
-
-		//delete database.globals.config.genVals
-		return output
-	}
+	
 
 }
 
