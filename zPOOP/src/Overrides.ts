@@ -70,7 +70,7 @@ export class Overrides{
 			}
 			else if (info.exit == "runner")
 			{
-                runThroughs++;
+                runthroughs++;
 				gv.logger.info("POOP: Runner Status. Your raid was not counted.");
 			}
 		}
