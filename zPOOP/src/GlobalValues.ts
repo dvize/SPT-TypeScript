@@ -43,6 +43,7 @@ export class GlobalValues
 	public static jsonUtil: JsonUtil;
 
  	public static legendWinMin: number = 10;
+	public static LegendaryPlayerModeChance: number = 15;
 
     static clone(data: any) {
 		return JSON.parse(JSON.stringify(data));

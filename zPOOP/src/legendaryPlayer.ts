@@ -7,11 +7,12 @@ import * as crypto from 'crypto';
 import { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
 import { Difficulties } from "@spt-aki/models/eft/common/tables/IBotType";
 import { Item } from "@spt-aki/models/eft/common/tables/IItem";
-import { SideEffect } from '../types/models/eft/common/tables/IItem';
 
 export class LegendaryPlayer {
 
-	//store legendary player into the botgenerationcache
+//LEGENDARY PLAYER METHODS
+
+    //store legendary player into botcache
 	static PushLegendaryPlayer(SessionID: string)
 	{
 		
@@ -21,9 +22,8 @@ export class LegendaryPlayer {
 		}
 
 		//legendary player chance is 15 percent right now
-		const LegendaryPlayerModeChance: boolean = gv.randomUtil.getChance100(85);
-
-		if (LegendaryPlayerModeChance) {
+        let randomChance = gv.randomUtil.getChance100(100-gv.LegendaryPlayerModeChance);
+		if (randomChance) {
 			
 			//create array of bots based on player.info.side and player.info.settings.difficulty
 			let botarray: IBotBase[] = [];
@@ -45,7 +45,7 @@ export class LegendaryPlayer {
 		}
 	}
 
-	static CheckLegendaryPlayer(SessionID: string){
+	static CheckLegendaryPlayer(progressRecord: progressRecord, SessionID: string){
 		//check if progressfile has consecutivesuccesful raids over const legendwinmin
 		let progressFile: progressRecord = this.ReadFileEncrypted(`${gv.modFolder}/donottouch/progress.json`);
 		if (progressFile == null) {
@@ -54,27 +54,19 @@ export class LegendaryPlayer {
 		}
 
 		let winMinimum: number = gv.legendWinMin;
-		let successRaids: number = progressFile.successfulConsecutiveRaids;
-        let failedRaids: number = progressFile.failedConsecutiveRaids;
-        let runThroughs: number = progressFile.runThroughs;
+		let successRaids: number = progressRecord.successfulConsecutiveRaids;
+        let failedRaids: number = progressRecord.failedConsecutiveRaids;
+        let runThroughs: number = progressRecord.runThroughs;
 
-		//if win minimum is reached, update legendary player file
+		//if win minimum is reached, create legendary player
         if (successRaids >= winMinimum) {
             gv.logger.info(`POOP: Updating with ${successRaids} successful raids, ${failedRaids} failed raids, and ${runThroughs} runthroughs`);
-            this.CreateProgressFile(successRaids, failedRaids, runThroughs);
+            this.StoreLegendBotFile(SessionID);
         }
 
+        this.CreateProgressFile(successRaids, failedRaids, runThroughs);
 
 	}
-
-    static CreateProgressFile(successful: number, failed: number, runthroughs: number){
-        let progressFile: progressRecord = {
-            successfulConsecutiveRaids: successful,
-            failedConsecutiveRaids: failed,
-            runThroughs: runthroughs
-        }
-        this.SaveToFileEncrypted(progressFile, `${gv.modFolder}/donottouch/progress.json`);
-    }
 
 	static CreateBot(player: IPmcData, difficulty: string): IBotBase
 	{
@@ -110,6 +102,19 @@ export class LegendaryPlayer {
 		}
 	}
 
+//PROGRESS FILE RELATED METHODS
+
+static CreateProgressFile(successful: number, failed: number, runthroughs: number){
+    let progressFile: progressRecord = {
+        successfulConsecutiveRaids: successful,
+        failedConsecutiveRaids: failed,
+        runThroughs: runthroughs
+    }
+    this.SaveToFileEncrypted(progressFile, `${gv.modFolder}/donottouch/progress.json`);
+}
+
+
+//TOOL METHODS
 	static PreparePlayerStashIDs(items: any): Item[] {
 
 		let newItems = [];
@@ -158,28 +163,6 @@ export class LegendaryPlayer {
 		else {
 			gv.logger.error(`POOP:${filePath} Hash is not valid`);
 			return null;
-		}
-	}
-
-	//does it know if it should be a death or survival?
-	static progDifficultygenerated(survivalcount: number, threshold: number, step: number): number {
-		let change = Math.round(Math.pow(step, survivalcount) * 100) / 100
-		change -= 1;
-
-		if (change > threshold) {
-			return threshold
-		} else {
-			let output = change.toFixed(2)
-			return parseFloat(output);
-		}
-	}
-
-	static serialize(data: { err: number; errmsg: any; data: any; }, prettify = false) {
-		if (prettify) {
-			return JSON.stringify(data, null, "\t");
-		}
-		else {
-			return JSON.stringify(data);
 		}
 	}
 
