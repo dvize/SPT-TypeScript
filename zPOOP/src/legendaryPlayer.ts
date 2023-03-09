@@ -1,215 +1,121 @@
 import { IBotBase } from "@spt-aki/models/eft/common/tables/IBotBase";
-import { globalValues } from "./POOP";
-import { PoopDifficulty } from "./PoopDifficulty";
+import { GlobalValues as gv} from "./GlobalValuesModule";
+import { POOPDifficulty as pd} from "./POOPDifficulty";
 import { HashUtil } from "@spt-aki/utils/HashUtil";
-import { config } from "process";
+import * as crypto from 'crypto';
+import { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
+import { Difficulties } from "@spt-aki/models/eft/common/tables/IBotType";
+import { Item } from "@spt-aki/models/eft/common/tables/IItem";
 
 export class LegendaryPlayer {
 
-	public static assaultTypes: string[] = ["assaulteasy", "assaultnormal", "assaulthard", "cursedassaulteasy",
-		"cursedassaultnormal", "cursedassaulthard"];
-
-	public static pmcTypes: string[] = ["sptbeareasy", "sptbearnormal", "sptbearhard", "sptuseceasy",
-		"sptusecnormal", "sptusechard"];
-
-	static getBot(key: string): IBotBase {
-		globalValues.Logger.warning(`requested bot type ${key} from cache`);
-		if (globalValues.botGenerationCacheService.storedBots.has(key)) {
-			const cachedOfType = globalValues.botGenerationCacheService.storedBots.get(key);
-
-			if (cachedOfType.length > 0) {
-				//this logic is fcuked up.   assault is included in cursedassault and assaultGroup?
-				if (LegendaryPlayer.assaultTypes.includes(key.toLowerCase())) {
-					let chance = globalValues.botGenerator.randomUtil.getChance100(globalValues.config.aiChanges.chanceChangeScavToWild);
-
-					if (chance) {
-						let newrole: string = globalValues.botGenerator.randomUtil.getArrayValue(globalValues.config.aiChanges.scavAltRolesPickList);
-						newrole = globalValues.roleCase[newrole];
-						cachedOfType[cachedOfType.length - 1].Info.Settings.Role = newrole;
-						cachedOfType[cachedOfType.length - 1].Info.Side = "Savage";
-						
-						
-						globalValues.Logger.info(`POOP: Substituting ${key} with ${newrole}!`);
-						return cachedOfType.pop();
-					}
-					globalValues.Logger.info(`POOP: Not Substituting ${key}!`);
-				}
-
-				return cachedOfType.pop();
-			}
-
-			globalValues.Logger.error(globalValues.botGenerationCacheService.localisationService.getText("bot-cache_has_zero_bots_of_requested_type", key));
-		}
-
-		globalValues.Logger.error(globalValues.botGenerationCacheService.localisationService.getText("bot-no_bot_type_in_cache", key));
-
-		return undefined;
-	}
-	
-	static legendaryPlayerCheck(sessionID: string) {
-		if (globalValues.progressRecord[sessionID]) {
-
-			if (globalValues.profileHelper.getPmcProfile(sessionID)) {
-
-				let setLegendary: boolean;
-				//Logger.info(`in legendaryPlayerCheck function`)
-
-				let therecord = globalValues.progressRecord[sessionID];
-
-				//Logger.info(`therecord: ${globalValues.serialize(therecord)}`)
-				
-
-				if (therecord.deathStreak > 0) {
-					setLegendary = false;
-					globalValues.Logger.info(`Last Winstreak: ${this.serialize(therecord.winStreak)}`)
-					this.createLegendPlayer(sessionID, setLegendary);
-					return;
-				}
-				if (therecord.winStreak >= 10) //change this later back to 10
-				{
-					setLegendary = true;
-					globalValues.Logger.info(`Current Winstreak: ${this.serialize(therecord.winStreak)}`)
-					this.createLegendPlayer(sessionID, setLegendary);
-					return;
-				}
-			}
-		}
-
-	}
-
-	static createLegendPlayer(sessionID: string, setLegendary: boolean): void {
-		if (setLegendary) {
-			//do stuff here, add check to see if entry already exists
-			//check if existing array of playerprofiles
-
-			let playerprofile = this.clone(globalValues.profileHelper.getPmcProfile(sessionID));
-
-			if (playerprofile) {
-
-				for(let item in playerprofile.Inventory.items)
-				{
-					playerprofile.Inventory.items[item]._id = globalValues.hashUtil.generate();
-				}
-
-				let newActIDBot = globalValues.hashUtil.generate();
-				globalValues.Logger.info(`newActIDBot: ${newActIDBot}`);
-				if (globalValues.legendaryFile[sessionID]) {
-					globalValues.Logger.info(`POOP: Legendary Player Exists, Overwriting`)
-					//Logger.info(`playerprofile stringified: ${JSON.stringify(playerprofile)}`)
-					globalValues.legendaryFile[sessionID] = playerprofile;
-					globalValues.legendaryFile[sessionID].aid = newActIDBot;
-					globalValues.legendaryFile[sessionID]._id = "pmc"+newActIDBot;
-					globalValues.legendaryFile[sessionID].Info.Settings.Role;
-					globalValues.legendaryFile[sessionID].Info.Settings.BotDifficulty = "hard";
-					this.saveToFile(globalValues.legendaryFile, "donottouch/legendary.json");
-				}
-				else {
-					globalValues.Logger.info(`POOP: Legendary Player Does not exist, adding`)
-					//Logger.info(`playerprofile stringified: ${JSON.stringify(playerprofile)}`)
-					globalValues.legendaryFile[sessionID] = playerprofile;
-					globalValues.legendaryFile[sessionID].aid = newActIDBot;
-					globalValues.legendaryFile[sessionID]._id = "pmc"+newActIDBot;
-					globalValues.legendaryFile[sessionID].Info.Settings.Role;
-					globalValues.legendaryFile[sessionID].Info.Settings.BotDifficulty = "hard";
-					this.saveToFile(globalValues.legendaryFile, "donottouch/legendary.json");
-				}
-				//Logger.info('Saved Legendary Player');
-				//revert profile back in case it changed.
-			}
-		}
-		else {
-			//should i clear legendary profile?
-			globalValues.Logger.info('POOP: setLegendary was false. Do not save Legendary Player')
-
-		}
-	}
-
-	static refreshLegendPlayerIds(playerprofile: IBotBase, sessionID: string): void {
+	//store legendary player into the botgenerationcache
+	static PushLegendaryPlayer(SessionID: string)
+	{
 		
-		for(let item in playerprofile.Inventory.items)
-		{
-			playerprofile.Inventory.items[item]._id = globalValues.hashUtil.generate();
+		let player = this.ReadFileEncrypted(`${gv.modFolder}/donottouch/legendary.json`);
+		if (player == null) {
+			return;
 		}
 
-		let newActIDBot = globalValues.hashUtil.generate();
-		globalValues.Logger.info(`newActIDBot: ${newActIDBot}`);
-		if (globalValues.legendaryFile[sessionID]) {
-			globalValues.legendaryFile[sessionID] = playerprofile;
-			globalValues.legendaryFile[sessionID].aid = newActIDBot;
-			globalValues.legendaryFile[sessionID]._id = "pmc"+newActIDBot;
-			globalValues.legendaryFile[sessionID].Info.Settings.Role;
-			globalValues.legendaryFile[sessionID].Info.Settings.BotDifficulty = "hard";
-			globalValues.Logger.info(`POOP: Refreshing Item Ids for Legendary Player`);
-			//Logger.info(`playerprofile stringified: ${JSON.stringify(playerprofile)}`)
-		}
-	}
-	
+		//legendary player chance is 15 percent right now
+		const LegendaryPlayerModeChance: boolean = gv.randomUtil.getChance100(85);
 
-	static storeLegendinCache(bot: IBotBase, sessionID: string): void {
-
-		globalValues.Logger.info(`in storeLegendinCache function`)
-		//determine if chance
-		let chance = globalValues.botGenerator.randomUtil.getChance100(globalValues.config.aiChanges.chanceLegendReplacesPMC);
-		globalValues.Logger.info(`chance: ${chance}`);
-		if (chance) 
-		{
+		if (LegendaryPlayerModeChance) {
 			
-			//determine original side to store as sptBearnormal or sptUsecnormal
-			let newRole: string;
-			let cacheKey: string; 
-
-			if(bot.Info.Side.toLowerCase() == "usec"){
-				newRole = "sptUsec";
-			}
-			else{
-				newRole = "sptBear";
-			}
-
-			//fill in other ai settings.
-			globalValues.botGenerator.generateDogtag(bot);
-			bot.Info.Side = "Savage"
-			bot.Info.Settings.Role = newRole;
-
+			//create array of bots based on player.info.side and player.info.settings.difficulty
 			let botarray: IBotBase[] = [];
+			let difficultyArray: string[] = ["easy", "normal", "hard", "impossible"];
 
-			//Gen difficulties and then push
+			//loop through the difficulty array and create 2 bots for each difficulty 
+			for (let i = 0; i < difficultyArray.length; i++) {
+				let difficulty = difficultyArray[i];
+				let bot = this.CreateBot(player);
+				bot.Info.Settings.Difficulty = difficulty;
+				bot.Info.Settings.Role = "Savage";
+				bot.Info.Side = "Savage";
+				botarray.push(bot);
+				botarray.push(bot);
+			}
+
+			//generate the key as it is a string value of player.info.side + player.info.settings.difficulty
+			let key = player.Info.Settings.Role + player.Info.Settings.Difficulty;
+			//push the botarray into the botgenerationcache using storemethod
+			gv.botGenerationCacheService.storeBots(player.Info.Side, botarray);
+		}
+
+
+	}
+
+	static CreateBot(player: IPmcData): IBotBase
+	{
+		let bot: IBotBase = player;
+		this.PreparePlayerStashIDs(bot.Inventory.items);
+		return bot;
+	}
+
+	static StoreLegendBotFile(SessionID: string)
+	{
+		if(gv.config.EnableLegendaryPlayerMode){
+			let data: IPmcData = gv.profileHelper.getPmcProfile(SessionID);
+			let legendaryFile: IPmcData = gv.clone(data);
 			
-			bot.Info.Settings.BotDifficulty = `easy`;
-			this.refreshLegendPlayerIds(bot, sessionID);
-			botarray.push(bot);
-			cacheKey = `${bot.Info.Settings.Role}${bot.Info.Settings.BotDifficulty}`;
-			globalValues.Logger.info(`POOP cacheKey: ${cacheKey}`)
-			//globalValues.Logger.info(`POOP botarray: ${JSON.stringify(botarray, null, '\t')}`)	
-			globalValues.botGenerationCacheService.storeBots(cacheKey, botarray);
-			botarray = [];
-
-			bot.Info.Settings.BotDifficulty = `normal`;
-			this.refreshLegendPlayerIds(bot, sessionID);
-			botarray.push(bot);
-			cacheKey = `${bot.Info.Settings.Role}${bot.Info.Settings.BotDifficulty}`;
-			globalValues.Logger.info(`POOP cacheKey: ${cacheKey}`)
-			//globalValues.Logger.info(`POOP botarray: ${JSON.stringify(botarray, null, '\t')}`)	
-			globalValues.botGenerationCacheService.storeBots(cacheKey, botarray);
-			botarray = [];
-
-			bot.Info.Settings.BotDifficulty = `hard`;
-			this.refreshLegendPlayerIds(bot, sessionID);
-			botarray.push(bot);
-			cacheKey = `${bot.Info.Settings.Role}${bot.Info.Settings.BotDifficulty}`;
-			globalValues.Logger.info(`POOP cacheKey: ${cacheKey}`)
-			//globalValues.Logger.info(`POOP botarray: ${JSON.stringify(botarray, null, '\t')}`)	
-			globalValues.botGenerationCacheService.storeBots(cacheKey, botarray);
-			botarray = [];
-
-			globalValues.Logger.info(`POOP: Throwing legendary PMC into cachedbots (not guaranteed)`)
+			let items = legendaryFile.Inventory.items;
+			this.PreparePlayerStashIDs(items);
+	
+			this.SaveToFileEncrypted(legendaryFile, `${gv.modFolder}/donottouch/legendary.json`);
 		}
 	}
 
-	static saveToFile(data, filePath) {
+	static PreparePlayerStashIDs(items: any): Item[] {
+
+		let newItems = [];
+		for (let i = 0; i < items.length; i++) {
+			let item = items[i];
+			if (item._id == "hideout") {
+				continue;
+			}
+			item._id = gv.hashUtil.generate();
+			newItems.push(item);
+		}
+		return newItems;
+	}
+
+	static SaveToFileEncrypted(data: any, filePath: string) {
 		var fs = require('fs');
-		fs.writeFile(globalValues.modFolder + filePath, JSON.stringify(data, null, 4), function (err) {
+		const hashedData = { ...data, hash: this.HashEncode(data) };
+		fs.writeFile(gv.modFolder + filePath, JSON.stringify(hashedData, null, 4), function (err) {
 			if (err) throw err;
 		});
+	}
+
+	static HashEncode(data: any): string {
+		const hash = crypto.createHash('sha256');
+		hash.update(JSON.stringify(data));
+		return hash.digest('hex');
+	  }
+
+	static ReadFileEncrypted(filePath: string): any {
+		var fs = require('fs');
+		const jsonString = fs.readFileSync(filePath, 'utf-8');
+		const data = JSON.parse(jsonString);
+
+		// Now you can access the original data and the hash
+		const originalData = { ...data };
+		delete originalData.hash;
+		const hash = data.hash;
+
+		// Verify the hash by comparing it to a new hash of the original data
+		const newHash = this.HashEncode(originalData);
+		const isHashValid = hash === newHash;
+
+		if (isHashValid) {
+			return originalData;
+		}
+		else {
+			gv.logger.error(`POOP:${filePath} Hash is not valid`);
+			return null;
+		}
 	}
 
 	//does it know if it should be a death or survival?
@@ -223,39 +129,6 @@ export class LegendaryPlayer {
 			let output = change.toFixed(2)
 			return parseFloat(output);
 		}
-	}
-
-
-	static recordWinLoss(url, info, sessionId): void {
-
-		let threshold = 8;
-		let step = 1.05;
-		if (globalValues.config.enableAutomaticDifficulty) {
-			
-			if (info.exit == "survived")//If they survived
-			{
-				globalValues.progressRecord[sessionId].winStreak += 1
-				globalValues.progressRecord[sessionId].deathStreak = 0
-				let diffAdjustment = this.progDifficultygenerated(globalValues.progressRecord[sessionId].winStreak, threshold, step)
-				globalValues.progressRecord[sessionId].diffMod += diffAdjustment;
-				globalValues.Logger.info(`POOP: Added ${diffAdjustment} ... New Difficulty =  ${globalValues.progressRecord[sessionId].diffMod}`)
-			}
-			else if (info.exit == "killed")//If they perished
-			{
-				globalValues.progressRecord[sessionId].winStreak = 0
-				globalValues.progressRecord[sessionId].deathStreak += 1
-				let diffAdjustment = this.progDifficultygenerated(globalValues.progressRecord[sessionId].deathStreak, threshold, step)
-				globalValues.progressRecord[sessionId].diffMod -= diffAdjustment;
-				globalValues.Logger.info(`POOP: Subtracted ${diffAdjustment} ... New Difficulty =  ${globalValues.progressRecord[sessionId].diffMod}`)
-			}
-
-			PoopDifficulty.adjustDifficulty(url, info, sessionId)
-		}
-
-		this.saveToFile(globalValues.progressRecord, "donottouch/progress.json");
-
-		//return globalValues.nullResponse()
-		return;
 	}
 
 	static serialize(data: { err: number; errmsg: any; data: any; }, prettify = false) {

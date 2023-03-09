@@ -1,10 +1,9 @@
 {
-	"enableAutomaticDifficulty": true,
-	"enableLegendaryPlayerMode": true,
-    "aiChanges": {
-		"chanceChangeScavToWild": 50,
-		"chanceLegendReplacesPMC": 100,
-		"scavAltRolesPickList": [
+	"EnableAutomaticDifficulty": true,
+	"EnableLegendaryPlayerMode": true,
+    "AIChanges": {
+		"ChanceChangeScavToNewRole": 50,
+		"ScavAlternateRolesAllowed": [
 			"followerbirdeye", 
 			"followerbigpipe", 
 			"bossknight", 
@@ -13,45 +12,46 @@
 			"bosstagilla",
             "bosszryachiy"
 			],
-        "roguesNeutralToUsecs": false
+        "RoguesNeutralToUsecs": false,
+        "AllowHealthTweaks":{
+            "Enabled": false,
+            "Multipliers": {
+                "PMCHealthMult": 1,
+                "ScavHealthMult": 1,
+                "RaiderHealthMult": 1,
+                "BossHealthMult": 1,
+                "CultistHealthMult": 1
+            }
         },
-    "overallAIDifficultyMod": -0.5,
-    "overallDifficultyMultipliers": {
-        "aiAimSpeedMult": 1,
-        "aiShotSpreadMult": 1,
-        "aiVisionSpeedMult": 1,
-        "aiAccuracyMult": 1,
-        "sniperBotAccuracyMult": 1,
-        "visibleDistanceMult": 1,
-        "semiAutoFireRateMult": 1,
-        "aiRecoilMult": 1.1,
-        "aiHearingMult": 0.3,
-        "visibleAngleMult": 1,
-        "visibleAngleMax": 320,
-        "grenadePrecisionMult": 1,
-        "grenadeThrowRangeMax": 20,
-        "grenadeThrowRangeMult": 1,
-        "allowAimAtHead": true,
-        "allowGrenades": true,
-        "changeHeadHPValues": false
+        "AllowBotsToTalk": {
+            "Scavs": true,
+            "Raiders": true,
+            "PMCs": true,
+            "Bosses": true,
+            "Rogues": true,
+            "Followers": true
+        }
     },
-	"allowHealthTweaks":{
-		"enabled": false,
-		"multipliers": {
-			"PMCHealthMult": 1,
-			"scavHealthMult": 1,
-			"raiderHealthMult": 1,
-			"bossHealthMult": 1,
-			"cultistHealthMult": 1
-		}
-	},
-    "allowBotsToTalk": {
-        "scavs": true,
-        "raiders": true,
-        "PMCs": true,
-        "bosses": true,
-        "rogues": true,
-        "followers": true
-    }
-
+    "Difficulty":{
+        "OverallDifficultyModifier": -0.5,
+        "Multipliers": {
+            "AimSpeedMult": 1,
+            "ShotSpreadMult": 1,
+            "VisionSpeedMult": 1,
+            "AccuracyMult": 1,
+            "SniperBotAccuracyMult": 1,
+            "VisibleDistanceMult": 1,
+            "SemiAutoFireRateMult": 1,
+            "RecoilMult": 1.1,
+            "HearingMult": 0.3,
+            "VisibleAngleMult": 1,
+            "VisibleAngleMax": 320,
+            "GrenadePrecisionMult": 1,
+            "GrenadeThrowRangeMax": 20,
+            "AllowAimAtHead": true,
+            "AllowGrenades": true
+        }
+    },
+    
+    "DebugOutput": true
 }

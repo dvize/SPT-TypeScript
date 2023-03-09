@@ -1,5 +1,5 @@
 {
-	"roletypes": [
+	"Roletypes": [
 		"sectantpriest",
 		"sectantwarrior",
 		"bossbully",
@@ -11,7 +11,7 @@
 		"bossknight",
 		"bosszryachiy"
 	],
-    "AIDifficultyMod": 1,
+    "AIDifficultyModifier": 1,
     "difficulty": {
         "easy": {
             "Aiming": {
