@@ -1,6 +1,7 @@
 import { GlobalValues as gv } from "./GlobalValuesModule";
 import { IBotBase } from "@spt-aki/models/eft/common/tables/IBotBase";
-import { RoleCase } from "./POOPClassDef";
+import { RoleCase, progressRecord } from "./POOPClassDef";
+import { LegendaryPlayer as lp} from './LegendaryPlayer';
 
 export class Overrides{
     public static assaultTypes: string[] = ["assaulteasy", "assaultnormal", "assaulthard", "cursedassaulteasy",
@@ -39,7 +40,6 @@ export class Overrides{
 
             gv.logger.error((gv.botGenerationCacheService as any).localisationService.getText("bot-cache_has_zero_bots_of_requested_type", key));
         }
-
         gv.logger.error((gv.botGenerationCacheService as any).localisationService.getText("bot-no_bot_type_in_cache", key));
 
         return undefined;
@@ -51,12 +51,20 @@ export class Overrides{
 	static onRaidSave(url: string, info: any, sessionId: string, output: string) {
 		gv.logger.info('POOP: onRaidSave')
 
+        let successfulConsecutiveRaids = gv.progressRecord.successfulConsecutiveRaids;
+        let failedConsecutiveRaids = gv.progressRecord.failedConsecutiveRaids;
+
+        //generate progress file if its null
+        let progressFile: progressRecord = lp.ReadFileEncrypted(`${gv.modFolder}/donottouch/progress.json`);
+		if (progressFile == null) {
+            gv.logger.info(`POOP: Progress file not found, creating new file`);
+			lp.CreateProgressFile(0, 0, sessionId, info);
+            progressFile = lp.ReadFileEncrypted(`${gv.modFolder}/donottouch/progress.json`);
+		}
+
 		//read gv.progressRecord and set the values for successfulConsecutive raids, failedConsecutive raids, and runthroughs
 		if (gv.progressRecord) {
-			let successfulConsecutiveRaids = gv.progressRecord.successfulConsecutiveRaids;
-			let failedConsecutiveRaids = gv.progressRecord.failedConsecutiveRaids;
-			let runthroughs = gv.progressRecord.runThroughs;
-
+			
 			//Check if the raid was successful then increment successful raids
 			if (info.exit == "survived")
 			{
@@ -70,12 +78,17 @@ export class Overrides{
 			}
 			else if (info.exit == "runner")
 			{
-                runthroughs++;
 				gv.logger.info("POOP: Runner Status. Your raid was not counted.");
 			}
 		}
 
-		//Check if the raid was successful then increment successful raids
+        //Update progress file
+		if (progressFile != null) {
+            gv.logger.info(`POOP: Updated progress file {SuccessfulConsecutiveRaids: ${successfulConsecutiveRaids}, FailedConsecutiveRaids: ${failedConsecutiveRaids}}`);
+			lp.CreateProgressFile(successfulConsecutiveRaids, failedConsecutiveRaids, sessionId, info);
+		}
+        
+        lp.CheckLegendaryPlayer(gv.progressRecord, sessionId);
 		
 		return output
 	}

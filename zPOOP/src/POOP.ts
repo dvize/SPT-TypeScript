@@ -6,6 +6,7 @@ import { DependencyContainer } from "tsyringe";
 import { BotGenerationCacheService } from "@spt-aki/services/BotGenerationCacheService"
 import { GlobalValues as gv } from "./GlobalValuesModule";
 import {RoleCase, POOPConfig, AITemplate, PmcTypes, RaiderTypes, RogueTypes, ScavTypes, BossTypes, FollowerTypes } from "./POOPClassDef";
+import { RecordSkills as rs } from "./RecordSkillChanges";
 import { POOPDifficulty as pd } from "./POOPDifficulty";
 import { ConfigTypes } from "@spt-aki/models/enums/ConfigTypes";
 import { IBotConfig } from "@spt-aki/models/spt/config/IBotConfig";
@@ -13,6 +14,7 @@ import { IInRaidConfig } from "@spt-aki/models/spt/config/IInraidConfig";
 import { Difficulty, Difficulties } from '@spt-aki/models/eft/common/tables/IBotType';
 import { Overrides } from "./Overrides";
 import { LegendaryPlayer as lp } from "./LegendaryPlayer";
+
 
 class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
 
@@ -56,7 +58,7 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
 
 		//Enable Setting from config
 		if(gv.config.AIChanges.RoguesNeutralToUsecs){
-			pd.SetRogueNeutral();
+			//pd.SetRogueNeutral();
 		}
 
 		if (gv.config.AIChanges.AllowHealthTweaks.Enabled) {
@@ -68,6 +70,9 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
 		}
 
 		pd.NoTalking();
+		
+		//rs.recordSkills();   //Record Skills for all bots
+		//rs.filterSkills();  //Filter Skills for values that remain same for all bots
 
 		gv.logger.info("POOP: Finished")
 	}

@@ -1,4 +1,5 @@
 import {Difficulties} from '@spt-aki/models/eft/common/tables/IBotType';
+import { Difficulty } from '../../../Server/project/src/models/eft/common/tables/IBotType';
 
 export interface POOPConfig {
 	EnableAutomaticDifficulty: boolean;
@@ -54,15 +55,27 @@ export interface POOPConfig {
   export interface AITemplate {
 	RoleTypes: string[];
     AIDifficultyModifier: number;
-    difficulty: Difficulties;
+    difficulty: Difficulty;
   }
   
   export interface progressRecord{
     successfulConsecutiveRaids: number;
     failedConsecutiveRaids: number;
-    runThroughs: number;
+    ScoreData: ScoreData;
   }
-  
+
+  interface ScoreData {
+    PlayerID: string;
+    PlayerName: string;
+    Level: number;
+    ConsSurvived: number;
+    LongestKillShot: number;
+    OverallDeaths: number;
+    OverallKills: number;
+    OverallPedometer: number;
+}
+
+
   export const RoleCase: Record<string, string> = {
     assault: "assault",
     assaultgroup: "assaultGroup",

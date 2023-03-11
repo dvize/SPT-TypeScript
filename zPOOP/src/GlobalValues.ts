@@ -14,7 +14,7 @@ import { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
 import { HashUtil } from "@spt-aki/utils/HashUtil";
 import { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
 import { ILogger } from "@spt-aki/models/spt/utils/ILogger";
-import { POOPConfig, progressRecord } from './POOPClassDef';
+import { POOPConfig, progressRecord, AITemplate } from './POOPClassDef';
 import { ILocationBase } from '@spt-aki/models/eft/common/ILocationBase';
 
 export class GlobalValues
@@ -41,6 +41,7 @@ export class GlobalValues
 	public static hashUtil: HashUtil;
 	public static randomUtil: RandomUtil;
 	public static jsonUtil: JsonUtil;
+	public static AITemplates: AITemplate[];
 
  	public static legendWinMin: number = 10;
 	public static LegendaryPlayerModeChance: number = 15;
