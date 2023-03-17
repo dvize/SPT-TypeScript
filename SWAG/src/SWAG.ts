@@ -154,7 +154,20 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       ],
       "aki"
     );
+
+    staticRouterModService.registerStaticRouter(`${modName}/client/locations`,
+    [
+      {
+        url: "/client/locations",
+        action: (url: string, info: any, sessionID: string, output: string): any => {
+          SWAG.ClearDefaultSpawns();
+          SWAG.ConfigureMaps();
+          return output;
+        }
+      }], "aki");
+
   }
+
 
   postDBLoad(container: DependencyContainer): void {
     logger = container.resolve<ILogger>("WinstonLogger");
@@ -167,8 +180,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
     SWAG.SetConfigCaps();
     SWAG.ReadAllPatterns();
-    SWAG.ClearDefaultSpawns();
-    SWAG.ConfigureMaps();
   }
 
   static SetConfigCaps(): void {
