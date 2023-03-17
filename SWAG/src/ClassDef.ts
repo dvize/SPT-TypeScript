@@ -37,7 +37,7 @@ export interface SWAGConfig {
 	BotType: string;
 	MaxBotCount: number;
   }
-  
+
   export class GroupPattern {
 	Name: string;
 	Bots: Bot[];
@@ -50,8 +50,6 @@ export interface SWAGConfig {
   
   export class MapWrapper {
 	MapName: string[];
-	RandomWaveTimerMin: RandomWaveTimer["RandomWaveTimerMin"];
-	RandomWaveTimerMax: RandomWaveTimer["RandomWaveTimerMax"];
 	MapGroups: GroupPattern[];
 	MapBosses: BossPattern[];
   }

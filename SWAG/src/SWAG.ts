@@ -18,7 +18,7 @@ import { ConfigServer } from "@spt-aki/servers/ConfigServer";
 import * as ClassDef from "./ClassDef";
 
 import config from "../config/config.json";
-import { GlobalRandomWaveTimer, MapWrapper } from './ClassDef';
+import { GlobalRandomWaveTimer, MapWrapper} from './ClassDef';
 import { Map } from '../types/models/eft/common/tables/IItem';
 import { setupMaster } from "cluster";
 
@@ -31,10 +31,6 @@ let databaseServer: DatabaseServer;
 let locations: ILocations;
 let randomUtil: RandomUtil;
 let BossWaveSpawnedOnceAlready: boolean;
-let mapRandomTimerMin: number;
-let mapRandomTimerMax: number;
-let originMapRandomTimerMin: number;
-let originMapRandomTimerMax: number;
 let RandomGroups: ClassDef.GroupPattern[];
 let StaticGroups: ClassDef.GroupPattern[];
 
@@ -286,12 +282,8 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
           // Configure random wave timer.. needs to be reset each map
           GlobalRandomWaveTimer.time_min = config.WaveTimerMinSec;
           GlobalRandomWaveTimer.time_max = config.WaveTimerMaxSec;
-          originMapRandomTimerMin = mapWrapper.RandomWaveTimerMin;
-          originMapRandomTimerMax = mapWrapper.RandomWaveTimerMax;
-          mapRandomTimerMin = mapWrapper.RandomWaveTimerMin;
-          mapRandomTimerMax = mapWrapper.RandomWaveTimerMax;
 
-          SWAG.SetUpGroups(mapGroups, mapBosses, globalmap, mapWrapper);
+          SWAG.SetUpGroups(mapGroups, mapBosses, globalmap, mapWrapper, pattern);
         }
 
         //config.DebugOutput && logger.warning(`Waves for ${globalmap} : ${JSON.stringify(locations[globalmap].base?.waves)}`);
@@ -315,10 +307,11 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     mapGroups: ClassDef.GroupPattern[],
     mapBosses: ClassDef.BossPattern[],
     globalmap: LocationName,
-    mapWrapper: ClassDef.MapWrapper
+    mapWrapper: ClassDef.MapWrapper,
+    pattern: string
   ): void {
     //set up local variables to contain outside of loop
-    RandomGroups = [];
+    RandomGroups = []; //need global to be able to recall itself later.
     const RandomBossGroups: ClassDef.BossPattern[] = [];
     StaticGroups = [];
     const StaticBossGroups: ClassDef.BossPattern[] = [];
@@ -525,8 +518,8 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     globalmap: LocationName
   ): Wave {
     const isRandom = SWAG.isGroupRandom(group);
-    let time_min = isRandom ? (mapRandomTimerMin !== undefined && mapRandomTimerMin !== null ? mapRandomTimerMin : GlobalRandomWaveTimer.time_min) : group.Time_min;
-    let time_max = isRandom ? (mapRandomTimerMax !== undefined && mapRandomTimerMax !== null ? mapRandomTimerMax : GlobalRandomWaveTimer.time_max) : group.Time_max;
+    let time_min = isRandom ? GlobalRandomWaveTimer.time_min : group.Time_min;
+    let time_max = isRandom ? GlobalRandomWaveTimer.time_max : group.Time_max;
 
     const wave: Wave = {
       number: null,
@@ -603,18 +596,11 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
   static incrementTimers(isRandom: boolean): void{
     // If the wave has a random time, increment the wave timer counts
-    if (isRandom && (mapRandomTimerMin == null || mapRandomTimerMax == null)) {
+    if (isRandom) {
       //need to make this so each mapRandomTimerMin and mapRandomTimerMax is added as its own wave and the GlobalRandomTimer is not incremented unless it was selected.
       GlobalRandomWaveTimer.time_min += config.WaveTimerMaxSec;
       GlobalRandomWaveTimer.time_max += config.WaveTimerMaxSec;
       config.DebugOutput && logger.warning("SWAG Incrementing: GlobalRandomWaveTimer.time_min: " + GlobalRandomWaveTimer.time_min + " GlobalRandomWaveTimer.time_max: " + GlobalRandomWaveTimer.time_max + "");
-    }
-    else (isRandom && (mapRandomTimerMin !== null && mapRandomTimerMax !== null))
-    {
-        //need to make this so each mapRandomTimerMin and mapRandomTimerMax is added as its own wave and the GlobalRandomTimer is not incremented unless it was selected.
-        mapRandomTimerMin += originMapRandomTimerMax;
-        mapRandomTimerMax += originMapRandomTimerMax;
-        config.DebugOutput && logger.warning("SWAG Incrementing: mapRandomTimerMin: " + mapRandomTimerMin + " mapRandomTimerMax: " + mapRandomTimerMax + "");
     }
   }
 

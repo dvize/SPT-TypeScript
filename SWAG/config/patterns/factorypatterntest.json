@@ -3,8 +3,6 @@
       "MapName": [
         "factory4_day"
       ],
-      "RandomWaveTimerMin": 200,
-      "RandomWaveTimerMax": 300,
       "MapGroups": [
         {
           "Name": "PMCs",
