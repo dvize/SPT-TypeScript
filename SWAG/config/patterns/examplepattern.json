@@ -1,6 +1,12 @@
 [
   {
-    "MapName": "bigmap",
+    "MapName": [
+      "factory4_day",
+      "factory4_night",
+      "bigmap"
+    ],
+    "RandomWaveTimerMin": 500,
+    "RandomWaveTimerMax": 600,
     "MapGroups": [
       {
         "Name": "Group1",
@@ -28,7 +34,7 @@
             "MaxBotCount": 5
           },
           {
-            "BotType": "marksman",
+            "BotType": "followerbigpipe",
             "MaxBotCount": 5
           }
         ],
@@ -36,7 +42,43 @@
         "Time_max": 20,
         "RandomTimeSpawn": true,
         "OnlySpawnOnce": true,
-        "BotZone": "ZoneDormitory"
+        "BotZone": null
+      },
+      {
+        "Name": "Group3",
+        "Bots": [
+          {
+            "BotType": "exusec",
+            "MaxBotCount": 2
+          },
+          {
+            "BotType": "pmcbot",
+            "MaxBotCount": 2
+          }
+        ],
+        "Time_min": 10,
+        "Time_max": 20,
+        "RandomTimeSpawn": true,
+        "OnlySpawnOnce": false,
+        "BotZone": null
+      },
+      {
+        "Name": "Group4",
+        "Bots": [
+          {
+            "BotType": "sptbear",
+            "MaxBotCount": 2
+          },
+          {
+            "BotType": "sptusec",
+            "MaxBotCount": 2
+          }
+        ],
+        "Time_min": 10,
+        "Time_max": 20,
+        "RandomTimeSpawn": true,
+        "OnlySpawnOnce": false,
+        "BotZone": null
       }
     ],
     "MapBosses": [
@@ -62,7 +104,7 @@
         ],
         "RandomTimeSpawn": true,
         "OnlySpawnOnce": true,
-        "BossZone": "ZoneDormitory"
+        "BossZone": null
       },
       {
         "Name": "Boss Pat 1",
@@ -73,7 +115,7 @@
         "Supports": null,
         "RandomTimeSpawn": true,
         "OnlySpawnOnce": true,
-        "BossZone": "ZoneDormitory"
+        "BossZone": null
       }
     ]
   }

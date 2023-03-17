@@ -2,8 +2,8 @@
 {
 	"aiDifficulty": "normal",
 	"aiAmount": "asonline",
-	"RandomWaveCount": 3,
-	"BossWaveCount": 1,
+	"RandomWaveCount": 2,
+	"BossWaveCount": 0,
 	"SkipOtherBossWavesIfBossWaveSelected": true,
 	"WaveTimerMinSec": 60, 
 	"WaveTimerMaxSec": 120,

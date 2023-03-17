@@ -1,6 +1,10 @@
 [
     {
-      "MapName": "all",
+      "MapName": [
+        "all"
+      ],
+      "RandomWaveTimerMin": 600,
+      "RandomWaveTimerMax": 700,
       "MapGroups": [
         {
           "Name": "PMCs",
