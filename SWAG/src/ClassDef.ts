@@ -49,7 +49,9 @@ export interface SWAGConfig {
   }
   
   export class MapWrapper {
-	MapName: string;
+	MapName: string[];
+	RandomWaveTimerMin: RandomWaveTimer["RandomWaveTimerMin"];
+	RandomWaveTimerMax: RandomWaveTimer["RandomWaveTimerMax"];
 	MapGroups: GroupPattern[];
 	MapBosses: BossPattern[];
   }
@@ -88,3 +90,12 @@ export interface SWAGConfig {
 	Radius: number;
   }
   
+  export class RandomWaveTimer {
+    RandomWaveTimerMin: number;
+    RandomWaveTimerMax: number;
+  };
+
+  export class GlobalRandomWaveTimer {
+    static time_min: number;
+    static time_max: number;
+  };
