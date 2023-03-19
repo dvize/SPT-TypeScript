@@ -18,9 +18,6 @@ import { ConfigServer } from "@spt-aki/servers/ConfigServer";
 import * as ClassDef from "./ClassDef";
 
 import config from "../config/config.json";
-import { GlobalRandomWaveTimer, MapWrapper} from './ClassDef';
-import { Map } from '../types/models/eft/common/tables/IItem';
-import { setupMaster } from "cluster";
 
 const modName = "SWAG";
 let logger: ILogger;
@@ -31,8 +28,7 @@ let databaseServer: DatabaseServer;
 let locations: ILocations;
 let randomUtil: RandomUtil;
 let BossWaveSpawnedOnceAlready: boolean;
-let RandomGroups: ClassDef.GroupPattern[];
-let StaticGroups: ClassDef.GroupPattern[];
+let globalGroupByMaps: { [mapName: string]: ClassDef.MapWrapper } = {};
 
 const customPatterns: Record<string, ClassDef.GroupPattern> = {};
 
@@ -130,9 +126,10 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     town: undefined,
   };
 
-  public static GlobalRandomWaveTimer: ClassDef.GlobalRandomWaveTimer;
-  public static RandomWaveTimers: ClassDef.RandomWaveTimer[] = [];
-
+  public static randomWaveTimer = {
+    time_min: 0,
+    time_max: 0
+  };
 
   preAkiLoad(container: DependencyContainer): void {
     const staticRouterModService = container.resolve<StaticRouterModService>(
@@ -154,16 +151,20 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
             SWAG.ConfigureMaps();
             return output;
           },
-        },
-      ],
-      "aki"
+        },],"aki"
     );
 
-    staticRouterModService.registerStaticRouter(`${modName}/client/locations`,
+    staticRouterModService.registerStaticRouter(
+      `${modName}/client/locations`,
     [
       {
         url: "/client/locations",
-        action: (url: string, info: any, sessionID: string, output: string): any => {
+        action: (
+          url: string, 
+          info: any, 
+          sessionID: string, 
+          output: string
+          ): any => {
           SWAG.ClearDefaultSpawns();
           SWAG.ConfigureMaps();
           return output;
@@ -184,6 +185,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
     SWAG.SetConfigCaps();
     SWAG.ReadAllPatterns();
+    SWAG.fillGlobalPatterns();
   }
 
   static SetConfigCaps(): void {
@@ -257,6 +259,57 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     }
   }
 
+  static fillGlobalPatterns(): void {
+    //put all groups in patterns into globalGroupsByMaps and globalBossByMaps so patterns are organized by same map
+    for (let pattern in customPatterns) {
+      //read mapWrapper in pattern and set its values to be used locally
+      const mapWrapper: ClassDef.MapWrapper = customPatterns[pattern][0];
+      const mapName: string = mapWrapper.MapName;
+      const mapGroups: ClassDef.GroupPattern[] = mapWrapper.MapGroups;
+      const mapBosses: ClassDef.BossPattern[] = mapWrapper.MapBosses;
+
+      if(mapName == "all")
+      {
+        //add groups to globalGroupsByMaps
+        for (let map in locations) {
+          if (globalGroupByMaps[map] == undefined) {
+            globalGroupByMaps[map] = {
+              MapName: map,
+              MapGroups: [],
+              MapBosses: []
+            }
+          }
+          globalGroupByMaps[map].MapGroups.push(...globalGroupByMaps[map].MapGroups, ...mapGroups);
+        }
+        //add bosses to globalBossByMaps
+        for (let map in locations) {
+          globalGroupByMaps[map].MapBosses.push(...globalGroupByMaps[map].MapBosses, ...mapBosses);
+        }
+      }
+      //singular maps listed in the map wrapper
+      else{
+
+        //add groups to globalGroupsByMaps
+        if (globalGroupByMaps[mapName] == undefined) {
+          globalGroupByMaps[mapName] = {
+            MapName: mapName,
+            MapGroups: [],
+            MapBosses: []
+          }
+        }
+        //push the map groups to the globalGroupByMaps
+        globalGroupByMaps[mapName].MapGroups.push(...globalGroupByMaps[mapName].MapGroups, ...mapGroups);
+
+        //push the map bosses to the globalBossByMaps
+        globalGroupByMaps[mapName].MapBosses.push(...globalGroupByMaps[mapName].MapBosses, ...mapBosses);
+      }
+
+    }
+
+    logger.info("SWAG: Global Patterns Filled");
+  }
+
+
   //This is the main top level function
   static ConfigureMaps(): void {
 
@@ -265,25 +318,26 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     Object.keys(locations).filter(
       (name) => this.validMaps.includes(name)
     ).forEach((globalmap: LocationName) => {
-      for (let pattern in customPatterns) {
-        //read mapWrapper in pattern and set its values to be used locally
-        const mapWrapper: ClassDef.MapWrapper = customPatterns[pattern][0];
-        const mapName: string[] = mapWrapper.MapName;
-        const mapGroups: ClassDef.GroupPattern[] = mapWrapper.MapGroups;
-        const mapBosses: ClassDef.BossPattern[] = mapWrapper.MapBosses;
+      for (let map in globalGroupByMaps) { 
 
-        //reset the bossWaveSpawnedOnceAlready flag
-        BossWaveSpawnedOnceAlready = false;
+         //read mapWrapper and set its values to be used locally
+         const mapWrapper: ClassDef.MapWrapper = globalGroupByMaps[map];
+         const mapName: string = mapWrapper.MapName;
+         const mapGroups: ClassDef.GroupPattern[] = mapWrapper.MapGroups;
+         const mapBosses: ClassDef.BossPattern[] = mapWrapper.MapBosses;
+         
+         //reset the bossWaveSpawnedOnceAlready flag
+         BossWaveSpawnedOnceAlready = false;
 
         //if mapName is not the same as the globalmap, skip. otherwise if all or matches, continue
-        if (mapName.some(name => name.toLowerCase().includes(globalmap)) || mapName.includes("all")) {
-          config.DebugOutput && logger.error(`Configuring ${globalmap}`);
+        if (mapName === globalmap) {
+          config.DebugOutput && logger.warning(`Configuring ${globalmap}`);
 
           // Configure random wave timer.. needs to be reset each map
-          GlobalRandomWaveTimer.time_min = config.WaveTimerMinSec;
-          GlobalRandomWaveTimer.time_max = config.WaveTimerMaxSec;
+          SWAG.randomWaveTimer.time_min = config.WaveTimerMinSec;
+          SWAG.randomWaveTimer.time_max = config.WaveTimerMaxSec;
 
-          SWAG.SetUpGroups(mapGroups, mapBosses, globalmap, mapWrapper, pattern);
+          SWAG.SetUpGroups(mapGroups, mapBosses, globalmap);
         }
 
         //config.DebugOutput && logger.warning(`Waves for ${globalmap} : ${JSON.stringify(locations[globalmap].base?.waves)}`);
@@ -306,14 +360,12 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   static SetUpGroups(
     mapGroups: ClassDef.GroupPattern[],
     mapBosses: ClassDef.BossPattern[],
-    globalmap: LocationName,
-    mapWrapper: ClassDef.MapWrapper,
-    pattern: string
+    globalmap: LocationName
   ): void {
     //set up local variables to contain outside of loop
-    RandomGroups = []; //need global to be able to recall itself later.
+    const RandomGroups: ClassDef.GroupPattern[] = [];
     const RandomBossGroups: ClassDef.BossPattern[] = [];
-    StaticGroups = [];
+    const StaticGroups: ClassDef.GroupPattern[] = [];
     const StaticBossGroups: ClassDef.BossPattern[] = [];
     const AlreadySpawnedGroups: ClassDef.GroupPattern[] = [];
     const AlreadySpawnedBossGroups: ClassDef.BossPattern[] = [];
@@ -386,22 +438,18 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     //read a random group from RandomGroups
     const randomGroup = randomUtil.getArrayValue(RandomGroups);
 
-    config.DebugOutput && logger.warning("SWAG: Starting Next Wave of Random Bots");
-
     //check to see if OnlySpawnOnce is true, if so, check to see if group is already spawned
-    if (randomGroup.OnlySpawnOnce && AlreadySpawnedGroups.includes(randomGroup)) {
-      SWAG.SetUpRandomBots(RandomGroups, globalmap, AlreadySpawnedGroups);
-      return;
-    } 
+    // if (randomGroup.OnlySpawnOnce && AlreadySpawnedGroups.includes(randomGroup)) {
+    //   config.DebugOutput && logger.warning(`Already spawned ${randomGroup.Name}, repicking`);
+    //   SWAG.SetUpRandomBots(RandomGroups, globalmap, AlreadySpawnedGroups);
+    //   return;
+    // } 
 
     SWAG.SpawnBots(
       randomGroup,
       globalmap,
       AlreadySpawnedGroups
     );
-
-    const isRandom = SWAG.isGroupRandom(randomGroup);
-    SWAG.incrementTimers(isRandom);
   }
 
   static SetUpRandomBosses(
@@ -426,12 +474,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   ): void {
     //read StaticGroups and set local values
     for (let group of StaticGroups) {
-      //check to see if OnlySpawnOnce is true, if so, check to see if group is already spawned
-      if (group.OnlySpawnOnce && AlreadySpawnedGroups.includes(group)) {
-        SWAG.SetUpStaticBots(StaticGroups, globalmap, AlreadySpawnedGroups);
-        return;
-      } 
-
       SWAG.SpawnBots(
         group,
         globalmap,
@@ -463,24 +505,21 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
     //check to see if RandomBossGroupSpawnOnce is true, if so, check to see if group is already spawned
     if (boss.OnlySpawnOnce && AlreadySpawnedBossGroups.includes(boss)) {
-      //SWAG.resetTimerPrevious();
       return;
     }
 
+    AlreadySpawnedBossGroups.push(boss);
+
     //check chance against randomint100 to see if boss should spawn from config.bossChance
     if (SWAG.getRandIntInclusive(0,100) > config.BossChance) {
-      //SWAG.resetTimerPrevious();
       return;
     }
 
     //check make sure BossWaveSpawnedOnceAlready = true and config.SkipOtherBossWavesIfBossWaveSelected = true
     if (BossWaveSpawnedOnceAlready && config.SkipOtherBossWavesIfBossWaveSelected) {
       config.DebugOutput && logger.info("SWAG: Skipping boss spawn as one spawned already")
-      //SWAG.resetTimerPrevious();
       return;
     }
-    
-    AlreadySpawnedBossGroups.push(boss);
 
     //read group and create wave from individual boss but same timing and location if RandomBossGroupBotZone is not null
     let wave: BossLocationSpawn = SWAG.ConfigureBossWave(
@@ -496,7 +535,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     globalmap: LocationName,
     AlreadySpawnedGroups: ClassDef.GroupPattern[]
   ): void {
-    //if it reached this point then we already checked to see if alreadyspawned before
+    
     AlreadySpawnedGroups.push(group);
 
     //read group and create wave from individual bots but same timing and location if StaticGroupBotZone is not null
@@ -518,14 +557,12 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     globalmap: LocationName
   ): Wave {
     const isRandom = SWAG.isGroupRandom(group);
-    let time_min = isRandom ? GlobalRandomWaveTimer.time_min : group.Time_min;
-    let time_max = isRandom ? GlobalRandomWaveTimer.time_max : group.Time_max;
 
     const wave: Wave = {
       number: null,
       WildSpawnType: SWAG.roleCase[bot.BotType.toLowerCase()],
-      time_min: time_min,
-      time_max: time_max,
+      time_min: isRandom ? SWAG.randomWaveTimer.time_min : group.Time_min,
+      time_max: isRandom ? SWAG.randomWaveTimer.time_max : group.Time_max,
       slots_min: 1,
       slots_max: Math.floor(
         bot.MaxBotCount *
@@ -546,6 +583,14 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       isPlayers: SWAG.pmcType.includes(bot.BotType.toLowerCase()),
     };
 
+    // If the wave has a random time, increment the wave timer counts
+    if (isRandom) {
+
+      //wave time increment is getting bigger each wave. Fix this by adding maxtimer to min timer
+      SWAG.randomWaveTimer.time_min += config.WaveTimerMaxSec;
+      SWAG.randomWaveTimer.time_max += config.WaveTimerMaxSec;
+    }
+
     config.DebugOutput && logger.info("SWAG: Configured Bot Wave: " + JSON.stringify(wave));
 
     return wave;
@@ -553,9 +598,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
   static ConfigureBossWave(
     boss: BossLocationSpawn,
-    globalmap: LocationName,
-    RandomWaveTimerMin?: number,
-    RandomWaveTimerMax?: number
+    globalmap: LocationName
   ): BossLocationSpawn {
     //read support bots if defined, set the difficulty to match config
     boss?.Supports?.forEach(escort => {
@@ -592,16 +635,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     config.DebugOutput && logger.warning("SWAG: Configured Boss Wave: " + JSON.stringify(wave));
     
     return wave;
-  }
-
-  static incrementTimers(isRandom: boolean): void{
-    // If the wave has a random time, increment the wave timer counts
-    if (isRandom) {
-      //need to make this so each mapRandomTimerMin and mapRandomTimerMax is added as its own wave and the GlobalRandomTimer is not incremented unless it was selected.
-      GlobalRandomWaveTimer.time_min += config.WaveTimerMaxSec;
-      GlobalRandomWaveTimer.time_max += config.WaveTimerMaxSec;
-      config.DebugOutput && logger.warning("SWAG Incrementing: GlobalRandomWaveTimer.time_min: " + GlobalRandomWaveTimer.time_min + " GlobalRandomWaveTimer.time_max: " + GlobalRandomWaveTimer.time_max + "");
-    }
   }
 
   static getRandIntInclusive(min: number, max: number): number {

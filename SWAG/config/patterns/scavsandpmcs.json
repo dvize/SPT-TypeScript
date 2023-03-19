@@ -1,8 +1,6 @@
 [
     {
-      "MapName": [
-        "all"
-      ],
+      "MapName": "all",
       "MapGroups": [
         {
           "Name": "PMCs",

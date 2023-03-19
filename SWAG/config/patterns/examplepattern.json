@@ -1,10 +1,6 @@
 [
   {
-    "MapName": [
-      "factory4_day",
-      "factory4_night",
-      "bigmap"
-    ],
+    "MapName": "all",
     "MapGroups": [
       {
         "Name": "Group1",
