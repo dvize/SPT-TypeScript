@@ -1,21 +1,22 @@
-import { DependencyContainer } from "tsyringe";
-import { IPreAkiLoadMod } from "@spt-aki/models/external/IPreAkiLoadMod";
-import { IPostDBLoadMod } from "@spt-aki/models/external/IPostDBLoadMod";
-import { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
-import { ILogger } from "@spt-aki/models/spt/utils/ILogger";
-import { StaticRouterModService } from "@spt-aki/services/mod/staticRouter/StaticRouterModService";
-import { RandomUtil } from "@spt-aki/utils/RandomUtil";
-import { JsonUtil } from "@spt-aki/utils/JsonUtil";
 import {
-BossLocationSpawn,
-ILocationBase,
-Wave,
+  BossLocationSpawn,
+  ILocationBase,
+  Wave,
 } from "@spt-aki/models/eft/common/ILocationBase";
 import { ConfigTypes } from "@spt-aki/models/enums/ConfigTypes";
+import { IPostDBLoadMod } from "@spt-aki/models/external/IPostDBLoadMod";
+import { IPreAkiLoadMod } from "@spt-aki/models/external/IPreAkiLoadMod";
 import { IBotConfig } from "@spt-aki/models/spt/config/IBotConfig";
 import { ILocations } from "@spt-aki/models/spt/server/ILocations";
+import { ILogger } from "@spt-aki/models/spt/utils/ILogger";
 import { ConfigServer } from "@spt-aki/servers/ConfigServer";
+import { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
+import { StaticRouterModService } from "@spt-aki/services/mod/staticRouter/StaticRouterModService";
+import { JsonUtil } from "@spt-aki/utils/JsonUtil";
+import { RandomUtil } from "@spt-aki/utils/RandomUtil";
+import { DependencyContainer } from "tsyringe";
 import * as ClassDef from "./ClassDef";
+import { BossPattern, GroupPattern } from "./ClassDef";
 
 import config from "../config/config.json";
 
@@ -28,12 +29,27 @@ let databaseServer: DatabaseServer;
 let locations: ILocations;
 let randomUtil: RandomUtil;
 let BossWaveSpawnedOnceAlready: boolean;
-let globalGroupByMaps: { [mapName: string]: ClassDef.MapWrapper } = {};
 
 const customPatterns: Record<string, ClassDef.GroupPattern> = {};
 
 type LocationName = keyof Omit<ILocations, "base">;
-type LocationBackupData = Record<LocationName,  { waves: Wave[], BossLocationSpawn: BossLocationSpawn[], openZones: string[] } | undefined>;
+type LocationBackupData = Record<
+  LocationName,
+  | {
+      waves: Wave[];
+      BossLocationSpawn: BossLocationSpawn[];
+      openZones: string[];
+    }
+  | undefined
+>;
+
+type GlobalPatterns = Record<string, MapPatterns>;
+type MapPatterns = {
+  MapGroups: GroupPattern[];
+  MapBosses: BossPattern[];
+};
+
+const globalPatterns: GlobalPatterns = {};
 
 class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   public static roleCase: object = {
@@ -116,7 +132,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     shoreline: undefined,
     tarkovstreets: undefined,
     woods: undefined,
-  
+
     // unused
     develop: undefined,
     hideout: undefined,
@@ -128,7 +144,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
   public static randomWaveTimer = {
     time_min: 0,
-    time_max: 0
+    time_max: 0,
   };
 
   preAkiLoad(container: DependencyContainer): void {
@@ -151,28 +167,31 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
             SWAG.ConfigureMaps();
             return output;
           },
-        },],"aki"
+        },
+      ],
+      "aki"
     );
 
     staticRouterModService.registerStaticRouter(
       `${modName}/client/locations`,
-    [
-      {
-        url: "/client/locations",
-        action: (
-          url: string, 
-          info: any, 
-          sessionID: string, 
-          output: string
+      [
+        {
+          url: "/client/locations",
+          action: (
+            url: string,
+            info: any,
+            sessionID: string,
+            output: string
           ): any => {
-          SWAG.ClearDefaultSpawns();
-          SWAG.ConfigureMaps();
-          return output;
-        }
-      }], "aki");
-
+            SWAG.ClearDefaultSpawns();
+            SWAG.ConfigureMaps();
+            return output;
+          },
+        },
+      ],
+      "aki"
+    );
   }
-
 
   postDBLoad(container: DependencyContainer): void {
     logger = container.resolve<ILogger>("WinstonLogger");
@@ -212,28 +231,32 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   /**
    * Returns all available OpenZones specified in location.base.OpenZones as well as any OpenZone found in the SpawnPointParams.
    * Filters out all sniper zones
-   * @param map 
-   * @returns 
+   * @param map
+   * @returns
    */
   static GetOpenZones(map: LocationName): string[] {
     const baseobj: ILocationBase = locations[map]?.base;
 
     // Get all OpenZones defined in the base obj that do not include sniper zones. Need to filter for empty strings as well.
-    const foundOpenZones = baseobj?.OpenZones?.split(",")
-      .filter((name) => !name.includes("Snipe"))
-      .filter((name) => name.trim() !== "") ?? [];
+    const foundOpenZones =
+      baseobj?.OpenZones?.split(",")
+        .filter((name) => !name.includes("Snipe"))
+        .filter((name) => name.trim() !== "") ?? [];
 
     // Sometimes there are zones in the SpawnPointParams that arent listed in the OpenZones, parse these and add them to the list of zones
     baseobj?.SpawnPointParams?.forEach((spawn) => {
       //check spawn for open zones and if it doesn't exist add to end of array
-      if (spawn?.BotZoneName && !foundOpenZones.includes(spawn.BotZoneName) && !spawn.BotZoneName.includes("Snipe")) {
+      if (
+        spawn?.BotZoneName &&
+        !foundOpenZones.includes(spawn.BotZoneName) &&
+        !spawn.BotZoneName.includes("Snipe")
+      ) {
         foundOpenZones.push(spawn.BotZoneName);
       }
     });
-    
+
     //logger.info(`SWAG: Open Zones(${map}): ${JSON.stringify(foundOpenZones)}`);
     return foundOpenZones;
-
   }
 
   static ReadAllPatterns(): void {
@@ -260,101 +283,78 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   }
 
   static fillGlobalPatterns(): void {
-    //put all groups in patterns into globalGroupsByMaps and globalBossByMaps so patterns are organized by same map
-    for (let pattern in customPatterns) {
-      //read mapWrapper in pattern and set its values to be used locally
-      const mapWrapper: ClassDef.MapWrapper = customPatterns[pattern][0];
-      const mapName: string = mapWrapper.MapName;
-      const mapGroups: ClassDef.GroupPattern[] = mapWrapper.MapGroups;
-      const mapBosses: ClassDef.BossPattern[] = mapWrapper.MapBosses;
+    // Loop through all the custom patterns
+    for (const [key, value] of Object.entries(customPatterns)) {
+      // `value` is an array of objects containing `MapWrapper`, `GroupPattern`, and `BossPattern` objects
+      const mapWrapper = value[0];
+      const mapName = mapWrapper.MapName;
+      const mapGroups = mapWrapper.MapGroups;
+      const mapBosses = mapWrapper.MapBosses;
 
-      if(mapName == "all")
-      {
-        //add groups to globalGroupsByMaps
-        for (let map in locations) {
-          if (globalGroupByMaps[map] == undefined) {
-            globalGroupByMaps[map] = {
-              MapName: map,
-              MapGroups: [],
-              MapBosses: []
-            }
-          }
-          globalGroupByMaps[map].MapGroups.push(...globalGroupByMaps[map].MapGroups, ...mapGroups);
-        }
-        //add bosses to globalBossByMaps
-        for (let map in locations) {
-          globalGroupByMaps[map].MapBosses.push(...globalGroupByMaps[map].MapBosses, ...mapBosses);
-        }
-      }
-      //singular maps listed in the map wrapper
-      else{
-
-        //add groups to globalGroupsByMaps
-        if (globalGroupByMaps[mapName] == undefined) {
-          globalGroupByMaps[mapName] = {
-            MapName: mapName,
-            MapGroups: [],
-            MapBosses: []
-          }
-        }
-        //push the map groups to the globalGroupByMaps
-        globalGroupByMaps[mapName].MapGroups.push(...globalGroupByMaps[mapName].MapGroups, ...mapGroups);
-
-        //push the map bosses to the globalBossByMaps
-        globalGroupByMaps[mapName].MapBosses.push(...globalGroupByMaps[mapName].MapBosses, ...mapBosses);
+      // Create an entry in globalPatterns for the map, if it doesn't exist
+      if (!globalPatterns[mapName]) {
+        globalPatterns[mapName] = { MapGroups: [], MapBosses: [] };
       }
 
+      // Add the mapGroups and mapBosses to the globalPatterns object
+      globalPatterns[mapName].MapGroups.push(...mapGroups);
+      globalPatterns[mapName].MapBosses.push(...mapBosses);
+
+      // If the mapName is "all", add the patterns to all maps
+      if (mapName === "all") {
+        for (const map in locations) {
+          if (!globalPatterns[map]) {
+            globalPatterns[map] = { MapGroups: [], MapBosses: [] };
+          }
+
+          globalPatterns[map].MapGroups.push(...mapGroups);
+          globalPatterns[map].MapBosses.push(...mapBosses);
+        }
+      }
     }
 
     logger.info("SWAG: Global Patterns Filled");
   }
 
-
   //This is the main top level function
   static ConfigureMaps(): void {
-
     // read all customPatterns and push them to the locations table. Invalid maps were being read, those should be filteredout as it causes an error when
     // assigning an openzone to a map that doesn't exist (base)
-    Object.keys(locations).filter(
-      (name) => this.validMaps.includes(name)
-    ).forEach((globalmap: LocationName) => {
-      for (let map in globalGroupByMaps) { 
+    Object.keys(locations)
+      .filter((name) => this.validMaps.includes(name))
+      .forEach((globalmap: LocationName) => {
+        //globalmap is the map name, locations[globalmap] is the map object
+        config.DebugOutput && logger.warning(`Configuring ${globalmap}`);
 
-         //read mapWrapper and set its values to be used locally
-         const mapWrapper: ClassDef.MapWrapper = globalGroupByMaps[map];
-         const mapName: string = mapWrapper.MapName;
-         const mapGroups: ClassDef.GroupPattern[] = mapWrapper.MapGroups;
-         const mapBosses: ClassDef.BossPattern[] = mapWrapper.MapBosses;
-         
-         //reset the bossWaveSpawnedOnceAlready flag
-         BossWaveSpawnedOnceAlready = false;
+        //read groups setup for globalpatterns
+        const mapGroups: ClassDef.GroupPattern[] =
+          globalPatterns[globalmap].MapGroups;
+        const mapBosses: ClassDef.BossPattern[] =
+          globalPatterns[globalmap].MapBosses;
 
-        //if mapName is not the same as the globalmap, skip. otherwise if all or matches, continue
-        if (mapName === globalmap) {
-          config.DebugOutput && logger.warning(`Configuring ${globalmap}`);
+        //reset the bossWaveSpawnedOnceAlready flag
+        BossWaveSpawnedOnceAlready = false;
 
-          // Configure random wave timer.. needs to be reset each map
-          SWAG.randomWaveTimer.time_min = config.WaveTimerMinSec;
-          SWAG.randomWaveTimer.time_max = config.WaveTimerMaxSec;
+        // Configure random wave timer.. needs to be reset each map
+        SWAG.randomWaveTimer.time_min = config.WaveTimerMinSec;
+        SWAG.randomWaveTimer.time_max = config.WaveTimerMaxSec;
 
-          SWAG.SetUpGroups(mapGroups, mapBosses, globalmap);
-        }
+        SWAG.SetUpGroups(mapGroups, mapBosses, globalmap);
 
         //config.DebugOutput && logger.warning(`Waves for ${globalmap} : ${JSON.stringify(locations[globalmap].base?.waves)}`);
-      }
-    });
+      });
   }
 
   /**
    * Groups can be marked random with the RandomTimeSpawn. groups that dont have a time_max or time_min will also be considered random
-   * @param group 
-   * @returns 
+   * @param group
+   * @returns
    */
   static isGroupRandom(group: ClassDef.GroupPattern) {
     const isRandomMin = group.Time_min === null || group.Time_min === undefined;
     const isRandomMax = group.Time_max === null || group.Time_max === undefined;
 
-    return group.RandomTimeSpawn || isRandomMax || isRandomMin
+    return group.RandomTimeSpawn || isRandomMax || isRandomMin;
   }
 
   static SetUpGroups(
@@ -392,7 +392,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       } else {
         StaticBossGroups.push(boss);
       }
-
     }
 
     //if RandomGroups is not empty, set up bot spawning for random groups
@@ -439,17 +438,26 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     const randomGroup = randomUtil.getArrayValue(RandomGroups);
 
     //check to see if OnlySpawnOnce is true, if so, check to see if group is already spawned
-    // if (randomGroup.OnlySpawnOnce && AlreadySpawnedGroups.includes(randomGroup)) {
-    //   config.DebugOutput && logger.warning(`Already spawned ${randomGroup.Name}, repicking`);
-    //   SWAG.SetUpRandomBots(RandomGroups, globalmap, AlreadySpawnedGroups);
-    //   return;
-    // } 
+    if (
+      randomGroup.OnlySpawnOnce &&
+      AlreadySpawnedGroups.includes(randomGroup)
+    ) {
+      //if group is already spawned, repick a random group
+      config.DebugOutput &&
+        logger.warning(`Already spawned ${randomGroup.Name}, repicking`);
+      const remainingGroups = RandomGroups.filter(
+        (group) => group !== randomGroup
+      );
+      if (remainingGroups.length > 0) {
+        // recursively call until no more groups left to check
+        SWAG.SetUpRandomBots(remainingGroups, globalmap, AlreadySpawnedGroups);
+      } else {
+        // no more groups left to check, exit back to SetUpGroups
+        return;
+      }
+    }
 
-    SWAG.SpawnBots(
-      randomGroup,
-      globalmap,
-      AlreadySpawnedGroups
-    );
+    SWAG.SpawnBots(randomGroup, globalmap, AlreadySpawnedGroups);
   }
 
   static SetUpRandomBosses(
@@ -460,11 +468,33 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     //read a random group from RandomBossGroups
     const randomBossGroup = randomUtil.getArrayValue(RandomBossGroups);
 
-    SWAG.SpawnBosses(
-      randomBossGroup,
-      globalmap,
-      AlreadySpawnedBossGroups
-    );
+    //check to see if RandomBossGroupSpawnOnce is true, if so, check to see if boss group is already spawned
+    if (
+      randomBossGroup.OnlySpawnOnce &&
+      AlreadySpawnedBossGroups.includes(randomBossGroup)
+    ) {
+      //if boss group is already spawned, repick a random boss group
+      config.DebugOutput &&
+        logger.warning(
+          `Already spawned ${randomBossGroup.BossName}, repicking`
+        );
+      const remainingBossGroups = RandomBossGroups.filter(
+        (boss) => boss !== randomBossGroup
+      );
+      if (remainingBossGroups.length > 0) {
+        // recursively call until no more boss groups left to check
+        SWAG.SetUpRandomBosses(
+          remainingBossGroups,
+          globalmap,
+          AlreadySpawnedBossGroups
+        );
+      } else {
+        // no more boss groups left to check, exit back to SetUpGroups
+        return;
+      }
+    }
+
+    SWAG.SpawnBosses(randomBossGroup, globalmap, AlreadySpawnedBossGroups);
   }
 
   static SetUpStaticBots(
@@ -474,11 +504,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   ): void {
     //read StaticGroups and set local values
     for (let group of StaticGroups) {
-      SWAG.SpawnBots(
-        group,
-        globalmap,
-        AlreadySpawnedGroups
-      );
+      SWAG.SpawnBots(group, globalmap, AlreadySpawnedGroups);
     }
   }
 
@@ -489,11 +515,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   ): void {
     //read StaticBossGroups and set local values
     for (let boss of StaticBossGroups) {
-      SWAG.SpawnBosses(
-        boss,
-        globalmap,
-        AlreadySpawnedBossGroups
-      );
+      SWAG.SpawnBosses(boss, globalmap, AlreadySpawnedBossGroups);
     }
   }
 
@@ -502,30 +524,25 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     globalmap: LocationName,
     AlreadySpawnedBossGroups: ClassDef.BossPattern[]
   ): void {
-
-    //check to see if RandomBossGroupSpawnOnce is true, if so, check to see if group is already spawned
-    if (boss.OnlySpawnOnce && AlreadySpawnedBossGroups.includes(boss)) {
-      return;
-    }
-
     AlreadySpawnedBossGroups.push(boss);
 
     //check chance against randomint100 to see if boss should spawn from config.bossChance
-    if (SWAG.getRandIntInclusive(0,100) > config.BossChance) {
+    if (SWAG.getRandIntInclusive(0, 100) > config.BossChance) {
       return;
     }
 
     //check make sure BossWaveSpawnedOnceAlready = true and config.SkipOtherBossWavesIfBossWaveSelected = true
-    if (BossWaveSpawnedOnceAlready && config.SkipOtherBossWavesIfBossWaveSelected) {
-      config.DebugOutput && logger.info("SWAG: Skipping boss spawn as one spawned already")
+    if (
+      BossWaveSpawnedOnceAlready &&
+      config.SkipOtherBossWavesIfBossWaveSelected
+    ) {
+      config.DebugOutput &&
+        logger.info("SWAG: Skipping boss spawn as one spawned already");
       return;
     }
 
     //read group and create wave from individual boss but same timing and location if RandomBossGroupBotZone is not null
-    let wave: BossLocationSpawn = SWAG.ConfigureBossWave(
-      boss,
-      globalmap
-    );
+    let wave: BossLocationSpawn = SWAG.ConfigureBossWave(boss, globalmap);
 
     locations[globalmap].base.BossLocationSpawn.push(wave);
   }
@@ -535,21 +552,15 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     globalmap: LocationName,
     AlreadySpawnedGroups: ClassDef.GroupPattern[]
   ): void {
-    
     AlreadySpawnedGroups.push(group);
 
     //read group and create wave from individual bots but same timing and location if StaticGroupBotZone is not null
     for (let bot of group.Bots) {
-      const wave: Wave = SWAG.ConfigureBotWave(
-        group,
-        bot,
-        globalmap
-      );
+      const wave: Wave = SWAG.ConfigureBotWave(group, bot, globalmap);
 
       locations[globalmap].base.waves.push(wave);
     }
   }
-
 
   static ConfigureBotWave(
     group: ClassDef.GroupPattern,
@@ -571,12 +582,14 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
           ]
       ),
       BotPreset: SWAG.diffProper[config.aiDifficulty.toLowerCase()],
-      SpawnPoints:
-        !!group.BotZone
-          ? group.BotZone
-          : (SWAG.savedLocationData[globalmap].openZones && SWAG.savedLocationData[globalmap].openZones.length > 0 
-            ? randomUtil.getStringArrayValue(SWAG.savedLocationData[globalmap].openZones) 
-            : ""),
+      SpawnPoints: !!group.BotZone
+        ? group.BotZone
+        : SWAG.savedLocationData[globalmap].openZones &&
+          SWAG.savedLocationData[globalmap].openZones.length > 0
+        ? randomUtil.getStringArrayValue(
+            SWAG.savedLocationData[globalmap].openZones
+          )
+        : "",
       //set manually to Savage as supposedly corrects when bot data is requested
       BotSide: "Savage",
       //verify if its a pmcType and set isPlayers to true if it is
@@ -585,13 +598,13 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
     // If the wave has a random time, increment the wave timer counts
     if (isRandom) {
-
       //wave time increment is getting bigger each wave. Fix this by adding maxtimer to min timer
       SWAG.randomWaveTimer.time_min += config.WaveTimerMaxSec;
       SWAG.randomWaveTimer.time_max += config.WaveTimerMaxSec;
     }
 
-    config.DebugOutput && logger.info("SWAG: Configured Bot Wave: " + JSON.stringify(wave));
+    config.DebugOutput &&
+      logger.info("SWAG: Configured Bot Wave: " + JSON.stringify(wave));
 
     return wave;
   }
@@ -601,10 +614,13 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     globalmap: LocationName
   ): BossLocationSpawn {
     //read support bots if defined, set the difficulty to match config
-    boss?.Supports?.forEach(escort => {
-      escort.BossEscortDifficult = [SWAG.diffProper[config.aiDifficulty.toLowerCase()]];
-      escort.BossEscortType = SWAG.roleCase[escort.BossEscortType.toLowerCase()];
-    })
+    boss?.Supports?.forEach((escort) => {
+      escort.BossEscortDifficult = [
+        SWAG.diffProper[config.aiDifficulty.toLowerCase()],
+      ];
+      escort.BossEscortType =
+        SWAG.roleCase[escort.BossEscortType.toLowerCase()];
+    });
 
     //set bossWaveSpawnedOnceAlready to true if not already
     BossWaveSpawnedOnceAlready = true;
@@ -612,14 +628,16 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     const wave: BossLocationSpawn = {
       BossName: SWAG.roleCase[boss.BossName.toLowerCase()],
       // If we are configuring a boss wave, we have already passed an internal check to add the wave based off the bossChance.
-      // Set the bossChance to guarntee the added boss wave is spawned
-      BossChance: 100, 
-      BossZone:
-        !!boss.BossZone
-          ? boss.BossZone
-          : (SWAG.savedLocationData[globalmap].openZones && SWAG.savedLocationData[globalmap].openZones.length > 0 
-            ? randomUtil.getStringArrayValue(SWAG.savedLocationData[globalmap].openZones) 
-            : ""),
+      // Set the bossChance to guarantee the added boss wave is spawned
+      BossChance: 100,
+      BossZone: !!boss.BossZone
+        ? boss.BossZone
+        : SWAG.savedLocationData[globalmap].openZones &&
+          SWAG.savedLocationData[globalmap].openZones.length > 0
+        ? randomUtil.getStringArrayValue(
+            SWAG.savedLocationData[globalmap].openZones
+          )
+        : "",
       BossPlayer: false,
       BossDifficult: SWAG.diffProper[config.aiDifficulty.toLowerCase()],
       BossEscortType: SWAG.roleCase[boss.BossEscortType.toLowerCase()],
@@ -632,8 +650,9 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       TriggerName: "",
     };
 
-    config.DebugOutput && logger.warning("SWAG: Configured Boss Wave: " + JSON.stringify(wave));
-    
+    config.DebugOutput &&
+      logger.warning("SWAG: Configured Boss Wave: " + JSON.stringify(wave));
+
     return wave;
   }
 
@@ -653,7 +672,11 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       // Save a backup of the wave data and the BossLocationSpawn to use when restoring defaults on raid end. Store openzones in this data as well
       if (!SWAG.savedLocationData[map]) {
         const locationBase = locations[map].base;
-        SWAG.savedLocationData[map] = { waves: locationBase.waves, BossLocationSpawn: locationBase.BossLocationSpawn, openZones: this.GetOpenZones(map) };
+        SWAG.savedLocationData[map] = {
+          waves: locationBase.waves,
+          BossLocationSpawn: locationBase.BossLocationSpawn,
+          openZones: this.GetOpenZones(map),
+        };
       }
 
       // Reset Database, Cringe  -- i stole this code from LUA
