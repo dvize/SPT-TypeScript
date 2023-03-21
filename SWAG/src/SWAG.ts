@@ -16,7 +16,15 @@ import { JsonUtil } from "@spt-aki/utils/JsonUtil";
 import { RandomUtil } from "@spt-aki/utils/RandomUtil";
 import { DependencyContainer } from "tsyringe";
 import * as ClassDef from "./ClassDef";
-import { BossPattern, GroupPattern } from "./ClassDef";
+import {
+  BossPattern,
+  GroupPattern,
+  aiAmountProper,
+  diffProper,
+  pmcType,
+  randomWaveTimer,
+  roleCase,
+} from "./ClassDef";
 
 import config from "../config/config.json";
 
@@ -29,6 +37,7 @@ let databaseServer: DatabaseServer;
 let locations: ILocations;
 let randomUtil: RandomUtil;
 let BossWaveSpawnedOnceAlready: boolean;
+let RandomWaveTimer: randomWaveTimer;
 
 const customPatterns: Record<string, ClassDef.GroupPattern> = {};
 
@@ -52,75 +61,6 @@ type MapPatterns = {
 const globalPatterns: GlobalPatterns = {};
 
 class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
-  public static roleCase: object = {
-    assault: "assault",
-    exusec: "exUsec",
-    marksman: "marksman",
-    pmcbot: "pmcBot",
-    sectantpriest: "sectantPriest",
-    sectantwarrior: "sectantWarrior",
-    assaultgroup: "assaultGroup",
-    bossbully: "bossBully",
-    bosstagilla: "bossTagilla",
-    bossgluhar: "bossGluhar",
-    bosskilla: "bossKilla",
-    bosskojaniy: "bossKojaniy",
-    bosssanitar: "bossSanitar",
-    followerbully: "followerBully",
-    followergluharassault: "followerGluharAssault",
-    followergluharscout: "followerGluharScout",
-    followergluharsecurity: "followerGluharSecurity",
-    followergluharsnipe: "followerGluharSnipe",
-    followerkojaniy: "followerKojaniy",
-    followersanitar: "followerSanitar",
-    followertagilla: "followerTagilla",
-    cursedassault: "cursedAssault",
-    usec: "usec",
-    bear: "bear",
-    sptbear: "sptBear",
-    sptusec: "sptUsec",
-    bosstest: "bossTest",
-    followertest: "followerTest",
-    gifter: "gifter",
-    bossknight: "bossKnight",
-    followerbigpipe: "followerBigPipe",
-    followerbirdeye: "followerBirdEye",
-    bosszryachiy: "bossZryachiy",
-    followerzryachiy: "followerZryachiy",
-  };
-
-  public static pmcType: string[] = ["sptbear", "sptusec"];
-
-  public static validMaps: string[] = [
-    "bigmap",
-    "factory4_day",
-    "factory4_night",
-    "interchange",
-    "laboratory",
-    "lighthouse",
-    "rezervbase",
-    "shoreline",
-    "tarkovstreets",
-    "woods",
-  ];
-
-  public static diffProper = {
-    easy: "easy",
-    asonline: "normal",
-    normal: "normal",
-    hard: "hard",
-    impossible: "impossible",
-    random: "random",
-  };
-
-  public static aiAmountProper = {
-    low: 0.5,
-    asonline: 1,
-    medium: 1,
-    high: 2,
-    horde: 4,
-  };
-
   public static savedLocationData: LocationBackupData = {
     factory4_day: undefined,
     factory4_night: undefined,
@@ -140,11 +80,6 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     suburbs: undefined,
     terminal: undefined,
     town: undefined,
-  };
-
-  public static randomWaveTimer = {
-    time_min: 0,
-    time_max: 0,
   };
 
   preAkiLoad(container: DependencyContainer): void {
@@ -321,7 +256,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     // read all customPatterns and push them to the locations table. Invalid maps were being read, those should be filteredout as it causes an error when
     // assigning an openzone to a map that doesn't exist (base)
     Object.keys(locations)
-      .filter((name) => this.validMaps.includes(name))
+      .filter((name) => ClassDef.validMaps.includes(name))
       .forEach((globalmap: LocationName) => {
         //globalmap is the map name, locations[globalmap] is the map object
         config.DebugOutput && logger.warning(`Configuring ${globalmap}`);
@@ -336,8 +271,8 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
         BossWaveSpawnedOnceAlready = false;
 
         // Configure random wave timer.. needs to be reset each map
-        SWAG.randomWaveTimer.time_min = config.WaveTimerMinSec;
-        SWAG.randomWaveTimer.time_max = config.WaveTimerMaxSec;
+        RandomWaveTimer.Time_min = config.WaveTimerMinSec;
+        RandomWaveTimer.Time_max = config.WaveTimerMaxSec;
 
         SWAG.SetUpGroups(mapGroups, mapBosses, globalmap);
 
@@ -571,17 +506,17 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
 
     const wave: Wave = {
       number: null,
-      WildSpawnType: SWAG.roleCase[bot.BotType.toLowerCase()],
-      time_min: isRandom ? SWAG.randomWaveTimer.time_min : group.Time_min,
-      time_max: isRandom ? SWAG.randomWaveTimer.time_max : group.Time_max,
+      WildSpawnType: roleCase[bot.BotType.toLowerCase()],
+      time_min: isRandom ? RandomWaveTimer.Time_min : group.Time_min,
+      time_max: isRandom ? RandomWaveTimer.Time_max : group.Time_max,
       slots_min: 1,
       slots_max: Math.floor(
         bot.MaxBotCount *
-          SWAG.aiAmountProper[
+          aiAmountProper[
             config.aiAmount ? config.aiAmount.toLowerCase() : "asonline"
           ]
       ),
-      BotPreset: SWAG.diffProper[config.aiDifficulty.toLowerCase()],
+      BotPreset: diffProper[config.aiDifficulty.toLowerCase()],
       SpawnPoints: !!group.BotZone
         ? group.BotZone
         : SWAG.savedLocationData[globalmap].openZones &&
@@ -593,14 +528,14 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       //set manually to Savage as supposedly corrects when bot data is requested
       BotSide: "Savage",
       //verify if its a pmcType and set isPlayers to true if it is
-      isPlayers: SWAG.pmcType.includes(bot.BotType.toLowerCase()),
+      isPlayers: pmcType.includes(bot.BotType.toLowerCase()),
     };
 
     // If the wave has a random time, increment the wave timer counts
     if (isRandom) {
       //wave time increment is getting bigger each wave. Fix this by adding maxtimer to min timer
-      SWAG.randomWaveTimer.time_min += config.WaveTimerMaxSec;
-      SWAG.randomWaveTimer.time_max += config.WaveTimerMaxSec;
+      RandomWaveTimer.Time_min += config.WaveTimerMaxSec;
+      RandomWaveTimer.Time_max += config.WaveTimerMaxSec;
     }
 
     config.DebugOutput &&
@@ -616,17 +551,16 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     //read support bots if defined, set the difficulty to match config
     boss?.Supports?.forEach((escort) => {
       escort.BossEscortDifficult = [
-        SWAG.diffProper[config.aiDifficulty.toLowerCase()],
+        diffProper[config.aiDifficulty.toLowerCase()],
       ];
-      escort.BossEscortType =
-        SWAG.roleCase[escort.BossEscortType.toLowerCase()];
+      escort.BossEscortType = roleCase[escort.BossEscortType.toLowerCase()];
     });
 
     //set bossWaveSpawnedOnceAlready to true if not already
     BossWaveSpawnedOnceAlready = true;
 
     const wave: BossLocationSpawn = {
-      BossName: SWAG.roleCase[boss.BossName.toLowerCase()],
+      BossName: roleCase[boss.BossName.toLowerCase()],
       // If we are configuring a boss wave, we have already passed an internal check to add the wave based off the bossChance.
       // Set the bossChance to guarantee the added boss wave is spawned
       BossChance: 100,
@@ -639,9 +573,9 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
           )
         : "",
       BossPlayer: false,
-      BossDifficult: SWAG.diffProper[config.aiDifficulty.toLowerCase()],
-      BossEscortType: SWAG.roleCase[boss.BossEscortType.toLowerCase()],
-      BossEscortDifficult: SWAG.diffProper[config.aiDifficulty.toLowerCase()],
+      BossDifficult: diffProper[config.aiDifficulty.toLowerCase()],
+      BossEscortType: roleCase[boss.BossEscortType.toLowerCase()],
+      BossEscortDifficult: diffProper[config.aiDifficulty.toLowerCase()],
       BossEscortAmount: boss.BossEscortAmount,
       Time: boss.Time,
       Supports: boss.Supports,
