@@ -1,29 +1,30 @@
-
 {
-	"aiDifficulty": "normal",
-	"aiAmount": "asonline",
-	"RandomWaveCount": 2,
-	"BossWaveCount": 0,
-	"SkipOtherBossWavesIfBossWaveSelected": true,
-	"WaveTimerMinSec": 60, 
-	"WaveTimerMaxSec": 120,
-	"BossChance": 25,
-	"MaxBotCap":{
-		"factory": 10,
-        "customs": 15,
-        "woods": 15,
-        "shoreline": 15,
-        "lighthouse": 15,
-        "reservebase": 15,
-        "interchange": 15,
-        "laboratory": 15,
-        "tarkovstreets": 18
-	},
-	"MaxBotPerZone": 8,
-	"UseDefaultSpawns": {
-		"Waves": true,
-		"Bosses": true,
-		"TriggeredWaves": true
-	},
-	"DebugOutput": true
+  "aiDifficulty": "normal",
+  "aiAmount": "asonline",
+  "RandomWaveCount": 2,
+  "BossWaveCount": 1,
+  "BossChance": 25,
+  "SkipOtherBossWavesIfBossWaveSelected": false,
+  "GlobalRandomWaveTimer": {
+    "WaveTimerMinSec": 60,
+    "WaveTimerMaxSec": 120
+  },
+  "MaxBotCap": {
+    "factory": 10,
+    "customs": 15,
+    "woods": 15,
+    "shoreline": 15,
+    "lighthouse": 15,
+    "reservebase": 15,
+    "interchange": 15,
+    "laboratory": 15,
+    "tarkovstreets": 18
+  },
+  "MaxBotPerZone": 8,
+  "UseDefaultSpawns": {
+    "Waves": true,
+    "Bosses": true,
+    "TriggeredWaves": true
+  },
+  "DebugOutput": true
 }

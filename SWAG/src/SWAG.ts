@@ -22,11 +22,13 @@ import {
   aiAmountProper,
   diffProper,
   pmcType,
-  randomWaveTimer,
   roleCase,
+  GlobalRandomWaveTimer,
 } from "./ClassDef";
 
 import config from "../config/config.json";
+import { roles } from "./ClassDef";
+import { spawn } from "child_process";
 
 const modName = "SWAG";
 let logger: ILogger;
@@ -37,7 +39,6 @@ let databaseServer: DatabaseServer;
 let locations: ILocations;
 let randomUtil: RandomUtil;
 let BossWaveSpawnedOnceAlready: boolean;
-let RandomWaveTimer: randomWaveTimer;
 
 const customPatterns: Record<string, ClassDef.GroupPattern> = {};
 
@@ -270,9 +271,11 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
         //reset the bossWaveSpawnedOnceAlready flag
         BossWaveSpawnedOnceAlready = false;
 
-        // Configure random wave timer.. needs to be reset each map
-        RandomWaveTimer.Time_min = config.WaveTimerMinSec;
-        RandomWaveTimer.Time_max = config.WaveTimerMaxSec;
+        // Configure Global Random Wave Timer needs to be reset each map
+        GlobalRandomWaveTimer.WaveTimerMinSec =
+          config.GlobalRandomWaveTimer.WaveTimerMinSec;
+        GlobalRandomWaveTimer.WaveTimerMaxSec =
+          config.GlobalRandomWaveTimer.WaveTimerMaxSec;
 
         SWAG.SetUpGroups(mapGroups, mapBosses, globalmap);
 
@@ -459,7 +462,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     globalmap: LocationName,
     AlreadySpawnedBossGroups: ClassDef.BossPattern[]
   ): void {
-    AlreadySpawnedBossGroups.push(boss);
+    //coming into the function, boss has not been spawned yet, do chance and config checks then add to AlreadySpawnedBossGroups
 
     //check chance against randomint100 to see if boss should spawn from config.bossChance
     if (SWAG.getRandIntInclusive(0, 100) > config.BossChance) {
@@ -476,6 +479,8 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       return;
     }
 
+    //Add boss to alreadyspawnedbosses since passed chance and not alreadyspawned
+    AlreadySpawnedBossGroups.push(boss);
     //read group and create wave from individual boss but same timing and location if RandomBossGroupBotZone is not null
     let wave: BossLocationSpawn = SWAG.ConfigureBossWave(boss, globalmap);
 
@@ -488,10 +493,15 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     AlreadySpawnedGroups: ClassDef.GroupPattern[]
   ): void {
     AlreadySpawnedGroups.push(group);
-
+    let groupsSpawnPoint: string;
     //read group and create wave from individual bots but same timing and location if StaticGroupBotZone is not null
     for (let bot of group.Bots) {
-      const wave: Wave = SWAG.ConfigureBotWave(group, bot, globalmap);
+      const wave: Wave = SWAG.ConfigureBotWave(
+        group,
+        bot,
+        globalmap,
+        groupsSpawnPoint
+      );
 
       locations[globalmap].base.waves.push(wave);
     }
@@ -500,15 +510,35 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
   static ConfigureBotWave(
     group: ClassDef.GroupPattern,
     bot: ClassDef.Bot,
-    globalmap: LocationName
+    globalmap: LocationName,
+    groupsSpawnPoint: string
   ): Wave {
     const isRandom = SWAG.isGroupRandom(group);
+
+    let spawnPoints = "";
+
+    if (groupsSpawnPoint == null || groupsSpawnPoint == undefined) {
+      spawnPoints = !!group.BotZone
+        ? randomUtil.getStringArrayValue(group.BotZone.split(","))
+        : SWAG.savedLocationData[globalmap].openZones &&
+          SWAG.savedLocationData[globalmap].openZones.length > 0
+        ? randomUtil.getStringArrayValue(
+            SWAG.savedLocationData[globalmap].openZones
+          )
+        : "";
+    } else {
+      spawnPoints = group.BotZone;
+    }
 
     const wave: Wave = {
       number: null,
       WildSpawnType: roleCase[bot.BotType.toLowerCase()],
-      time_min: isRandom ? RandomWaveTimer.Time_min : group.Time_min,
-      time_max: isRandom ? RandomWaveTimer.Time_max : group.Time_max,
+      time_min: isRandom
+        ? GlobalRandomWaveTimer.WaveTimerMinSec
+        : group.Time_min,
+      time_max: isRandom
+        ? GlobalRandomWaveTimer.WaveTimerMaxSec
+        : group.Time_max,
       slots_min: 1,
       slots_max: Math.floor(
         bot.MaxBotCount *
@@ -517,25 +547,25 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
           ]
       ),
       BotPreset: diffProper[config.aiDifficulty.toLowerCase()],
-      SpawnPoints: !!group.BotZone
-        ? group.BotZone
-        : SWAG.savedLocationData[globalmap].openZones &&
-          SWAG.savedLocationData[globalmap].openZones.length > 0
-        ? randomUtil.getStringArrayValue(
-            SWAG.savedLocationData[globalmap].openZones
-          )
-        : "",
+      SpawnPoints: spawnPoints,
+
       //set manually to Savage as supposedly corrects when bot data is requested
       BotSide: "Savage",
       //verify if its a pmcType and set isPlayers to true if it is
       isPlayers: pmcType.includes(bot.BotType.toLowerCase()),
     };
 
+    if (groupsSpawnPoint == null || groupsSpawnPoint == undefined) {
+      groupsSpawnPoint = wave.SpawnPoints;
+    }
+
     // If the wave has a random time, increment the wave timer counts
     if (isRandom) {
       //wave time increment is getting bigger each wave. Fix this by adding maxtimer to min timer
-      RandomWaveTimer.Time_min += config.WaveTimerMaxSec;
-      RandomWaveTimer.Time_max += config.WaveTimerMaxSec;
+      GlobalRandomWaveTimer.WaveTimerMinSec +=
+        config.GlobalRandomWaveTimer.WaveTimerMaxSec;
+      GlobalRandomWaveTimer.WaveTimerMaxSec +=
+        config.GlobalRandomWaveTimer.WaveTimerMaxSec;
     }
 
     config.DebugOutput &&
@@ -565,7 +595,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
       // Set the bossChance to guarantee the added boss wave is spawned
       BossChance: 100,
       BossZone: !!boss.BossZone
-        ? boss.BossZone
+        ? randomUtil.getStringArrayValue(boss.BossZone.split(","))
         : SWAG.savedLocationData[globalmap].openZones &&
           SWAG.savedLocationData[globalmap].openZones.length > 0
         ? randomUtil.getStringArrayValue(

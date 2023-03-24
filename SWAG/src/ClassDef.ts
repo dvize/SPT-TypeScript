@@ -10,8 +10,10 @@ export interface SWAGConfig {
   BossWaveCount: number;
   BossChance: number;
   SkipOtherBossWavesIfBossWaveSelected: boolean;
-  WaveTimerMinSec: number;
-  WaveTimerMaxSec: number;
+  GlobalRandomWaveTimer: {
+    WaveTimerMinSec: number;
+    WaveTimerMaxSec: number;
+  };
   MaxBotCap: {
     factory: number;
     customs: number;
@@ -32,11 +34,9 @@ export interface SWAGConfig {
   DebugOutput: boolean;
 }
 
-export class randomWaveTimer {
-  Name: string;
-  Time_min: number;
-  Time_max: number;
-  Roles: string[];
+export class GlobalRandomWaveTimer {
+  static WaveTimerMinSec: number;
+  static WaveTimerMaxSec: number;
 }
 
 export interface BossPattern extends BossLocationSpawn {
