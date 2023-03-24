@@ -159,7 +159,7 @@ pmgconfig example:
         "Time_max": 20,
         "RandomTimeSpawn": true,				//notice commas after each one except last entry
         "OnlySpawnOnce": true,
-        "BotZone": "ZoneDormitory"				//if no BotZone specified a random one is picked.
+        "BotZone": "ZoneDormitory"				//if no BotZone specified a random one is picked. You may specify multiple botzones and one will be randomly picked.. just use a comma inbetween.
       }
     ]
 
