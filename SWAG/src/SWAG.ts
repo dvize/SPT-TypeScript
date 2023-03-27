@@ -15,6 +15,7 @@ import { StaticRouterModService } from "@spt-aki/services/mod/staticRouter/Stati
 import { JsonUtil } from "@spt-aki/utils/JsonUtil";
 import { RandomUtil } from "@spt-aki/utils/RandomUtil";
 import { DependencyContainer } from "tsyringe";
+import { LocationCallbacks } from "@spt-aki/callbacks/LocationCallbacks";
 import * as ClassDef from "./ClassDef";
 import {
   BossPattern,
@@ -27,8 +28,6 @@ import {
 } from "./ClassDef";
 
 import config from "../config/config.json";
-import { roles } from "./ClassDef";
-import { spawn } from "child_process";
 
 const modName = "SWAG";
 let logger: ILogger;
@@ -39,6 +38,7 @@ let databaseServer: DatabaseServer;
 let locations: ILocations;
 let randomUtil: RandomUtil;
 let BossWaveSpawnedOnceAlready: boolean;
+let locationCallbacks: LocationCallbacks;
 
 const customPatterns: Record<string, ClassDef.GroupPattern> = {};
 
@@ -121,7 +121,7 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
           ): any => {
             SWAG.ClearDefaultSpawns();
             SWAG.ConfigureMaps();
-            return output;
+            return locationCallbacks.getLocationData(url, info, sessionID);
           },
         },
       ],
@@ -137,6 +137,8 @@ class SWAG implements IPreAkiLoadMod, IPostDBLoadMod {
     databaseServer = container.resolve<DatabaseServer>("DatabaseServer");
     locations = databaseServer.getTables().locations;
     randomUtil = container.resolve<RandomUtil>("RandomUtil");
+    locationCallbacks =
+      container.resolve<LocationCallbacks>("LocationCallbacks");
 
     SWAG.SetConfigCaps();
     SWAG.ReadAllPatterns();
