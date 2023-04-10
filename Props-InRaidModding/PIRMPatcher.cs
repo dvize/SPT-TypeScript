@@ -1,28 +1,17 @@
-﻿using Aki.Reflection.Patching;
-using BepInEx;
-using Comfort.Common;
-using EFT;
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
+using Aki.Reflection.Patching;
 using EFT.InventoryLogic;
 using EFT.UI;
 using EFT.UI.DragAndDrop;
-using EFT.UI.WeaponModding;
 using JetBrains.Annotations;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
-using UnityEngine;
-using UnityEngine.EventSystems;
-    
+
 namespace PIRM
 {
     public class PIRMMethod17Patch : ModulePatch
     {
-        protected override MethodBase GetTargetMethod()
-        {
-            return typeof(ItemSpecificationPanel).GetMethod("method_17", BindingFlags.NonPublic | BindingFlags.Instance);
-        }
+        protected override MethodBase GetTargetMethod() => typeof(ItemSpecificationPanel).GetMethod("method_17", BindingFlags.NonPublic | BindingFlags.Instance);
 
         [PatchPrefix]
         public static bool PatchPrefix(ref KeyValuePair<EModLockedState, string> __result, Slot slot)
@@ -34,23 +23,21 @@ namespace PIRM
         }
     }
 
-   
+
 
     // THIS METHOD IS Causing an issue of not being able to move items back at all probably.... or maybe need new one for itemspecifcationpanel
     public class PIRMGlass2426Smethod1 : ModulePatch
     {
-        protected override MethodBase GetTargetMethod()
-        {
-            return typeof(GClass2426).GetMethod("smethod_1", BindingFlags.NonPublic | BindingFlags.Static);
-        }
+        protected override MethodBase GetTargetMethod() => typeof(GClass2429).GetMethod("smethod_1", BindingFlags.NonPublic | BindingFlags.Static);
 
         [PatchPrefix]
-        public static bool Prefix(Item item, ItemAddress to, TraderControllerClass itemController, ref GStruct323<GClass2894> __result)
+        [Obsolete]
+        public static bool Prefix(Item item, ItemAddress to, TraderControllerClass itemController, ref GStruct326<GClass2897> __result)
         {
 
-            if (GClass1754.InRaid)
+            if (GClass1757.InRaid)
             {
-                __result = GClass2894._;
+                __result = GClass2897._;
                 return false;
             }
 
@@ -60,10 +47,7 @@ namespace PIRM
 
     public class SlotViewMethod2 : ModulePatch
     {
-        protected override MethodBase GetTargetMethod()
-        {
-            return typeof(EFT.InventoryLogic.Item).GetMethod("CheckAction", BindingFlags.Public | BindingFlags.Instance);
-        }
+        protected override MethodBase GetTargetMethod() => typeof(EFT.InventoryLogic.Item).GetMethod("CheckAction", BindingFlags.Public | BindingFlags.Instance);
 
         [PatchPrefix]
         static bool Prefix(Item __instance, [CanBeNull] ItemAddress location, ref bool __result)
@@ -79,13 +63,10 @@ namespace PIRM
     //need this one
     public class EFTInventoryLogicModPatch : ModulePatch
     {
-        protected override MethodBase GetTargetMethod()
-        {
-            return typeof(EFT.InventoryLogic.Mod).GetMethod("CanBeMoved", BindingFlags.Public | BindingFlags.Instance);
-        }
+        protected override MethodBase GetTargetMethod() => typeof(EFT.InventoryLogic.Mod).GetMethod("CanBeMoved", BindingFlags.Public | BindingFlags.Instance);
 
         [PatchPrefix]
-        static bool Prefix(IContainer toContainer, ref GStruct323<bool> __result)
+        static bool Prefix(IContainer toContainer, ref GStruct326<bool> __result)
         {
             __result = true;
             return false;

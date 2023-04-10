@@ -1,22 +1,11 @@
-﻿using System;
-using BepInEx;
-using BepInEx.Configuration;
-using UnityEngine;
-using EFT;
-using System.IO;
-using System.Reflection;
-using PIRM;
-using EFT.InventoryLogic;
-using System.Linq;
-using HarmonyLib;
-using System.Collections.Generic;
+﻿using BepInEx;
 
 namespace PIRM
 {
 
-    [BepInPlugin("com.dvize.PIRM", "dvize.PIRM", "1.5.0")]
+    [BepInPlugin("com.dvize.PIRM", "dvize.PIRM", "1.5.2")]
     class PIRMPlugin : BaseUnityPlugin
-    { 
+    {
         private void Start()
         {
             new PIRMMethod17Patch().Enable();
