@@ -179,126 +179,361 @@
 
         //Distance closer than the boss will shoot.  it is this value squared aka 16*16
         BOSS_DIST_TO_SHOOT: 16,
+
+        //Distance below which the boss will warn usec faction players
         BOSS_DIST_TO_WARNING: 34,
+
+        //The distance beyond which the boss stops paying attention to the wild role types
         BOSS_DIST_TO_WARNING_OUT: 43,
+
+        // Chance to use grenade?
         CHANCE_TO_SEND_GRENADE_100: 100,
+
+        //Chance that when choosing a patrol path, the boss will choose the Rest Route instead of the main one
         CHANCE_USE_RESERVE_PATROL_100: 50,
+
+        //Is everyone in cover a necessary condition to submit for verification (check)
         COVER_TO_SEND: true,
+
+        //After this time he will try to send again. order minions?
         DELTA_SEARCH_TIME: 18,
+
+        //How long to wait and not run after grenade suppression
         KILLA_AFTER_GRENADE_SUPPRESS_DELAY: 2,
+
+        //If there are less than X bullets before attacking the enemy, then killa will reload
         KILLA_BULLET_TO_RELOAD: 15,
+
+        //close range
         KILLA_CLOSE_ATTACK_DIST: 8,
+
+        //Break duration
         KILLA_CLOSEATTACK_DELAY: 10,
+
+        //After how many assaults must there be a break
         KILLA_CLOSEATTACK_TIMES: 3,
+
+        //How long the shock lasts.
         KILLA_CONTUTION_TIME: 5,
+
+        //Distance to seek cover in defense mode
         KILLA_DEF_DIST_SQRT: 225,
+
+        //If the place from which you need to suppress further than X, then it is not it will suppress.
         KILLA_DIST_TO_GO_TO_SUPPRESS: 6,
+
+        //The distance within which the player is considered an enemy of killa
         KILLA_DITANCE_TO_BE_ENEMY_BOSS: 45,
+
+        //Number of enemies to attack?
         KILLA_ENEMIES_TO_ATTACK: 3,
+
+        //Killa base wait time in cover.
         KILLA_HOLD_DELAY: 5,
+
+        //far distance
         KILLA_LARGE_ATTACK_DIST: 41,
+
+        //medium distance
         KILLA_MIDDLE_ATTACK_DIST: 22,
+
+        //If the enemies are in short range (less than 30m) the boss will assault them.
         KILLA_ONE_IS_CLOSE: 30,
+
+        //to stop and wait for search distance
         KILLA_SEARCH_METERS: 30,
+
+        //If the bot has not found anyone during this delta and has been closer than KILLA_SEARCH_METERS, then it will go and rest.
         KILLA_SEARCH_SEC_STOP_AFTER_COMING: 25,
+
+        //In how many seconds the boss will start searching
         KILLA_START_SEARCH_SEC: 40,
+
+        //How long does a killa hold from bullets flying by a mime? machinegun maybe?
         KILLA_TRIGGER_DOWN_DELAY: 1,
+
+        //How long does a killa peek out of cover
         KILLA_WAIT_IN_COVER_COEF: 1,
+
+        //Height distance within which the player is considered an enemy of killa
         KILLA_Y_DELTA_TO_BE_ENEMY_BOSS: 5,
+
+        //If the enemy came closer than X to the retinue/boss then attack.
         KOJANIY_DIST_ENEMY_TOO_CLOSE: 17,
+
+        //This radius is taken into account to account for the number of enemies.
         KOJANIY_DIST_TO_BE_ENEMY: 200,
+
+        //The distance of at least 1 enemy to the loot is less than X when everyone is in position then attack
         KOJANIY_DIST_WHEN_READY: 40,
+
+        //Loot access factor by distance for enemies is greater than 1
         KOJANIY_MANY_ENEMIES_COEF: 1.5,
+
+        //Distance to loot to attack
         KOJANIY_MIN_DIST_TO_LOOT: 20,
+
+        // no comments but looks like KOJANIY_MIN_DIST_TO_LOOT * KOJANIY_MIN_DIST_TO_LOOT
         KOJANIY_MIN_DIST_TO_LOOT_SQRT: 400,
+
+        //Distance to the boss, if the distance to the potential cover is greater than X then the bots will not occupy it.
         MAX_DIST_COVER_BOSS: 25,
+
+        //MAX_DIST_COVER_BOSS * this.MAX_DIST_COVER_BOSS;
         MAX_DIST_COVER_BOSS_SQRT: 625,
+
+        //Distance if the enemy is closer than X then a check will be sent or a grenade roll requested
         MAX_DIST_DECIDER_TO_SEND: 35,
+
+        //MAX_DIST_DECIDER_TO_SEND * MAX_DIST_DECIDER_TO_SEND
         MAX_DIST_DECIDER_TO_SEND_SQRT: 1225,
+
+        //So much he will try to send (order or cause check?)
         PERSONS_SEND: 2,
+
+        //Will the boss warn (depending on the distance)
         SHALL_WARN: true,
+
+        //After the loss of the vision, the boss decides whether to send people to check in seconds
         TIME_AFTER_LOSE: 15,
+
+        //But no more than X seconds later to send to check
         TIME_AFTER_LOSE_DELTA: 60,
+
+        //This is the amount of time the boss will not shoot at the savage enemy while his retinue is dealing with him if this savage does not shoot at the boss himself
         WAIT_NO_ATTACK_SAVAGE: 10,
       },
       Change: {
+        //Aim speed factor when blinded
         FLASH_ACCURATY: 1.6,
+
+        //Notice rate factor when blinded
         FLASH_GAIN_SIGHT: 1.8,
+
+        //range hearing factor when blinded
         FLASH_HEARING: 1,
+
+        //Chance factor to lie down in case of sudden danger when blinded
         FLASH_LAY_CHANCE: 1,
+
+        //Aim speed factor when blinded
         FLASH_PRECICING: 1.6,
+
+        //accuracy factor when blinded
         FLASH_SCATTERING: 1.6,
+
+        //visibility factor when blinded
         FLASH_VISION_DIST: 0.05,
+
+        //aim speed factor when inside smoke
         SMOKE_ACCURATY: 1.6,
+
+        //Reacquire target speed factor when inside smoke
         SMOKE_GAIN_SIGHT: 1.6,
+
+        //range audibility factor when inside smoke
         SMOKE_HEARING: 1,
+
+        //Chance factor to lie down in case of sudden danger when inside smoke
         SMOKE_LAY_CHANCE: 1.6,
+
+        //Aim speed factor when inside smoke
         SMOKE_PRECICING: 1.6,
+
+        //accuracy factor when inside smoke
         SMOKE_SCATTERING: 1.6,
+
+        //visibility factor when inside smoke
         SMOKE_VISION_DIST: 0.6,
+
+        //hearing range factor when stunned
         STUN_HEARING: 0.01,
       },
       Core: {
+        //Aim speed
         AccuratySpeed: 0.3,
+
+        // normal and regular .. wtf
         AimingType: 'normal',
+
+        //can use grenades
         CanGrenade: true,
+
+        //can run
         CanRun: true,
+
+        //damage coefficient.. does more damage the higher this is.  1 should be normal/no change.
         DamageCoeff: 1,
+
+        // how far they can see affected by this coefficient?
         GainSightCoef: 0.2,
+
+        //hearing range modifier
         HearingSense: 1.85,
+
+        //what distance they use a pistol
         PistolFireDistancePref: 35,
+
+        //what distance they use a rifle
         RifleFireDistancePref: 100,
+
+        //accuracy modifier per meter in close range
         ScatteringClosePerMeter: 0.1,
+
+        //accuracy modifier per meter
         ScatteringPerMeter: 0.05,
+
+        //what distance to use a shotgun
         ShotgunFireDistancePref: 50,
+
+        // bot visible angle
         VisibleAngle: 130,
+
+        // bot visible distance
         VisibleDistance: 120,
+
+        //bot wait in cover between shots in seconds
         WaitInCoverBetweenShotsSec: 1.5,
       },
       Cover: {
+        //Variables set in update cycle
+        //this.SDIST_MAX_REWORK_NOT_TO_SHOOT = this.DIST_MAX_REWORK_NOT_TO_SHOOT * this.DIST_MAX_REWORK_NOT_TO_SHOOT;
+        //this.MIN_TO_ENEMY_TO_BE_NOT_SAFE_SQRT = this.MIN_TO_ENEMY_TO_BE_NOT_SAFE * this.MIN_TO_ENEMY_TO_BE_NOT_SAFE;
+        //this.STAY_IF_FAR_SQRT = this.STAY_IF_FAR * this.STAY_IF_FAR;
+        //this.RUN_IF_FAR_SQRT = this.RUN_IF_FAR * this.RUN_IF_FAR;
+        //this.DIST_CANT_CHANGE_WAY_SQR = this.DIST_CANT_CHANGE_WAY * this.DIST_CANT_CHANGE_WAY;
+        //this.MAX_DIST_OF_COVER_SQR = this.MAX_DIST_OF_COVER * this.MAX_DIST_OF_COVER;
+
+        //Delta in time (seconds) to recalculate finding cover while running.
         CHANGE_RUN_TO_COVER_SEC: 5,
+
+        //Delta to recalculate finding cover while running from a grenade.
         CHANGE_RUN_TO_COVER_SEC_GREANDE: 0.6,
+
+        //Check if a cover is safe by whether an enemy is looking at it.
         CHECK_COVER_ENEMY_LOOK: true,
+
+        //????
         CLOSE_DIST_POINT_SQRT: 4,
+
+        //After how many seconds for peeking out from behind the cover, the position will definitely be considered impenetrable.
         DELTA_SEEN_FROM_COVE_LAST_POS: 15,
+
+        //When searching points for the maximum proximity to the bot, the Y delta will be taken into account
         DEPENDS_Y_DIST_TO_BOT: false,
+
+        //If we have already approached our destination point (Cover) by X meters, then it cannot be changed
         DIST_CANT_CHANGE_WAY: 5,
+
+        //DIST_CANT_CHANGE_WAY * DIST_CANT_CHANGE_WAY
         DIST_CANT_CHANGE_WAY_SQR: 25,
+
+        //If the player is looking at me and is closer than X then cover is considered unreliable and will be abandoned
         DIST_CHECK_SFETY: 9,
+
+        //How long after a bot is kicked out of cover it will be in a dogfight
         DOG_FIGHT_AFTER_LEAVE: 4,
+
+        //If the enemy came closer than X and the enemy was visible, then the bot will leave cover
         ENEMY_DIST_TO_GO_OUT: 1,
+
+        //If closer to the point than GOOD_DIST_TO_POINT*X, then the point is good
         GOOD_DIST_TO_POINT_COEF: 1.8,
+
+        //Time for the bot to peek and hide behind cover
         HIDE_TO_COVER_TIME: 1.5,
+
+        //If more than X enemies hit the bot, it will consider the cover invalid
         HITS_TO_LEAVE_COVER: 1,
+
+        //If non-enemies hit the bot more than X, then it will consider the cover invalid
         HITS_TO_LEAVE_COVER_UNKNOWN: 1,
+
+        //The time if the last point seen was less than so many 100 seconds when examining the suspicious location.
         LOOK_LAST_ENEMY_POS_LOOKAROUND: 45,
+
+        //If the last enemy seen was less than this many seconds ago, then the bot not in cover position will look at the last known point
         LOOK_LAST_ENEMY_POS_MOVING: 1.5,
+
+        //If the last enemy seen was less than X seconds ago, and the bot was hit recently, then the bot will look in the direction of damage
         LOOK_TO_HIT_POINT_IF_LAST_ENEMY: 3,
+
+        //The maximum distance at which the bot is considered to be in cover, after re-search for a point of cover
         MAX_DIST_OF_COVER: 4,
+
+        //MAX_DIST_OF_COVER * MAX_DIST_OF_COVER
         MAX_DIST_OF_COVER_SQR: 16,
+
+        //This many seconds of cover will remain unreliable.
         MAX_SPOTTED_TIME_SEC: 45,
+
+        //If a number greater than 0 is specified, then the bot will try to choose shelters with a protection level greater than X
         MIN_DEFENCE_LEVEL: 22,
+
+        //??? I guess minimum distance to the enemy before seeking cover
         MIN_DIST_TO_ENEMY: 9,
+
+        //??? move to cover if bot discovers a target
         MOVE_TO_COVER_WHEN_TARGET: false,
+
+        //Ignore walls while sitting in cover when reacting to shots.
         NOT_LOOK_AT_WALL_IS_DANGER: true,
+
+        //Max deflection angle when bot sits in cover and looks along the wall
         OFFSET_LOOK_ALONG_WALL_ANG: 20,
+
+        //max Time after which the ambushed god can return to attack mode
         RETURN_TO_ATTACK_AFTER_AMBUSH_MAX: 50,
+
+        //min Time after which the ambushed god can return to attack mode
         RETURN_TO_ATTACK_AFTER_AMBUSH_MIN: 20,
+
+        //run to cover if possible when there are no enemies
         RUN_COVER_IF_CAN_AND_NO_ENEMIES: false,
+
+        //Bot will run for cover if it is closer than X
         RUN_IF_FAR: 7,
+
+        //RUN_IF_FAR * RUN_IF_FAR
         RUN_IF_FAR_SQRT: 225,
+
+        //If a shot was fired next to a bot that is sitting in cover, then it will count no more than once every X seconds
         SHOOT_NEAR_SEC_PERIOD: 0.5,
+
+        //If there are more than X shots fired next to a bot that is sitting in cover, then it will consider this cover invalid
         SHOOT_NEAR_TO_LEAVE: 2,
+
+        //The distance at which the bot gets scared of a shot and stops considering its cover safe
         SOUND_TO_GET_SPOTTED: 2,
+
+        //If the bot was detected, then all hiding points in this radius will be marked as discovered
         SPOTTED_COVERS_RADIUS: 3,
+
+        //When a grenade is noticed, all cover within this radius will be marked as unreliable.
         SPOTTED_GRENADE_RADIUS: 16,
+
+        //This much cover will be unreliable after throwing a grenade nearby.
         SPOTTED_GRENADE_TIME: 7,
+
+        //If the station is farther than X, then the bot will definitely not use this station
         STATIONARY_WEAPON_MAX_DIST_TO_USE: 25,
+
+        //If the enemy is not visible for more than X seconds, then the bot will leave the station
         STATIONARY_WEAPON_NO_ENEMY_GETUP: 20,
+
+        //Bot will shoot back at cover if it is closer than X but more than RUN_IF_FAR
         STAY_IF_FAR: 25,
+
+        //STAY_IF_FAR * STAY_IF_FAR
         STAY_IF_FAR_SQRT: 625,
+
+        //How often the roof is checked for integrity
         TIME_CHECK_SAFE: 2,
+
+        //The time after the last firefight the bot will sit in cover (When attacking state) on any
         TIME_TO_MOVE_TO_COVER: 15,
+
+        //So many bots sit in shelters, moving in dashes towards an enemy that has been lost from sight
         WAIT_INT_COVER_FINDING_ENEMY: 2,
       },
       Grenade: {
