@@ -56,6 +56,13 @@ export interface progressRecord {
   failedConsecutiveRaids: number;
 }
 
+export const gameDifficulty: Record<string, number> = {
+  easy: -0.5,
+  normal: 0,
+  hard: 1,
+  impossible: 2,
+};
+
 export const RoleCase: Record<string, string> = {
   assault: "assault",
   assaultgroup: "assaultGroup",
@@ -300,17 +307,17 @@ export interface CoreAITemplate {
 export interface AITemplate {
   RoleTypes: string[];
   AIDifficultyModifier: number;
-  difficulty: Difficulty;
+  difficulty: Difficulties;
 }
+
+/* export interface Difficulties {
+  easy: Difficulty;
+  normal: Difficulty;
+  hard: Difficulty;
+  impossible: Difficulty;
+} */
 
 export interface Difficulty {
-  easy: DifficultyStats;
-  normal: DifficultyStats;
-  hard: DifficultyStats;
-  impossible: DifficultyStats;
-}
-
-export interface DifficultyStats {
   Aiming: Aiming;
   Boss: Boss;
   Change: Change;

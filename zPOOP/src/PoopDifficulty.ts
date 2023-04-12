@@ -13,6 +13,7 @@ import {
   FollowerTypes,
   CoreAITemplate,
   Core,
+  gameDifficulty,
 } from "./POOPClassDef";
 import { IBotBase } from "@spt-aki/models/eft/common/tables/IBotBase";
 import { IHealthTreatmentRequestData } from "@spt-aki/models/eft/health/IHealthTreatmentRequestData";
@@ -22,6 +23,12 @@ import {
 } from "@spt-aki/models/eft/common/tables/IBotBase";
 import { BodyParts } from "@spt-aki/models/eft/common/IGlobals";
 import JSON5 from "json5";
+import { IBotConfig } from "@spt-aki/models/spt/config/IBotConfig";
+import {
+  Difficulty,
+  IBotType,
+} from "@spt-aki/models/eft/common/tables/IBotType";
+import { Difficulties } from "@spt-aki/models/eft/common/tables/IBotType";
 
 export class POOPDifficulty {
   static readAITemplate(): AITemplate[] {
@@ -72,6 +79,95 @@ export class POOPDifficulty {
     }
 
     return CoreTemplate;
+  }
+
+  static setupAITemplates(
+    botTypes: IBotType[],
+    CoreAITemplate: CoreAITemplate,
+    AITemplates: AITemplate[]
+  ) {
+    //read bot config and alter bot types accordingly by looping through each bot type and applying the appropriate template
+    for (let botType in botTypes) {
+      //create an array to store all AITemplates where their RoleTypes array includes the botType
+      let applicableTemplate: AITemplate;
+      //loop through each AITemplate
+      for (let template in AITemplates) {
+        //if the AITemplate's RoleTypes array includes the botType, set it as the applicable template. we only want first applicable template, so break out of the loop
+        if (AITemplates[template].RoleTypes.includes(botType)) {
+          applicableTemplate = AITemplates[template];
+          break;
+        }
+      }
+
+      //if the applicableTemplate is null or undefined, skip this botType
+      if (applicableTemplate == null || applicableTemplate == undefined) {
+        gv.logger.info(
+          `POOP: No applicable AITemplate for ${botType}, skipping`
+        );
+        continue;
+      }
+
+      //apply the AITemplates.difficulty.normal values to the botType in the applicableTemplate
+      botTypes[botType].difficulty.normal =
+        applicableTemplate.difficulty.normal;
+
+      //create the botType.difficulty.easy and botType.difficulty.hard and botType.difficulty.impossible and set them to appropriate botType.difficulty values
+      botTypes[botType].difficulty.easy = this.applyDifficultyChange(
+        botTypes[botType].difficulty.normal,
+        "easy"
+      );
+      botTypes[botType].difficulty.hard = this.applyDifficultyChange(
+        botTypes[botType].difficulty.normal,
+        "hard"
+      );
+      botTypes[botType].difficulty.impossible = this.applyDifficultyChange(
+        botTypes[botType].difficulty.normal,
+        "impossible"
+      );
+
+      //setup CoreAITemplate - used when not overridden by AITemplate
+    }
+  }
+
+  //centralize difficulty changes + the hardcoded difficulty modifiers.
+  static applyDifficultyChange(
+    setting: Difficulty,
+    difficultyOption: string
+  ): Difficulty {
+    //switch the difficultyOption
+    switch (difficultyOption) {
+      case "easy":
+        //apply the easy changes to the normal difficulty
+        return this.setDifficultyModifier(
+          setting,
+          gameDifficulty["easy"] +
+            gv.config.Difficulty.OverallDifficultyModifier
+        );
+      case "hard":
+        //apply the hard changes to the normal difficulty
+        return this.setDifficultyModifier(
+          setting,
+          gameDifficulty["hard"] +
+            gv.config.Difficulty.OverallDifficultyModifier
+        );
+      case "impossible":
+        //apply the impossible changes to the normal difficulty
+        return this.setDifficultyModifier(
+          setting,
+          gameDifficulty["impossible"] +
+            gv.config.Difficulty.OverallDifficultyModifier
+        );
+      default:
+        //apply no changes so it will default to normal
+        return setting;
+    }
+  }
+
+  static setDifficultyModifier(
+    setting: Difficulty,
+    DifficultyModifier: number
+  ): Difficulty {
+    return setting;
   }
 
   //RANDOM MISC FUNCTIONS

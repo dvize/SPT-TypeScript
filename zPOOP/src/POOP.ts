@@ -5,17 +5,7 @@ import { StaticRouterModService } from "@spt-aki/services/mod/staticRouter/Stati
 import { DependencyContainer } from "tsyringe";
 import { BotGenerationCacheService } from "@spt-aki/services/BotGenerationCacheService";
 import { GlobalValues as gv } from "./GlobalValuesModule";
-import {
-  RoleCase,
-  POOPConfig,
-  AITemplate,
-  PmcTypes,
-  RaiderTypes,
-  RogueTypes,
-  ScavTypes,
-  BossTypes,
-  FollowerTypes,
-} from "./POOPClassDef";
+import { RoleCase, POOPConfig, AITemplate } from "./POOPClassDef";
 import { RecordSkills as rs } from "./RecordSkillChanges";
 import { POOPDifficulty as pd } from "./POOPDifficulty";
 import { ConfigTypes } from "@spt-aki/models/enums/ConfigTypes";
@@ -28,6 +18,7 @@ import {
 import { Overrides } from "./Overrides";
 import { LegendaryPlayer as lp } from "./LegendaryPlayer";
 import JSON5 from "json5";
+import { SecureContainerHelper } from "../../../Server/project/src/helpers/SecureContainerHelper";
 
 class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
   preAkiLoad(container: DependencyContainer): void {
@@ -95,9 +86,16 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
   postAkiLoad(container: DependencyContainer): void {
     this.setupInitialValues(container);
 
+    //Setup Difficulty
+    gv.CoreAITemplate = pd.readCoreTemplate();
+    gv.AITemplates = pd.readAITemplate();
+
+    //Setup AI Templates in Config.
+    pd.setupAITemplates(gv.botTypes, gv.CoreAITemplate, gv.AITemplates);
+
     //Enable Setting from config
     if (gv.config.AIChanges.RoguesNeutralToUsecs) {
-      //pd.SetRogueNeutral();
+      pd.SetRogueNeutral();
     }
 
     if (gv.config.AIChanges.AllowHealthTweaks.Enabled) {
@@ -115,15 +113,6 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
     //Don't use this unless trying to find skill differences in easy - impossible bot types
     //rs.recordSkills(); //Record Skills for all bots
     //rs.filterSkills(); //Filter Skills for values that remain same for all bots
-
-    //Setup Difficulty
-    gv.CoreAITemplate = pd.readCoreTemplate();
-    //gv.config.DebugOutput && gv.logger.info(JSON.stringify(gv.CoreAITemplate));
-
-    gv.AITemplates = pd.readAITemplate();
-
-    //show AITemplates in console
-    gv.config.DebugOutput && gv.logger.info(JSON.stringify(gv.AITemplates));
 
     gv.logger.info("POOP: Finished");
   }
