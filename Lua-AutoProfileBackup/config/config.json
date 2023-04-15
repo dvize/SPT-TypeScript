@@ -1,0 +1,13 @@
+{
+	"Enabled": false,
+
+	"BackupSavedLog": true,
+	"MaximumBackupDeleteLog": true,
+	"MaximumBackupPerProfile": 50,
+	"AutoBackup":
+	{
+		"OnGameStart": true,
+		"OnRaidStart": true,
+		"OnRaidEnd": true
+	}
+}
