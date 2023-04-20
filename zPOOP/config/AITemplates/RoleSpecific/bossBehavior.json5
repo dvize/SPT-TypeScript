@@ -1,5 +1,6 @@
 {
   RoleTypes: [
+    //you can add the role types in lowercase for bots you want this setting to apply too.
     'sectantpriest',
     'sectantwarrior',
     'bossbully',
@@ -537,121 +538,359 @@
         WAIT_INT_COVER_FINDING_ENEMY: 2,
       },
       Grenade: {
+        //update cycle items
+        //this.CLOSE_TO_SMOKE_TO_SHOOT_SQRT = this.CLOSE_TO_SMOKE_TO_SHOOT * this.CLOSE_TO_SMOKE_TO_SHOOT;
+        //this.MAX_FLASHED_DIST_TO_SHOOT_SQRT = this.MAX_FLASHED_DIST_TO_SHOOT * this.MAX_FLASHED_DIST_TO_SHOOT;
+        //this.REQUEST_DIST_MUST_THROW_SQRT = this.REQUEST_DIST_MUST_THROW * this.REQUEST_DIST_MUST_THROW;
+        //this.RUN_AWAY_SQR = this.RUN_AWAY * this.RUN_AWAY;
+        //this.ADD_GRENADE_AS_DANGER_SQR = this.ADD_GRENADE_AS_DANGER * this.ADD_GRENADE_AS_DANGER;
+        //this.MIN_DIST_NOT_TO_THROW_SQR = this.MIN_DIST_NOT_TO_THROW * this.MIN_DIST_NOT_TO_THROW;
+        //this.MIN_THROW_GRENADE_DIST_SQRT = this.MIN_THROW_GRENADE_DIST * this.MIN_THROW_GRENADE_DIST;
+
+        //The distance if the bot is closer than it to the intended place of the grenade hit, then it will record the point in danger
         ADD_GRENADE_AS_DANGER: 65,
+
+        // add_grenade_as_danger * add_grenade_as_danger
         ADD_GRENADE_AS_DANGER_SQR: 4225,
+
+        //The bot will enter the Ambush state if smoke is thrown in its zone
         AMBUSH_IF_SMOKE_IN_ZONE_100: 40,
+
+        //After how many seconds the bot will return to its previous state after smokes.
         AMBUSH_IF_SMOKE_RETURN_TO_ATTACK_SEC: 30,
+
+        //Basic angle for calculating the throw of a grenade, 1 - 45 degrees, 2 - 25 degrees, 3 - 65 degrees, 4 - 15 degrees, 5 - 35, 6 - 55 degrees
         ANG_TYPE: 4,
+
+        //Bot coefficient for attracting attention with a smoke grenade
         BE_ATTENTION_COEF: 4,
+
+        //2 - Runs away from the exact location of the grenade. 3 - Runs away from the intended location of the grenade. The rest - runs away from the midpoint.
         BEWARE_TYPE: 2,
+
+        //Can the bot throw grenades on direct contact with an enemy
         CAN_THROW_STRAIGHT_CONTACT: true,
+
+        //Chance to run away while flashed, rather than shoot at the dot if he can.
         CHANCE_RUN_FLASHED_100: 0,
+
+        //Chance to see a grenade flying at the bot
         CHANCE_TO_NOTIFY_ENEMY_GR_100: 99,
+
+        //If enabled, then the grenade will not fly out of the hand, but from where the bot thought it should be thrown
         CHEAT_START_GRENADE_PLACE: false,
+
+        //How long ago there must have been noise in smokes to shoot there
         CLOSE_TO_SMOKE_TIME_DELTA: 7,
+
+        //How close to the source of the smoke do you have to be suspicious to start shooting there.
         CLOSE_TO_SMOKE_TO_SHOOT: 5,
+
+        //close_to_smoke_to_shoot * close_to_smoke_to_shoot
         CLOSE_TO_SMOKE_TO_SHOOT_SQRT: 25,
+
+        //How much suppression a grenade damage has
         DAMAGE_GRENADE_SUPPRESS_DELTA: 8,
+
+        //In so many seconds after the throw, the danger point will become active (the bot will react to it => run away if necessary) (it used to be in globals)
         DELTA_GRENADE_START_TIME: 0.7,
+
+        //Frequency of attempts to throw a grenade.. in seconds?
         DELTA_NEXT_ATTEMPT: 10,
+
+        //Frequency of attempts to check if a grenade can be thrown from behind cover.. in seconds?
         DELTA_NEXT_ATTEMPT_FROM_COVER: 5,
+
+        //The coefficient by which the time that the bot will receive after calculating the blindness is multiplied
         FLASH_GRENADE_TIME_COEF: 0.3,
+
+        //Grenade Throw Spread Level (Smaller == More Accurate)
         GrenadePerMeter: 0.15,
+
+        //accuracy of throwing a grenade. less is more accurate
         GrenadePrecision: 0.2,
+
+        //If the last danger point is closer than X and the bot is in the blind, then he can shoot at it
         MAX_FLASHED_DIST_TO_SHOOT: 10,
+
+        //max_flashed_dist_to_shoot * max_flashed_dist_to_shoot
         MAX_FLASHED_DIST_TO_SHOOT_SQRT: 100,
+
+        //no details
         MAX_THROW_POWER: 16.7,
+
+        //distance to check whether there are friends or the one who is throwing near the throw point
         MIN_DIST_NOT_TO_THROW: 8,
+
+        //min_dist_not_to_throw * min_dist_not_to_throw
         MIN_DIST_NOT_TO_THROW_SQR: 64,
+
+        //Min grenade throw distance
         MIN_THROW_GRENADE_DIST: 12,
+
+        //min_throw_grenade_dist * min_throw_grenade_dist
         MIN_THROW_GRENADE_DIST_SQRT: 144,
+
+        //The time when it is believed that the bot recently threw a grenade (Need to know that it's time to return to cover)
         NEAR_DELTA_THROW_TIME_SEC: 2,
+
+        //The bot will NOT run away from grenades thrown by other bots
         NO_RUN_FROM_AI_GRENADES: false,
+
+        //If the distance is less than X meters from the throw point and the enemy is visible, then the request will not be interrupted.
         REQUEST_DIST_MUST_THROW: 2,
+
+        //request_dist_must_throw * request_dist_must_throw
         REQUEST_DIST_MUST_THROW_SQRT: 4,
+
+        //The distance if the bot is closer than it to the intended place of the grenade hit, then it will record the point as danger
         RUN_AWAY: 22,
+
+        //run_away * run_away
         RUN_AWAY_SQR: 484,
+
+        //Probability of wanting to shoot smoke or use smoke grenades
         SHOOT_TO_SMOKE_CHANCE_100: 30,
+
+        //smoke grenade. How much larger is the radius for the points that the bot will not occupy while there is smoke than the smoke collider
         SIZE_SPOTTED_COEF: 2,
+
+        //Frequency of checking smokes. in seconds?
         SMOKE_CHECK_DELTA: 1,
+
+        //How much suppression a smoke grenade has.. in seconds?
         SMOKE_SUPPRESS_DELTA: 20,
+
+        //Will the bot stop to throw a grenade. If it stops, it will throw more accurately, if not, it may not throw exactly where it wants to.
         STOP_WHEN_THROW_GRENADE: true,
+
+        //Delay for a direct throw of a grenade after the first contact
         STRAIGHT_CONTACT_DELTA_SEC: -1,
+
+        //How much suppression does a stun grenade have
         STUN_SUPPRESS_DELTA: 9,
+
+        //How many seconds until the bot shoots while flashed
         TIME_SHOOT_TO_FLASH: 4,
+
+        //How many seconds to wait after throwing your flash grenade to turn away from the flash
         WAIT_TIME_TURN_AWAY: 0.2,
       },
       Hearing: {
+        //If you shoot near the bot when he is not disturbed by anything from a distance of less than X, he will start to panic
         BOT_CLOSE_PANIC_DIST: 2,
+
+        //Chance to hear a simple sound 0-1 (0 - never, 1 - always)
         CHANCE_TO_HEAR_SIMPLE_SOUND_0_1: 0.65,
+
+        //Closer to this distance, a simple sound is always heard
         CLOSE_DIST: 10,
+
+        //How much the bot will be distracted by the sound of a dead body radius?
         DEAD_BODY_SOUND_RAD: 30,
+
+        //Coefficient of sound perception accuracy from non-hazardous sounds - more - more accurate
         DISPERSION_COEF: 2.6,
+
+        //how much distance to find point of sound?
         DIST_PLACE_TO_FIND_POINT: 70,
+
+        //After this distance, a simple sound is never heard
         FAR_DIST: 30,
+
+        //Hearing delay when bot is in suspicious mode. in seconds?
         HEAR_DELAY_WHEN_HAVE_SMT: 0.5,
+
+        //Hearing delay when bot is in peaceful mode. in seconds?
         HEAR_DELAY_WHEN_PEACE: 0.75,
+
+        //When you look at your ears. He will only look at \"dangerous\" points.
         LOOK_ONLY_DANGER: false,
+
+        //In how many seconds after the enemy disappears from view, the bot enters sentry mode
         LOOK_ONLY_DANGER_DELTA: 9,
+
+        // reset timer distance for what?
         RESET_TIMER_DIST: 17,
+
+        //The angle at which the shot is considered fired at the bot
         SOUND_DIR_DEEFREE: 30,
       },
       Lay: {
+        //update cycle items
+        //this.DIST_ENEMY_GETUP_LAY_SQRT = this.DIST_ENEMY_GETUP_LAY * this.DIST_ENEMY_GETUP_LAY;
+        //this.DIST_ENEMY_NULL_DANGER_LAY_SQRT = this.DIST_ENEMY_NULL_DANGER_LAY * this.DIST_ENEMY_NULL_DANGER_LAY;
+        //this.DIST_TO_COVER_TO_LAY_SQRT = this.DIST_TO_COVER_TO_LAY * this.DIST_TO_COVER_TO_LAY;
+        //this.MIN_CAN_LAY_DIST_SQRT = this.MIN_CAN_LAY_DIST * this.MIN_CAN_LAY_DIST;
+        //this.MAX_CAN_LAY_DIST_SQRT = this.MAX_CAN_LAY_DIST * this.MAX_CAN_LAY_DIST;
+        //this.DIST_ENEMY_CAN_LAY_SQRT = this.DIST_ENEMY_CAN_LAY * this.DIST_ENEMY_CAN_LAY;
+
+        //Chance to lie down if all conditions are met
         ATTACK_LAY_CHANCE: 25,
+
+        //When laying down, it checks if it can fire at the last known enemy position from this position. (If not, then it may lie around the corner, etc.)
         CHECK_SHOOT_WHEN_LAYING: false,
+
+        //if the bot lies for X seconds, then all points of fear will be reset to zero
         CLEAR_POINTS_OF_SCARE_SEC: 20,
+
+        //how much time to get up after being shot?
         DAMAGE_TIME_TO_GETUP: 3,
+
+        //After getting up again, you can lie down only after X seconds
         DELTA_AFTER_GETUP: 10,
+
+        //The bot can only get up after X seconds after lying down
         DELTA_GETUP: 5,
+
+        //The main limiter on the timings of the attempt to lie down (seconds)
         DELTA_LAY_CHECK: 2,
+
+        //Delta checks during an attack: is it worth lying down
         DELTA_WANT_LAY_CHECL_SEC: 5,
+
+        //If the enemy is closer than X, then it prohibits lying down if there is a visible enemy closer than X
         DIST_ENEMY_CAN_LAY: 15,
+
+        //dist_enemy_can_lay * dist_enemy_can_lay
         DIST_ENEMY_CAN_LAY_SQRT: 225,
+
+        //If the enemy is closer than X then it's time to get up
         DIST_ENEMY_GETUP_LAY: 10,
+
+        //dist_enemy_getup_lay * dist_enemy_getup_lay
         DIST_ENEMY_GETUP_LAY_SQRT: 100,
+
+        //If the enemy came closer than X, then reset all points of fear
         DIST_ENEMY_NULL_DANGER_LAY: 15,
+
+        //dist_enemy_null_danger_lay * dist_enemy_null_danger_lay
         DIST_ENEMY_NULL_DANGER_LAY_SQRT: 225,
+
+        //if there is less than X between the ground and grass, then you can lie down
         DIST_GRASS_TERRAIN_SQRT: 0.160000011,
+
+        //if there is more than X before the shelter. one of the necessary conditions to lie down
         DIST_TO_COVER_TO_LAY: 3.5,
+
+        //dist_to_cover_to_lay * dist_to_cover_to_lay
         DIST_TO_COVER_TO_LAY_SQRT: 12.25,
+
+        //X multiplies the spread factor when aiming when the bot is down.
         LAY_AIM: 0.6,
+
+        //Chance to lie down instead of running away (0..100)
         LAY_CHANCE_DANGER: 40,
+
+        //If the scare point was closer than X then the bot may try to lie down
         MAX_CAN_LAY_DIST: 200,
+
+        //max_can_lay_dist * max_can_lay_dist
         MAX_CAN_LAY_DIST_SQRT: 40000,
+
+        //If the bot lies more than X, then it will stand up
         MAX_LAY_TIME: 35,
+
+        //If the scare point was further than X then the bot may try to lie down
         MIN_CAN_LAY_DIST: 11,
+
+        //min_can_lay_dist * min_can_lay_dist
         MIN_CAN_LAY_DIST_SQRT: 121,
       },
       Look: {
+        //Update cycle times
+        //this.DIST_SQRT_REPEATED_SEEN = this.DIST_REPEATED_SEEN * this.DIST_REPEATED_SEEN;
+        //this.MAX_VISION_GRASS_METERS_OPT = 1f / this.MAX_VISION_GRASS_METERS;
+        //this.MAX_VISION_GRASS_METERS_FLARE_OPT = 1f / this.MAX_VISION_GRASS_METERS_FLARE;
+
+        //Frequency of searching for new bodies
         BODY_DELTA_TIME_SEARCH_SEC: 1.7,
+
+        //can look to wall (this option does nothing i don't see it in code)
         CAN_LOOK_TO_WALL: false,
+
+        // ? looking for heads at any distance
         CHECK_HEAD_ANY_DIST: false,
+
+        //Next time delta update at close range
         CloseDeltaTimeSec: 0.1,
+
+        //how close bot goes to look at body?
         COME_TO_BODY_DIST: 1.2,
+
+        //If the wall is closer than X then the bot will look in the direction of travel when it goes to a suspicious point.
         DIST_CHECK_WALL: 20,
+
+        //If the point the bot is looking at is closer than X. It can play walls
         DIST_NOT_TO_IGNORE_WALL: 15,
+
+        //So much further in meters the enemy will be visible if he has a flashlight on.
         ENEMY_LIGHT_ADD: 45,
+
+        //If the bot's vision range is less than X, then the ENEMY_LIGHT_COEF parameter takes effect
         ENEMY_LIGHT_START_DIST: 40,
+
+        //Distance above which an object is considered far
         FAR_DISTANCE: 160,
+
+        //Delta update of the next time at a far distance
         FarDeltaTimeSec: 3,
+
+        //After disappearing from visibility, the bot will \"see\" the enemy for so many more seconds
         GOAL_TO_FULL_DISSAPEAR: 0.25,
+
+        //After disappearing from visibility, the bot will still be able to shoot at the enemy for so many seconds
         GOAL_TO_FULL_DISSAPEAR_SHOOT: 0.0001,
+
+        //TODO flashlights - literally what they wrote in code comments
         LightOnVisionDistance: 30,
+
+        //Time to look at one direction when the bot is looking at a place.
         LOOK_AROUND_DELTA: 1.1,
+
+        //If there were no other points of interest, then the bot will look at the last point where they saw their enemy
         LOOK_LAST_POSENEMY_IF_NO_DANGER_SEC: 25,
+
+        //no comments
         MARKSMAN_VISIBLE_DIST_COEF: 1.15,
+
+        //The distance through which the bot sees in the foliage
         MAX_VISION_GRASS_METERS: 0.4,
+
+        //Weapon flash ratio. Affects how quickly the bot will notice the shooter
         MAX_VISION_GRASS_METERS_FLARE: 7,
+
+        //no comments
         MAX_VISION_GRASS_METERS_FLARE_OPT: 0.125,
+
+        //no comments
         MAX_VISION_GRASS_METERS_OPT: 0.9090909,
+
+        //The distance above which the object is considered to be at an average distance
         MIDDLE_DIST: 90,
+
+        //Next time delta update at medium distance
         MiddleDeltaTimeSec: 1,
+
+        //no comments
         MIN_LOOK_AROUD_TIME: 20,
+
+        //The lifetime of the point up to which the bot will pay attention to it with the standard inspection algorithm.
         OLD_TIME_POINT: 11,
+
+        //not located in the code
         OPTIMIZE_TO_ONLY_BODY: true,
+
+        //The time at which the visibility set is not reset.
         POSIBLE_VISION_SPACE: 1.2,
+
+        //Visibility range with a flashlight
         VISIBLE_DISNACE_WITH_LIGHT: 43,
+
+        //Delta at which the bot can turn in the other direction along the wall in the standard algorithm
         WAIT_NEW__LOOK_SENSOR: 7.8,
+
+        //delta through which the bot will update the points in the standard algorithm where to look
         WAIT_NEW_SENSOR: 2.1,
       },
       Mind: {

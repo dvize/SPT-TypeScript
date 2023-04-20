@@ -1,0 +1,27 @@
+{
+  "name": "Tracer",
+  "author": "Props, Extrenz Arnautov",
+  "version": "3.5.5",
+  "akiVersion": "3.5.*",
+  "license": "MIT",
+  "main": "src/mod.js",
+  "scripts": {
+    "setup": "npm i",
+    "build": "node ./packageBuild.ts"
+  },
+  "devDependencies": {
+    "@types/node": "16.18.10",
+    "@typescript-eslint/eslint-plugin": "5.46.1",
+    "@typescript-eslint/parser": "5.46.1",
+    "copyfiles": "2.4.1",
+    "eslint": "8.30.0",
+    "tsyringe": "4.7.0",
+    "typescript": "4.9.4",
+    "json5": "^2.2.3",
+    "bestzip": "2.2.1"
+  },
+  "dependencies": {
+    "i18n": "^0.15.1",
+    "path": "^0.12.7"
+  }
+}

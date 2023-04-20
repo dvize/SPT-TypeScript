@@ -167,6 +167,10 @@ export class POOPDifficulty {
     setting: Difficulty,
     DifficultyModifier: number
   ): Difficulty {
+    //apply the difficulty modifier to the difficulty settings
+
+    gv.config.Difficulty.Multipliers.AimSpeedMult;
+
     return setting;
   }
 

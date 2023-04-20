@@ -125,6 +125,7 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
     gv.botGenerationCacheService = container.resolve(
       "BotGenerationCacheService"
     );
+    gv.randomUtil = container.resolve("RandomUtil");
     gv.hashUtil = container.resolve("HashUtil");
     gv.databaseServer = container.resolve("DatabaseServer");
     gv.database = gv.databaseServer.getTables();

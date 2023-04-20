@@ -1,0 +1,9 @@
+{
+  //if you don't want the ammo to have tracers, put the item id here:
+  AddNoTracer: [
+    //"5efb0cabfb3e451d70735af5",     These are just examples and you can write below them or remove from array.
+    //"5efb0cabfb3e451d70735af6"        Remember the last item in the array doesn't need a comma.
+  ],
+  //they use the word, i'm guessing you get the choice of red green blue.
+  TracerColor: 'green',
+}
