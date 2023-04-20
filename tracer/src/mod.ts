@@ -5,7 +5,6 @@ import JSON5 from "json5";
 import { ILogger } from "@spt-aki/models/spt/utils/ILogger";
 import { ITemplateItem } from "@spt-aki/models/eft/common/tables/ITemplateItem";
 import * as ammoTypes from "@spt-aki/models/enums/AmmoTypes";
-import { Info } from "../types/models/eft/common/tables/IBotBase";
 
 class tracer implements IPostAkiLoadMod {
   postAkiLoad(container: DependencyContainer): void {
@@ -30,7 +29,7 @@ class tracer implements IPostAkiLoadMod {
 
         //logger.info(`Adding tracer to ${value} : ${items[value]._name}`);
 
-        items[value]._props.TracerColor = config.TracerColor;
+        items[value]._props.TracerColor = config.TracerColor.toLowerCase();
         items[value]._props.Tracer = true;
         items[value]._props.TracerDistance = 50000;
         items[value]._props.ShowBullet = true;
