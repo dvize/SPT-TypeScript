@@ -29,6 +29,7 @@ import {
   IBotType,
 } from "@spt-aki/models/eft/common/tables/IBotType";
 import { Difficulties } from "@spt-aki/models/eft/common/tables/IBotType";
+import { Aiming } from "./POOPClassDef";
 
 export class POOPDifficulty {
   static readAITemplate(): AITemplate[] {
@@ -167,12 +168,25 @@ export class POOPDifficulty {
     setting: Difficulty,
     DifficultyModifier: number
   ): Difficulty {
-    //apply the difficulty modifier to the difficulty settings
-
-    if(gv.config.Difficulty.Multipliers.AimSpeedMult){
-      setting.Aiming.
+    //set a floor for each of the multiplers in the difficulty
+    for (let setting in gv.config.Difficulty.Multipliers) {
+      if (
+        gv.config.Difficulty.Multipliers[setting] + DifficultyModifier <
+        0.01
+      ) {
+        gv.config.Difficulty.Multipliers[setting] = 0.01;
+      } else {
+        gv.config.Difficulty.Multipliers[setting] += DifficultyModifier;
+      }
     }
+
+    //setup Aim multiplier
+    POOPDifficulty.SetupAimMultiplier(setting);
+
+    //setup Shot Spread multiplier
     gv.config.Difficulty.Multipliers.ShotSpreadMult;
+
+    //setup vision speed multiplier
     gv.config.Difficulty.Multipliers.VisionSpeedMult;
     gv.config.Difficulty.Multipliers.AccuracyMult;
     gv.config.Difficulty.Multipliers.SniperBotAccuracyMult;
@@ -185,11 +199,44 @@ export class POOPDifficulty {
     gv.config.Difficulty.Multipliers.VisibleAngleMax;
     gv.config.Difficulty.Multipliers.GrenadePrecisionMult;
     gv.config.Difficulty.Multipliers.GrenadeThrowRangeMax;
-    gv.config.Difficulty.Multipliers.AllowAimAtHead;
-    gv.config.Difficulty.Multipliers.AllowGrenades;
-    gv.config.Difficulty.Multipliers.AllowStationaryTurrets;
+    if (gv.config.Difficulty.DirectValue.AllowAimAtHead) {
+      //this sets to // 4 - randomly + center + without head
+      setting.Aiming.AIMING_TYPE = 4;
+    }
+    gv.config.Difficulty.DirectValue.AllowGrenades;
+    gv.config.Difficulty.DirectValue.AllowStationaryTurrets;
 
     return setting;
+  }
+
+  private static SetupAimMultiplier(setting: Difficulty) {
+    //method that has all the aim speed multipliers
+
+    //zeroing speed factor
+    setting.Aiming.BETTER_PRECICING_COEFF =
+      Number(setting.Aiming.BETTER_PRECICING_COEFF) *
+      gv.config.Difficulty.Multipliers.AimSpeedMult;
+    //aim speed factor when blinded
+    setting.Aiming.FLASH_ACCURACY_COEFF =
+      Number(setting.Aiming.FLASH_ACCURACY_COEFF) *
+      gv.config.Difficulty.Multipliers.AimSpeedMult;
+    //aim speed factor when in smoke
+    setting.Aiming.SMOKE_ACCURATY =
+      Number(setting.Aiming.SMOKE_ACCURATY) *
+      gv.config.Difficulty.Multipliers.AimSpeedMult;
+    //Reacquire target speed factor when in smoke
+    setting.Aiming.SMOKE_GAIN_SIGHT =
+      Number(setting.Aiming.SMOKE_GAIN_SIGHT) *
+      gv.config.Difficulty.Multipliers.AimSpeedMult;
+    //aim speed.. not sure if bigger is better or worse (I think lower is better)
+    //use inverse of multiplication to get a division
+    setting.Core.AccuratySpeed =
+      Number(setting.Core.AccuratySpeed) /
+      gv.config.Difficulty.Multipliers.AimSpeedMult;
+    //coefficient speed of converging on spread angle. bigger is better
+    setting.Scattering.SpeedUpAim =
+      Number(setting.Scattering.SpeedUpAim) *
+      gv.config.Difficulty.Multipliers.AimSpeedMult;
   }
 
   //RANDOM MISC FUNCTIONS

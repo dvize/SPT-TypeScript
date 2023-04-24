@@ -65,12 +65,15 @@
       RecoilMult: 1.1,
       HearingMult: 0.3,
       VisibleAngleMult: 1,
-      VisibleAngleMax: 320,
       GrenadePrecisionMult: 1,
-      GrenadeThrowRangeMax: 20,
+    },
+    //Basically set either true/false or the number value you want to use.
+    DirectValue: {
       AllowAimAtHead: true,
       AllowGrenades: true,
       AllowStationaryTurrets: true,
+      VisibleAngleMax: 320,
+      GrenadeThrowRangeMax: 20,
     },
   },
 

@@ -43,9 +43,13 @@ export interface POOPConfig {
       VisibleAngleMax: number;
       GrenadePrecisionMult: number;
       GrenadeThrowRangeMax: number;
+    };
+    DirectValue: {
       AllowAimAtHead: boolean;
       AllowGrenades: boolean;
       AllowStationaryTurrets: boolean;
+      VisibleAngleMax: number;
+      GrenadeThrowRangeMax: number;
     };
   };
 
