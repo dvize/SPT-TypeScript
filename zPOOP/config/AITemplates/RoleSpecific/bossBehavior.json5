@@ -12,7 +12,7 @@
     'bossknight',
     'bosszryachiy',
   ],
-  AIDifficultyModifier: 1,
+  AIDifficultyModifier: 0,
   difficulty: {
     normal: {
       Aiming: {
