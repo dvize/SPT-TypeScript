@@ -53,7 +53,7 @@ export class POOPDifficulty {
 
         gv.config.DebugOutput &&
           gv.logger.info(`POOP: Adding AITemplate ${file}`);
-        gv.config.DebugOutput && gv.logger.info(JSON.stringify(template));
+        //gv.config.DebugOutput && gv.logger.info(JSON.stringify(template));
         AITemplates.push(template);
       });
     } catch (err) {
@@ -124,9 +124,9 @@ export class POOPDifficulty {
         botTypes[botType].difficulty.normal,
         "impossible"
       );
-
-      //setup CoreAITemplate - used when not overridden by AITemplate
     }
+
+    //setup CoreAITemplate - used when not overridden by AITemplate
   }
 
   //centralize difficulty changes + the hardcoded difficulty modifiers.
@@ -169,7 +169,25 @@ export class POOPDifficulty {
   ): Difficulty {
     //apply the difficulty modifier to the difficulty settings
 
-    gv.config.Difficulty.Multipliers.AimSpeedMult;
+    if(gv.config.Difficulty.Multipliers.AimSpeedMult){
+      setting.Aiming.
+    }
+    gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    gv.config.Difficulty.Multipliers.VisionSpeedMult;
+    gv.config.Difficulty.Multipliers.AccuracyMult;
+    gv.config.Difficulty.Multipliers.SniperBotAccuracyMult;
+    gv.config.Difficulty.Multipliers.VisibleDistanceMult;
+    gv.config.Difficulty.Multipliers.SemiAutoFireRateMult;
+    gv.config.Difficulty.Multipliers.FullAutoFireRateMult;
+    gv.config.Difficulty.Multipliers.RecoilMult;
+    gv.config.Difficulty.Multipliers.HearingMult;
+    gv.config.Difficulty.Multipliers.VisibleAngleMult;
+    gv.config.Difficulty.Multipliers.VisibleAngleMax;
+    gv.config.Difficulty.Multipliers.GrenadePrecisionMult;
+    gv.config.Difficulty.Multipliers.GrenadeThrowRangeMax;
+    gv.config.Difficulty.Multipliers.AllowAimAtHead;
+    gv.config.Difficulty.Multipliers.AllowGrenades;
+    gv.config.Difficulty.Multipliers.AllowStationaryTurrets;
 
     return setting;
   }

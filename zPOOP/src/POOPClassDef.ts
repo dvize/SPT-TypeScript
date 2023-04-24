@@ -36,14 +36,16 @@ export interface POOPConfig {
       SniperBotAccuracyMult: number;
       VisibleDistanceMult: number;
       SemiAutoFireRateMult: number;
+      FullAutoFireRateMult: number;
       RecoilMult: number;
       HearingMult: number;
       VisibleAngleMult: number;
       VisibleAngleMax: number;
       GrenadePrecisionMult: number;
       GrenadeThrowRangeMax: number;
-      AllowAimAtHead: true;
-      AllowGrenades: true;
+      AllowAimAtHead: boolean;
+      AllowGrenades: boolean;
+      AllowStationaryTurrets: boolean;
     };
   };
 
