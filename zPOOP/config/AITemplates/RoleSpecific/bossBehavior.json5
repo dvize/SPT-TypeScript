@@ -894,200 +894,600 @@
         WAIT_NEW_SENSOR: 2.1,
       },
       Mind: {
+        //update cycle items
+        //this.MAX_AGGRO_BOT_DIST_SQR = this.MAX_AGGRO_BOT_DIST * this.MAX_AGGRO_BOT_DIST;
+        // if (this.DEFAULT_BEAR_BEHAVIOUR.HasFlag(EWarnBehaviour.Attack))
+        // {
+        // 	this.DEFAULT_BEAR_BEHAVIOUR |= EWarnBehaviour.Warn;
+        // }
+        // if (this.DEFAULT_SAVAGE_BEHAVIOUR.HasFlag(EWarnBehaviour.Attack))
+        // {
+        // 	this.DEFAULT_SAVAGE_BEHAVIOUR |= EWarnBehaviour.Warn;
+        // }
+        // if (this.DEFAULT_USEC_BEHAVIOUR.HasFlag(EWarnBehaviour.Attack))
+        // {
+        // 	this.DEFAULT_USEC_BEHAVIOUR |= EWarnBehaviour.Warn;
+        // }
+
+        //Coefficient for converting a player's strength into ambush distance
         AI_POWER_COEF: 120,
+
+        //nothing else written in the code
         AMBUSH_WHEN_UNDER_FIRE: true,
+
+        //After the chela was frightened by shots and driven into the ambush, he will have a resistance to this for X sec
         AMBUSH_WHEN_UNDER_FIRE_TIME_RESIST: 60,
+
+        //If a person was seen by someone less than X seconds ago, then we are going to attack him
         ATTACK_ENEMY_IF_PROTECT_DELTA_LAST_TIME_SEEN: 1.5,
+
+        //The chance that after losing sight of the enemy and not having a new bot will go to look for the enemy immediately. Applicable only for offensive tactics. (Next comes a check on your strength and the strength of the enemy.)
         ATTACK_IMMEDIATLY_CHANCE_0_100: 40,
+
+        //The square of the distance, if closer than which the bullet hits next to the bots, then he will perceive it (and if in cover, he will consider the cover bad)
         BULLET_FEEL_CLOSE_SDIST: 1,
+
+        //The distance from which the bot can \"feel\" the bullet
         BULLET_FEEL_DIST: 360,
+
+        //no other comments
         CAN_PANIC_IS_PROTECT: false,
+
+        //no other comments
         CAN_RECEIVE_PLAYER_REQUESTS_BEAR: false,
+
+        //no other comments
         CAN_RECEIVE_PLAYER_REQUESTS_SAVAGE: true,
+
+        //no other comments
         CAN_RECEIVE_PLAYER_REQUESTS_USEC: false,
+
+        //this seems like spt-only parameter. not in code so probably removed
         CAN_RECIVE_PLAYER_REQUESTS: true,
+
+        //no other comments
         CAN_STAND_BY: true,
+
+        //Can the bot pick up things thrown by other players
         CAN_TAKE_ITEMS: true,
+
+        //Can the bot send requests to other bots.
         CAN_THROW_REQUESTS: true,
+
+        //no other comments
         CAN_USE_MEDS: true,
+
+        //Chance to do fuck you action/sound at the moment when the bot sees the player
         CHANCE_FUCK_YOU_ON_CONTACT_100: 10,
+
+        //Chance that when the bot warns the player, he will take a look next to him (to shoot) and not speak
         CHANCE_SHOOT_WHEN_WARN_PLAYER_100: 25,
+
+        //The probability that the bot will run if it is hit while it is in cover and cannot see the enemy (to shoot at)
         CHANCE_TO_RUN_CAUSE_DAMAGE_0_100: 35,
+
+        //The chance that after the first 2 actions when warning the bot will stand and wait for the next 4 seconds.
         CHANCE_TO_STAY_WHEN_WARN_PLAYER_100: 80,
+
+        //What is the coefficient when looking for a shelter point
         COVER_DIST_COEF: 1.5,
+
+        //No other comments
         COVER_SECONDS_AFTER_LOSE_VISION: 10,
+
+        //When looking for cover, the bot will always dive if it has damage.
         COVER_SELF_ALWAYS_IF_DAMAGED: false,
+
+        //The time after which the bot will restore its characteristics after receiving damage
         DAMAGE_REDUCTION_TIME_SEC: 20,
+
+        //Hazard point coefficient when looking for cover. danger point
         DANGER_POINT_CHOOSE_COEF: 1,
+
+        //are wild enemies default for this bot
         DEFAULT_ENEMY_SAVAGE: true,
+
+        //If there is an enemy, in order for the bot to start healing, the enemy must be further than X meters
         DIST_TO_ENEMY_YO_CAN_HEAL: 30,
+
+        //No other comments
         DIST_TO_FOUND_SQRT: 400,
+
+        //when running, when there is less than X left to the shelter point, then the basic dangerous points are reset to zero
         DIST_TO_STOP_RUN_ENEMY: 15,
+
+        //Will enter the dogfight if the enemy is closer than X meters
         DOG_FIGHT_IN: 3,
+
+        //Coming out of the dogfight
         DOG_FIGHT_OUT: 6,
+
+        //list of hostile bot types.  public WildSpawnType[] ENEMY_BOT_TYPES = new WildSpawnType[0];
         ENEMY_BOT_TYPES: [],
+
+        //The angle at which the bot understands that the enemy is looking at him
         ENEMY_LOOK_AT_ME_ANG: 15,
+
+        //When the bot is looking for cover (in some cases) if the last visible enemy was visible less than X time ago, it will try to find a position with shooting
         FIND_COVER_TO_GET_POSITION_WITH_SHOOT: 2,
+
+        //How much aggression grows if someone died near them
         FRIEND_AGR_KILL: 0.2,
+
+        //How much the bot's aggression drops if they kill a cognate in his group.
         FRIEND_DEAD_AGR_LOW: -0.2,
+
+        //After the bot says the phrase, the next bot from the same group will be able to say the phrase only through X. If X<0 then there is no delay.
         GROUP_ANY_PHRASE_DELAY: 1,
+
+        //Same as GROUP_ANY_PHRASE_DELAY only applies to a specific phrase type. -1 means can't say same phrase
         GROUP_EXACTLY_PHRASE_DELAY: 4,
+
+        //Break between treatments.
         HEAL_DELAY_SEC: 5,
+
+        //Delay to feel hit if the bot is alert
         HIT_DELAY_WHEN_HAVE_SMT: -1,
+
+        //Delay to feel the hit if the bot is at peace
         HIT_DELAY_WHEN_PEACE: -1,
+
+        //Coefficient of accuracy of position perception where the player was hit more - more precisely;
         HIT_POINT_DETECTION: 4,
+
+        //If a person was seen by someone less than X seconds ago - and we are out of cover and there is no cover, then we will cool down and set fire to him.
         HOLD_IF_PROTECT_DELTA_LAST_TIME_SEEN: 8.5,
+
+        //What exactly to do when you come to a corpse 1 - use medicine kit, 2 - try to take a weapon, Default - look. public bool CAN_TALK = true;
         HOW_WORK_OVER_DEAD_BODY: 2,
+
+        //No other comments
         LAST_ENEMY_LOOK_TO: 40,
+
+        //What is the coefficient when looking for a shelter point
         LASTSEEN_POINT_CHOOSE_COEF: 0.2,
+
+        //no other comments
         MAX_AGGRO_BOT_DIST: 100,
+
+        //max_aggro_bot_dist * max_aggro_bot_dist
         MAX_AGGRO_BOT_DIST_SQR: 10000,
+
+        //Max number of shots randomly fired at position from close range
         MAX_SHOOTS_TIME: 4,
+
+        //max - thats all it say.. look at min_start_aggression_coef
         MAX_START_AGGRESION_COEF: 3,
+
+        //The minimum damage that the bot must pull to get a point of danger
         MIN_DAMAGE_SCARE: 20,
+
+        //Min number of shots at random at the position from which the fire was fired at close range
         MIN_SHOOTS_TIME: 2,
+
+        //min Aggressiveness level. [0....inf] Self-strength is multiplied by this factor => probability of tactical models.
         MIN_START_AGGRESION_COEF: 1,
+
+        //Don't run away to protect yourself
         NO_RUN_AWAY_FOR_SAFE: false,
+
+        //If the part of the body is less than X then it will be treated
         PART_PERCENT_TO_HEAL: 0.65,
+
+        //Distance to go to ambush for pistols and shotguns
         PISTOL_SHOTGUN_AMBUSH_DIST: 60,
+
+        //When the bot is protecting someone and the last enemy was seen more than X seconds ago, then you can try to heal.
         PROTECT_DELTA_HEAL_SEC: 10,
+
+        //what type of time to take in order to decide whether to attack or not. Real visible or \"feels like\"
         PROTECT_TIME_REAL: true,
+
+        //If the enemy was visible less than X seconds ago, then the distance to the cover for running will be increased by 1.5
         SEC_TO_MORE_DIST_TO_RUN: 10,
+
+        //If the bot has entered a dogfight more than 2 times in X seconds, it will instead fire from a spot.
         SHOOT_INSTEAD_DOG_FIGHT: 9,
+
+        //Hazard point coefficient when looking for cover. simple point
         SIMPLE_POINT_CHOOSE_COEF: 0.4,
+
+        //Distance to go to Ambush for the rest of the weapons
         STANDART_AMBUSH_DIST: 200,
+
+        //Use of the surgeon kit only from the safe container
         SURGE_KIT_ONLY_SAFE_CONTAINER: false,
+
+        //no other comments
         SUSPETION_POINT_CHANCE_ADD100: 0,
+
+        //The bot speaks only through the queue of phrases and by priorities
         TALK_WITH_QUERY: true,
+
+        //not in code.. maybe old field or spt?
         TIME_LEAVE_MAP: 23,
+
+        //After X seconds, the bot will look for the enemy, having come to the place of his last vision! must be less than TIME_TO_FORGOR_ABOUT_ENEMY_SEC
         TIME_TO_FIND_ENEMY: 22,
+
+        //After X seconds, the enemy ceases to be a task dispenser for bots.
         TIME_TO_FORGOR_ABOUT_ENEMY_SEC: 52,
+
+        //The bot will be able to get scared only after this time after the disappearance of the last seen enemy from the field
         TIME_TO_RUN_TO_COVER_CAUSE_SHOOT_SEC: 15,
+
+        //list of neutral types of bots. If the bot cannot warn, then all bots in this list become friendly or hostile depending on the value of DEFAULT_ENEMY_SAVAGE.   public WildSpawnType[] WARN_BOT_TYPES = new WildSpawnType[0];  think this is set by SPT?
         WARN_BOT_TYPES: [],
+
+        //Will the bot chase axemen ?  Guessing bot will chase with meleeweapon
         WILL_PERSUE_AXEMAN: true,
       },
       Move: {
+        //Update Cycle
+        //this.DIST_TO_CAN_CHANGE_WAY_SQR = this.DIST_TO_CAN_CHANGE_WAY * this.DIST_TO_CAN_CHANGE_WAY;
+        //this.DIST_TO_START_RAYCAST_SQR = this.DIST_TO_START_RAYCAST * this.DIST_TO_START_RAYCAST;
+        //this.BASE_SQRT_START_SERACH = this.BASE_START_SERACH * this.BASE_START_SERACH;
+        //this.FAR_DIST_SQR = this.FAR_DIST * this.FAR_DIST;
+
+        //degree per second
         BASE_ROTATE_SPEED: 270,
+
+        //base_start_search * base_start_search
         BASE_SQRT_START_SERACH: 1225,
+
+        //The base radius of the search circle for hiding points to before abandoning the serach
         BASE_START_SERACH: 35,
+
+        //If it was not specified what should be slowed down at the end, then the deceleration coefficient is
         BASESTART_SLOW_DIST: 1.1,
+
+        //Chance that the bot will run when it runs out of ammo and is out of cover
         CHANCE_TO_RUN_IF_NO_AMMO_0_100: 100,
+
+        //the bot goes and if the time of seeing the last place of the enemy is less than X, then he will look there
         DELTA_LAST_SEEN_ENEMY: 20,
+
+        //The distance at which ... change direction?
         DIST_TO_CAN_CHANGE_WAY: 8,
+
+        //DIST_TO_CAN_CHANGE_WAY * DIST_TO_CAN_CHANGE_WAY
         DIST_TO_CAN_CHANGE_WAY_SQR: 64,
+
+        //Distance from which attempts to see the danger point begin
         DIST_TO_START_RAYCAST: 15,
+
+        //DIST_TO_START_RAYCAST * DIST_TO_START_RAYCAST
         DIST_TO_START_RAYCAST_SQR: 225,
+
+        //Distance to the point to start running towards it
         FAR_DIST: 4,
+
+        //FAR_DIST * FAR_DIST
         FAR_DIST_SQR: 16,
+
+        //The distance less than which the bot considers that he has come to the destination
         REACH_DIST: 0.5,
+
+        //if the new shelter that the bot found is closer than X, then it already considers that it is in the shelter
         REACH_DIST_COVER: 2,
+
+        //The distance less than which the bot considers that he has reached his destination when running
         REACH_DIST_RUN: 0.8,
+
+        //If I do not see the enemy, then I will run away if I have an Ambush state
         RUN_IF_CANT_SHOOT: false,
+
+        //You can run if the enemy is further than X meters
         RUN_IF_GAOL_FAR_THEN: 10,
+
+        //If the bot runs to the point, then if the distance was less than X, then the bot will move to a step
         RUN_TO_COVER_MIN: 2,
+
+        //How many seconds after the start of the movement with shooting will be checked for the ability to escape
         SEC_TO_CHANGE_TO_RUN: 3,
+
+        //Deceleration factor
         SLOW_COEF: 7,
+
+        //The distance at which the bot starts to slow down when approaching the end point of the route
         START_SLOW_DIST: 1.5,
+
+        //Frequency of path recalculation then destinations
         UPDATE_TIME_RECAL_WAY: 7,
+
+        //If the point to which goes less than X by Y, then it will be cut to 0
         Y_APPROXIMATION: 0.7,
       },
       Patrol: {
+        //update cycle
+        //this.MIN_DIST_TO_CLOSE_TALK_SQR = this.MIN_DIST_TO_CLOSE_TALK * this.MIN_DIST_TO_CLOSE_TALK;
+
+        //Can take alternative paths
         CAN_CHOOSE_RESERV: true,
+
+        //bot will be able to tilt at friendlies
         CAN_FRIENDLY_TILT: true,
+
+        //no other comment.  Believe it means actually physically aiming with weapon (but not shooting).
         CAN_HARD_AIM: true,
+
+        //Can the bot look at corpses in peaceful mode
         CAN_LOOK_TO_DEADBODIES: true,
+
+        //no other comment.
         CAN_WATCH_SECOND_WEAPON: true,
+
+        //Chance to change patrol path
         CHANCE_TO_CHANGE_WAY_0_100: 50,
+
+        //Chance to take shortcuts when patrolling
         CHANCE_TO_CUT_WAY_0_100: 75,
+
+        //The probability that the bot will try to make a control shot in the body of the enemy
         CHANCE_TO_SHOOT_DEADBODY: 52,
+
+        //base time when the bot can decide to change paths
         CHANGE_WAY_TIME: 125.1,
+
+        //The distance to the midpoint of the path for the backup paths so that the path can be selected.
         CLOSE_TO_SELECT_RESERV_WAY: 25,
+
+        //see cut_way_min_0_1
         CUT_WAY_MAX_0_1: 0.65,
+
+        //The minimum percentage by which the path distance during patrol mb is cut
         CUT_WAY_MIN_0_1: 0.4,
+
+        //Base examination time
         DEAD_BODY_LOOK_PERIOD: 8,
+
+        //Delta search for a service on a backup path for a soulful conversation
         FRIEND_SEARCH_SEC: 12,
+
+        //The time that the bot spends at the inspection point on the normal path
         LOOK_TIME_BASE: 12,
+
+        //If the bot wants to execute a warning request, it must be closer than X to the target on the Y axis - this is for the number of floors, but if the ground is curved, then it is better to put more.
         MAX_YDIST_TO_START_WARN_REQUEST_TO_REQUESTER: 5,
+
+        //No other comments.
         MIN_DIST_TO_CLOSE_TALK: 5,
+
+        //MIN_DIST_TO_CLOSE_TALK * MIN_DIST_TO_CLOSE_TALK
         MIN_DIST_TO_CLOSE_TALK_SQR: 25,
+
+        //Delta on talkativeness
         MIN_TALK_DELAY: 35,
+
+        //After how much time if the bot got on the backup route, it will try to find a new one.
         RESERVE_OUT_TIME: 30,
+
+        //The time that the bot spends on the points of the Backup Path
         RESERVE_TIME_STAY: 72,
+
+        //Lifetime of a suspicious point.
         SUSPETION_PLACE_LIFETIME: 7,
+
+        //Delta phrases in a conversation
         TALK_DELAY: 1.1,
+
+        //If there are no friends, then we will talk with such a delta
         TALK_DELAY_BIG: 15.1,
+
+        //On spawning, will try to choose a backup path
         TRY_CHOOSE_RESERV_WAY_ON_START: false,
+
+        //The coefficient by which the distance is cut in \"peaceful\" mode
         VISION_DIST_COEF_PEACE: 0.75,
       },
       Scattering: {
+        //Update Cycle
+        //this.DIST_FROM_OLD_POINT_TO_NOT_AIM_SQRT = this.DIST_FROM_OLD_POINT_TO_NOT_AIM * this.DIST_FROM_OLD_POINT_TO_NOT_AIM;
+
+        //[Meters] How high does the sight bounce with amplitude
         AMPLITUDE_FACTOR: 0.015,
+
+        //[Meters]. Aim amplitude speed
         AMPLITUDE_SPEED: 0.001,
+
+        //Float - Coefficient of change in the working circle of accuracy during bleeding
         BloodFall: 1.45,
+
+        //Percentage - Amount of ammo remaining to enter ammo saving state 0_1
         Caution: 0.03,
+
+        //[Meters]. The distance from the new point aiming to the old one, if more than X, then the bot automatically considers that it did not aim, regardless of anything else.
         DIST_FROM_OLD_POINT_TO_NOT_AIM: 15,
+
+        //DIST_FROM_OLD_POINT_TO_NOT_AIM * DIST_FROM_OLD_POINT_TO_NOT_AIM
         DIST_FROM_OLD_POINT_TO_NOT_AIM_SQRT: 225,
+
+        //[Meters]. If the aiming point is closer than X then the bot will not shoot
         DIST_NOT_TO_SHOOT: 0.3,
+
+        //[Degrees] - How much the bot's spread angle diverges when it hits multiplied by the damage.
         FromShot: 0.001,
+
+        //Float - Coefficient of the convergence rate of the aiming angle when the arm is knocked out
         HandDamageAccuracySpeed: 1.3,
+
+        //Float - Coefficient of change in the minimum circle of accuracy when a hand is knocked out
         HandDamageScatteringMinMax: 0.7,
+
+        //At the moment of changing the position to lying / not lying, the current circle of information will increase by X
         LayFactor: 0.1,
+
+        //[meters per distance] - Maximum spread angle
         MaxScatter: 0.3,
+
+        //[meters per distance] - Minimum spread angle
         MinScatter: 0.015,
+
+        //Coefficient. More = worse. How much will the speed of information change if the specific speed (ToSlowBotSpeed,ToLowBotSpeed) is in this interval
         MovingSlowCoef: 1.4,
+
+        //At the time of the change of position, the current circle of convergence will increase by X * the degree of change of position
         PoseChnageCoef: 0.1,
+
+        //Float - Recoil control coefficient dependent on weapon recoil. Increases the current circle when the bullet exits the barrel. For single shots.
         RecoilControlCoefShootDone: 0.0003,
+
+        //Float - Recoil control coefficient dependent on weapon recoil. Increases the current circle when the bullet exits the barrel. for automatic fire
         RecoilControlCoefShootDoneAuto: 0.00015,
+
+        //Float - how high the barrel throws up. Weapon recoil coefficient.
         RecoilYCoef: 0.0005,
+
+        //Recoil decline rate up
         RecoilYCoefSppedDown: -0.52,
+
+        //how much recoil can be increased.
         RecoilYMax: 1,
+
+        //[meter per distance /sec] - Spread angle divergence speed. Bigger is better
         SpeedDown: -0.2,
+
+        //[meters per distance /sec] - Spread angle convergence rate
         SpeedUp: 0.6,
+
+        //Float - Coefficient by which the speed of convergence of the spread angle when aiming is multiplied. Bigger is better
         SpeedUpAim: 1.8,
+
+        //Float - Factor to change the preferred circle of accuracy in ammo saving mode
         ToCaution: 0.6,
+
+        //[Degrees/sec] - Bot turning speed after which the spread angle starts to diverge
         ToLowBotAngularSpeed: 140,
+
+        //[Meters/sec] - Bot speed after which the convergence of the scatter angle starts to stop
         ToLowBotSpeed: 2.8,
+
+        //[Meters/sec] - Bot speed after which the spread angle starts to slow down
         ToSlowBotSpeed: 1.8,
+
+        // no other comments - must be [Degrees/sec]
         ToStopBotAngularSpeed: 80,
+
+        //[meters/sec] Boat speed after which the spread angle starts to diverge
         ToUpBotSpeed: 4.3,
+
+        //Float - Multiplier by how fast the ScatterSpeed value will converge when using tracer bullets
         TracerCoef: 1.3,
+
+        //[meters per distance] - Working spread angle
         WorkingScatter: 0.15,
       },
       Shoot: {
+        //Update Cycle
+        //this.FAR_DIST_ENEMY_SQR = this.FAR_DIST_ENEMY * this.FAR_DIST_ENEMY;
+        //this.RUN_DIST_NO_AMMO_SQRT = this.RUN_DIST_NO_AMMO * this.RUN_DIST_NO_AMMO;
+
+        //Spread coefficient for automatic firing
         AUTOMATIC_FIRE_SCATTERING_COEF: 1.5,
+
+        //How long will we hold our finger on the course with automatic fire
         BASE_AUTOMATIC_TIME: 0.1,
+
+        //How many times do you have to be unable to shoot so as not to try to shoot further, but to go hide.
         CAN_SHOOTS_TIME_TO_AMBUSH: 333,
+
+        //no commments
         CAN_STOP_SHOOT_CAUSE_ANIMATOR: true,
+
+        //Chance to switch to auto fire at game start
         CHANCE_TO_CHANGE_TO_AUTOMATIC_FIRE_100: 76,
+
+        //Chance to change weapons if ammo runs out.
         CHANCE_TO_CHANGE_WEAPON: 0,
+
+        //Chance to switch weapons if out of ammo and the enemy has a helmet.
         CHANCE_TO_CHANGE_WEAPON_WITH_HELMET: 0,
+
+        //time in seconds between entering the malfunktion node and inspecting the weapon
         DELAY_BEFORE_EXAMINE_MALFUNCTION: 0.5,
+
+        //time in seconds between the inspection of the weapon and the actual repair
         DELAY_BEFORE_FIX_MALFUNCTION: 0.5,
+
+        //Minimum delta on shooting weapons for cover
         FAR_DIST_ENEMY: 20,
+
+        //far_dist_enemy * far_dist_enemy
         FAR_DIST_ENEMY_SQR: 400,
+
+        //The bot will only change weapons if the enemy is closer than X.
         FAR_DIST_TO_CHANGE_WEAPON: 50,
+
+        //How long will the finger be clamped on the course with a single fire
         FINGER_HOLD_SINGLE_SHOT: 0.14,
+
+        //How long will the finger be clamped on the course during the fire of a stationary grenade launcher
         FINGER_HOLD_STATIONARY_GRENADE: 0.3,
+
+        //How high will the recoil jump sideways depending on the vertical recoil
         HORIZONT_RECOIL_COEF: 0.4,
+
+        //the bot will only change weapons if the enemy is farther than X.
         LOW_DIST_TO_CHANGE_WEAPON: 10,
+
+        //The dependence coefficient of the frequency of sniper shots (every X meters - about a second)
         MARKSMAN_DIST_SEK_COEF: 44,
+
+        //The coefficient on which the effective shooting distance is calculated to get the maximum shooting distance.
         MAX_DIST_COEF: 1.35,
+
+        //How high will the recoil jump up in meters depending on the distance
         MAX_RECOIL_PER_METER: 0.2,
+
+        //If the enemy was visible for more than NOT_TO_SEE_ENEMY_TO_WANT_RELOAD_SEC seconds ago and there are less than X rounds in the magazine, then it will reload
         NOT_TO_SEE_ENEMY_TO_WANT_RELOAD_PERCENT: 0.5,
+
+        //Time for which the enemy must not be visible for the bot to want to reload
         NOT_TO_SEE_ENEMY_TO_WANT_RELOAD_SEC: 2,
+
+        //type rate of fire 600 per min => 10 per sec => 1 in 0.1 sec.
         RECOIL_DELTA_PRESS: 0.15,
+
+        //How high will the recoil jump up in meters depending on the distance
         RECOIL_PER_METER: 0.1,
+
+        //The time for which the return will go to the original position
         RECOIL_TIME_NORMALIZE: 2,
+
+        //If there have been no enemies for a long time and there are less than X percent of cartridges in the inventory, then it will reload
         RELOAD_PECNET_NO_ENEMY: 0.6,
+
+        //a chance to repair weapons immediately at the moment of breakage, without running for cover. If it doesn’t work, the bot hides first, only then repairs
         REPAIR_MALFUNCTION_IMMEDIATE_CHANCE: 25,
+
+        //If the enemy is farther than X and the bot runs out of ammo, it will run into cover and reload there.
         RUN_DIST_NO_AMMO: 25,
+
+        //run_dist_no_ammo * run_dist_no_ammo
         RUN_DIST_NO_AMMO_SQRT: 625,
+
+        //If more shots were made from cover than X, then it returns to cover
         SHOOT_FROM_COVER: 4,
+
+        //This is how much the enemy will be considered suppressed if he is suppressed by bullets
         SUPPRESS_BY_SHOOT_TIME: 6,
+
+        //How many times do you have to press the trigger for the enemy to become suppressed
         SUPPRESS_TRIGGERS_DOWN: 3,
+
+        //100% - weapons break like ordinary players, 50% - 2 times less often, 0 - never
         VALIDATE_MALFUNCTION_CHANCE: 100,
+
+        //Break between shots.
         WAIT_NEXT_SINGLE_SHOT: 0.3,
+
+        //Maximum break between shots for snipers basically
         WAIT_NEXT_SINGLE_SHOT_LONG_MAX: 3.3,
+
+        //Minimum break between shots for snipers basically
         WAIT_NEXT_SINGLE_SHOT_LONG_MIN: 0.8,
+
+        //Break between shots stationary grenade launcher.
         WAIT_NEXT_STATIONARY_GRENADE: 1,
       },
     },
