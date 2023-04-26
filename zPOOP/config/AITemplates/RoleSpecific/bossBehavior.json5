@@ -139,7 +139,7 @@
         //Recommended values are 0.2..1.3. //Less than 1 means the farther away the more accurate the linear dependence will be. More - oblique.") ]
         SCATTERING_DIST_MODIF_CLOSE: 0.82,
 
-        //This is how ugly the bot gets when it gets corrupted ? corrupted not sure what translation is
+        //This is how ugly the bot gets when it gets corrupted ? corrupted probably is stunned
         SCATTERING_HAVE_DAMAGE_COEF: 2,
 
         //Approximately how many shots on the target are needed to change the priority to shooting on the legs
@@ -366,7 +366,7 @@
         //damage coefficient.. does more damage the higher this is.  1 should be normal/no change.
         DamageCoeff: 1,
 
-        // how far they can see affected by this coefficient?
+        // how fast they can see affected by this coefficient?
         GainSightCoef: 0.2,
 
         //hearing range modifier

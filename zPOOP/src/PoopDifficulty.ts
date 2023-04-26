@@ -29,7 +29,6 @@ import {
   IBotType,
 } from "@spt-aki/models/eft/common/tables/IBotType";
 import { Difficulties } from "@spt-aki/models/eft/common/tables/IBotType";
-import { Aiming } from "./POOPClassDef";
 
 export class POOPDifficulty {
   static readAITemplate(): AITemplate[] {
@@ -181,52 +180,223 @@ export class POOPDifficulty {
     }
 
     //setup Aim multiplier
-    POOPDifficulty.SetupAimMultiplier(setting);
+    POOPDifficulty.SetupAimSpeedMultiplier(setting);
 
-    //setup Shot Spread multiplier
-    gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    //setup Accuracy multiplier
+    POOPDifficulty.SetupShotSpreadMultiplier(setting);
 
     //setup vision speed multiplier
-    gv.config.Difficulty.Multipliers.VisionSpeedMult;
-    gv.config.Difficulty.Multipliers.AccuracyMult;
-    gv.config.Difficulty.Multipliers.SniperBotAccuracyMult;
-    gv.config.Difficulty.Multipliers.VisibleDistanceMult;
-    gv.config.Difficulty.Multipliers.SemiAutoFireRateMult;
+    POOPDifficulty.SetupVisionSpeedMultiplier(setting);
+
+    //setup visible distance multiplier
+    POOPDifficulty.SetupVisibleDistanceMultiplier(setting);
+
+    //setup FullAutoFireRateMult
+    POOPDifficulty.SetupFullAutoFireRateMultiplier(setting);
     gv.config.Difficulty.Multipliers.FullAutoFireRateMult;
-    gv.config.Difficulty.Multipliers.RecoilMult;
-    gv.config.Difficulty.Multipliers.HearingMult;
-    gv.config.Difficulty.Multipliers.VisibleAngleMult;
-    gv.config.Difficulty.Multipliers.VisibleAngleMax;
-    gv.config.Difficulty.Multipliers.GrenadePrecisionMult;
-    gv.config.Difficulty.Multipliers.GrenadeThrowRangeMax;
+
+    //setup Recoil multiplier
+    POOPDifficulty.SetupRecoilMultiplier(setting);
+
+    //setup hearing multiplier
+    POOPDifficulty.SetupHearingMultiplier(setting);
+
+    //setup Visible Angle with floor 120 and max 320
+    if (gv.config.Difficulty.DirectValue.VisibleAngle < 120) {
+      setting.Change.VisibleAngle = 120;
+    } else if (gv.config.Difficulty.DirectValue.VisibleAngle > 320) {
+      setting.Change.VisibleAngle = 320;
+    } else {
+      setting.Change.VisibleAngle =
+        gv.config.Difficulty.DirectValue.VisibleAngle;
+    }
+
+    //setup Grenade Precision multiplier
+    POOPDifficulty.SetupGrenadePrecisionMultiplier(setting);
+
+    //setup Grenade Throw Range Max
+    setting.Grenade.MAX_THROW_POWER =
+      gv.config.Difficulty.DirectValue.GrenadeThrowRangeMax;
+
     if (gv.config.Difficulty.DirectValue.AllowAimAtHead) {
       //this sets to // 4 - randomly + center + without head
       setting.Aiming.AIMING_TYPE = 4;
     }
-    gv.config.Difficulty.DirectValue.AllowGrenades;
+
+    //setup AllowGrenades
+    setting.Core.CanGrenade = gv.config.Difficulty.DirectValue.AllowGrenades;
+
     gv.config.Difficulty.DirectValue.AllowStationaryTurrets;
 
     return setting;
   }
 
-  private static SetupAimMultiplier(setting: Difficulty) {
+  static SetupGrenadePrecisionMultiplier(setting: Difficulty) {
+    setting.Aiming.BASE_SHIEF_STATIONARY_GRENADE =
+      Number(setting.Aiming.BASE_SHIEF_STATIONARY_GRENADE) /
+      gv.config.Difficulty.Multipliers.GrenadePrecisionMult;
+    setting.Grenade.GrenadePrecision =
+      Number(setting.Grenade.GrenadePrecision) /
+      gv.config.Difficulty.Multipliers.GrenadePrecisionMult;
+    setting.Grenade.GrenadePerMeter =
+      Number(setting.Grenade.GrenadePerMeter) /
+      gv.config.Difficulty.Multipliers.GrenadePrecisionMult;
+  }
+
+  static SetupHearingMultiplier(setting: Difficulty) {
+    setting.Change.FLASH_HEARING =
+      Number(setting.Hearing.FLASH_HEARING) /
+      gv.config.Difficulty.Multipliers.HearingMult;
+    setting.Change.SMOKE_HEARING =
+      Number(setting.Hearing.SMOKE_HEARING) /
+      gv.config.Difficulty.Multipliers.HearingMult;
+    setting.Change.STUN_HEARING =
+      Number(setting.Hearing.STUN_HEARING) *
+      gv.config.Difficulty.Multipliers.HearingMult;
+    setting.Core.HearingSense =
+      Number(setting.Hearing.HearingSense) *
+      gv.config.Difficulty.Multipliers.HearingMult;
+  }
+
+  static SetupRecoilMultiplier(setting: Difficulty) {
+    setting.Scattering.RecoilYMax =
+      Number(setting.Scattering.RecoilYMax) *
+      gv.config.Difficulty.Multipliers.RecoilMult;
+    setting.Scattering.RecoilYCoef =
+      Number(setting.Scattering.RecoilYCoef) /
+      gv.config.Difficulty.Multipliers.RecoilMult;
+    setting.Scattering.RecoilYCoefSppedDown =
+      Number(setting.Scattering.RecoilYCoefSppedDown) *
+      gv.config.Difficulty.Multipliers.RecoilMult;
+    setting.Scattering.RecoilControlCoefShootDone =
+      Number(setting.Scattering.RecoilControlCoefShootDone) /
+      gv.config.Difficulty.Multipliers.RecoilMult;
+    setting.Scattering.RecoilControlCoefShootDoneAuto =
+      Number(setting.Scattering.RecoilControlCoefShootDoneAuto) /
+      gv.config.Difficulty.Multipliers.RecoilMult;
+    setting.Shoot.HORIZONT_RECOIL_COEF =
+      Number(setting.Shoot.HORIZONT_RECOIL_COEF) /
+      gv.config.Difficulty.Multipliers.RecoilMult;
+    //on rate of fire how much recoil is added.
+    setting.Shoot.RECOIL_DELTA_PRESS =
+      Number(setting.Shoot.RECOIL_DELTA_PRESS) /
+      gv.config.Difficulty.Multipliers.RecoilMult;
+    setting.Shoot.RECOIL_PER_METER =
+      Number(setting.Shoot.RECOIL_PER_METER) /
+      gv.config.Difficulty.Multipliers.RecoilMult;
+  }
+
+  static SetupFullAutoFireRateMultiplier(setting: Difficulty) {
+    //how long hold down the trigger with automatic fire
+    setting.Shoot.BASE_AUTOMATIC_TIME =
+      Number(setting.Shoot.BASE_AUTOMATIC_TIME) *
+      gv.config.Difficulty.Multipliers.FullAutoFireRateMult;
+  }
+
+  static SetupVisibleDistanceMultiplier(setting: Difficulty) {
+    //set min floor of 50 meters for visble distance
+    if (Number(setting.Core.VisibleDistance) < 50) {
+      setting.Core.VisibleDistance = 50;
+    } else {
+      setting.Core.VisibleDistance =
+        Number(setting.Core.VisibleDistance) *
+        gv.config.Difficulty.Multipliers.VisibleDistanceMult;
+    }
+
+    setting.Shoot.MAX_DIST_COEF =
+      Number(setting.Shoot.MAX_DIST_COEF) *
+      gv.config.Difficulty.Multipliers.VisibleDistanceMult;
+  }
+
+  static SetupVisionSpeedMultiplier(setting: Difficulty) {
+    setting.Move.BASE_ROTATE_SPEED =
+      Number(setting.Move.BASE_ROTATE_SPEED) *
+      gv.config.Difficulty.Multipliers.VisionSpeedMult;
+    setting.Look.WAIT_NEW__LOOK_SENSOR =
+      Number(setting.Look.WAIT_NEW__LOOK_SENSOR) /
+      gv.config.Difficulty.Multipliers.VisionSpeedMult;
+    setting.Look.WAIT_NEW_SENSOR =
+      Number(setting.Look.WAIT_NEW_SENSOR) /
+      gv.config.Difficulty.Multipliers.VisionSpeedMult;
+
+    setting.Core.GainSightCoef =
+      Number(setting.Core.GainSightCoef) /
+      gv.config.Difficulty.Multipliers.VisionSpeedMult;
+  }
+
+  static SetupShotSpreadMultiplier(setting: Difficulty) {
+    //method that has all the shot spread multipliers
+    setting.Aiming.SCATTERING_DIST_MODIF =
+      Number(setting.Aiming.SCATTERING_DIST_MODIF) /
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    setting.Aiming.SCATTERING_DIST_MODIF_CLOSE =
+      Number(setting.Aiming.SCATTERING_DIST_MODIF_CLOSE) /
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    setting.Aiming.SCATTERING_HAVE_DAMAGE_COEF =
+      Number(setting.Aiming.SCATTERING_HAVE_DAMAGE_COEF) /
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    setting.Change.FLASH_SCATTERING =
+      Number(setting.Change.FLASH_SCATTERING) *
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    setting.Change.SMOKE_SCATTERING =
+      Number(setting.Change.SMOKE_SCATTERING) *
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    setting.Core.ScatteringClosePerMeter =
+      Number(setting.Core.ScatteringClosePerMeter) *
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    setting.Core.ScatteringPerMeter =
+      Number(setting.Core.ScatteringPerMeter) *
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    setting.Scattering.HandDamageScatteringMinMax =
+      Number(setting.Scattering.HandDamageScatteringMinMax) /
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    setting.Scattering.AMPLITUDE_FACTOR =
+      Number(setting.Scattering.AMPLITUDE_FACTOR) /
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    setting.Scattering.AMPLITUDE_SPEED =
+      Number(setting.Scattering.AMPLITUDE_SPEED) /
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    setting.Scattering.BloodFall =
+      Number(setting.Scattering.BloodFall) /
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    setting.Scattering.MaxScatter =
+      Number(setting.Scattering.MaxScatter) /
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    setting.Scattering.MinScatter =
+      Number(setting.Scattering.MinScatter) /
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    setting.Scattering.WorkingScatter =
+      Number(setting.Scattering.WorkingScatter) /
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    setting.Shoot.AUTOMATIC_FIRE_SCATTERING_COEF =
+      Number(setting.Shoot.AUTOMATIC_FIRE_SCATTERING_COEF) /
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    setting.Scattering.SpeedDown =
+      Number(setting.Scattering.SpeedDown) *
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    setting.Scattering.SpeedUp =
+      Number(setting.Scattering.SpeedUp) *
+      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+  }
+
+  private static SetupAimSpeedMultiplier(setting: Difficulty) {
     //method that has all the aim speed multipliers
 
     //zeroing speed factor
-    setting.Aiming.BETTER_PRECICING_COEFF =
-      Number(setting.Aiming.BETTER_PRECICING_COEFF) *
+    setting.Aiming.BETTER_PRECICING_COEF =
+      Number(setting.Aiming.BETTER_PRECICING_COEF) *
       gv.config.Difficulty.Multipliers.AimSpeedMult;
     //aim speed factor when blinded
-    setting.Aiming.FLASH_ACCURACY_COEFF =
-      Number(setting.Aiming.FLASH_ACCURACY_COEFF) *
+    setting.Aiming.FLASH_ACCURATY =
+      Number(setting.Aiming.FLASH_ACCURATY) /
       gv.config.Difficulty.Multipliers.AimSpeedMult;
     //aim speed factor when in smoke
     setting.Aiming.SMOKE_ACCURATY =
-      Number(setting.Aiming.SMOKE_ACCURATY) *
+      Number(setting.Aiming.SMOKE_ACCURATY) /
       gv.config.Difficulty.Multipliers.AimSpeedMult;
     //Reacquire target speed factor when in smoke
     setting.Aiming.SMOKE_GAIN_SIGHT =
-      Number(setting.Aiming.SMOKE_GAIN_SIGHT) *
+      Number(setting.Aiming.SMOKE_GAIN_SIGHT) /
       gv.config.Difficulty.Multipliers.AimSpeedMult;
     //aim speed.. not sure if bigger is better or worse (I think lower is better)
     //use inverse of multiplication to get a division
