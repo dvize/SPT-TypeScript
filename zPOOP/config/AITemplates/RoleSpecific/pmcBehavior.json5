@@ -1,6 +1,7 @@
 {
   RoleTypes: ['sptbear', 'sptusec', 'assaultgroup', 'usec', 'bear'],
   AIDifficultyModifier: 0,
+  OverrideConfigMultipliers: false,
   difficulty: {
     normal: {
       Aiming: {

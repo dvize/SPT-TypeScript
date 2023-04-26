@@ -311,6 +311,7 @@ export interface CoreAITemplate {
 export interface AITemplate {
   RoleTypes: string[];
   AIDifficultyModifier: number;
+  OverrideConfigMultipliers: boolean;
   difficulty: Difficulties;
 }
 

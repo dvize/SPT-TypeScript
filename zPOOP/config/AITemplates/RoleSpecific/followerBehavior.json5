@@ -13,6 +13,7 @@
     'followerzryachiy',
   ],
   AIDifficultyModifier: 0,
+  OverrideConfigMultipliers: false,
   difficulty: {
     normal: {
       Aiming: {

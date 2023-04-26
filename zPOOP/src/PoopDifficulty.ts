@@ -114,15 +114,23 @@ export class POOPDifficulty {
       //create the botType.difficulty.easy and botType.difficulty.hard and botType.difficulty.impossible and set them to appropriate botType.difficulty values
       botTypes[botType].difficulty.easy = this.applyDifficultyChange(
         botTypes[botType].difficulty.normal,
-        "easy"
+        "easy",
+        applicableTemplate.OverrideConfigMultipliers
+      );
+      botTypes[botType].difficulty.easy = this.applyDifficultyChange(
+        botTypes[botType].difficulty.normal,
+        "normal",
+        applicableTemplate.OverrideConfigMultipliers
       );
       botTypes[botType].difficulty.hard = this.applyDifficultyChange(
         botTypes[botType].difficulty.normal,
-        "hard"
+        "hard",
+        applicableTemplate.OverrideConfigMultipliers
       );
       botTypes[botType].difficulty.impossible = this.applyDifficultyChange(
         botTypes[botType].difficulty.normal,
-        "impossible"
+        "impossible",
+        applicableTemplate.OverrideConfigMultipliers
       );
     }
 
@@ -132,7 +140,8 @@ export class POOPDifficulty {
   //centralize difficulty changes + the hardcoded difficulty modifiers.
   static applyDifficultyChange(
     setting: Difficulty,
-    difficultyOption: string
+    difficultyOption: string,
+    OverrideConfigMultipliers: boolean
   ): Difficulty {
     //switch the difficultyOption
     switch (difficultyOption) {
@@ -141,21 +150,32 @@ export class POOPDifficulty {
         return this.setDifficultyModifier(
           setting,
           gameDifficulty["easy"] +
-            gv.config.Difficulty.OverallDifficultyModifier
+            gv.config.Difficulty.OverallDifficultyModifier,
+          OverrideConfigMultipliers
+        );
+      case "normal":
+        //apply the normal changes to the normal difficulty
+        return this.setDifficultyModifier(
+          setting,
+          gameDifficulty["normal"] +
+            gv.config.Difficulty.OverallDifficultyModifier,
+          OverrideConfigMultipliers
         );
       case "hard":
         //apply the hard changes to the normal difficulty
         return this.setDifficultyModifier(
           setting,
           gameDifficulty["hard"] +
-            gv.config.Difficulty.OverallDifficultyModifier
+            gv.config.Difficulty.OverallDifficultyModifier,
+          OverrideConfigMultipliers
         );
       case "impossible":
         //apply the impossible changes to the normal difficulty
         return this.setDifficultyModifier(
           setting,
           gameDifficulty["impossible"] +
-            gv.config.Difficulty.OverallDifficultyModifier
+            gv.config.Difficulty.OverallDifficultyModifier,
+          OverrideConfigMultipliers
         );
       default:
         //apply no changes so it will default to normal
@@ -165,8 +185,14 @@ export class POOPDifficulty {
 
   static setDifficultyModifier(
     setting: Difficulty,
-    DifficultyModifier: number
+    DifficultyModifier: number,
+    OverrideConfigMultipliers: boolean
   ): Difficulty {
+    //if we are not overriding the config multipliers, just return the setting
+    if (!OverrideConfigMultipliers) {
+      return setting;
+    }
+
     //set a floor for each of the multiplers in the difficulty
     for (let setting in gv.config.Difficulty.Multipliers) {
       if (
@@ -226,6 +252,7 @@ export class POOPDifficulty {
     //setup AllowGrenades
     setting.Core.CanGrenade = gv.config.Difficulty.DirectValue.AllowGrenades;
 
+    //NEED TO WORK ON THIS
     gv.config.Difficulty.DirectValue.AllowStationaryTurrets;
 
     return setting;
@@ -244,18 +271,20 @@ export class POOPDifficulty {
   }
 
   static SetupHearingMultiplier(setting: Difficulty) {
-    setting.Change.FLASH_HEARING =
-      Number(setting.Hearing.FLASH_HEARING) /
-      gv.config.Difficulty.Multipliers.HearingMult;
-    setting.Change.SMOKE_HEARING =
-      Number(setting.Hearing.SMOKE_HEARING) /
-      gv.config.Difficulty.Multipliers.HearingMult;
-    setting.Change.STUN_HEARING =
-      Number(setting.Hearing.STUN_HEARING) *
-      gv.config.Difficulty.Multipliers.HearingMult;
-    setting.Core.HearingSense =
-      Number(setting.Hearing.HearingSense) *
-      gv.config.Difficulty.Multipliers.HearingMult;
+    //guess these values aren't being used.
+    // setting.Change.FLASH_HEARING =
+    //   Number(setting.Hearing.FLASH_HEARING) /
+    //   gv.config.Difficulty.Multipliers.HearingMult;
+    // setting.Change.SMOKE_HEARING =
+    //   Number(setting.Hearing.SMOKE_HEARING) /
+    //   gv.config.Difficulty.Multipliers.HearingMult;
+    // setting.Change.STUN_HEARING =
+    //   Number(setting.Hearing.STUN_HEARING) *
+    //   gv.config.Difficulty.Multipliers.HearingMult;
+    //this setting is null to?
+    // setting.Core.HearingSense =
+    //   Number(setting.Hearing.HearingSense) *
+    //   gv.config.Difficulty.Multipliers.HearingMult;
   }
 
   static SetupRecoilMultiplier(setting: Difficulty) {
