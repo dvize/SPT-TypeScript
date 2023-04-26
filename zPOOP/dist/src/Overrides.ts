@@ -64,20 +64,20 @@ export class Overrides {
   static onRaidSave(url: string, info: any, sessionId: string, output: string) {
     gv.logger.info("POOP: onRaidSave");
 
-    let successfulConsecutiveRaids =
-      gv.progressRecord.successfulConsecutiveRaids;
-    let failedConsecutiveRaids = gv.progressRecord.failedConsecutiveRaids;
+    //try read values from progress record and if not we need to set them to 0
+    let successfulConsecutiveRaids: number = 0;
+    let failedConsecutiveRaids: number = 0;
 
-    //generate progress file if its null
-    let progressFile: progressRecord = lp.ReadFileEncrypted(
-      `${gv.modFolder}/donottouch/progress.json`
-    );
-    if (progressFile == null) {
+    //if gv.ProgressRecord is null, then we need to generate a new progress file
+    if (gv.progressRecord == null) {
       gv.logger.info(`POOP: Progress file not found, creating new file`);
       lp.CreateProgressFile(0, 0, sessionId, info);
-      progressFile = lp.ReadFileEncrypted(
+      gv.progressRecord = lp.ReadFileEncrypted(
         `${gv.modFolder}/donottouch/progress.json`
-      );
+      ); //assign progressFile to gv.progressRecord
+    } else {
+      successfulConsecutiveRaids = gv.progressRecord.successfulConsecutiveRaids;
+      failedConsecutiveRaids = gv.progressRecord.failedConsecutiveRaids;
     }
 
     //read gv.progressRecord and set the values for successfulConsecutive raids, failedConsecutive raids, and runthroughs
@@ -95,7 +95,7 @@ export class Overrides {
     }
 
     //Update progress file
-    if (progressFile != null) {
+    if (gv.progressRecord != null) {
       gv.logger.info(
         `POOP: Updated progress file {SuccessfulConsecutiveRaids: ${successfulConsecutiveRaids}, FailedConsecutiveRaids: ${failedConsecutiveRaids}}`
       );

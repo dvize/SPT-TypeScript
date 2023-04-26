@@ -32,18 +32,22 @@ export interface POOPConfig {
       AimSpeedMult: number;
       ShotSpreadMult: number;
       VisionSpeedMult: number;
-      AccuracyMult: number;
-      SniperBotAccuracyMult: number;
       VisibleDistanceMult: number;
-      SemiAutoFireRateMult: number;
+      FullAutoFireRateMult: number;
       RecoilMult: number;
       HearingMult: number;
-      VisibleAngleMult: number;
-      VisibleAngleMax: number;
       GrenadePrecisionMult: number;
+    };
+    DirectValue: {
+      AllowAimAtHead: boolean;
+      AllowGrenades: boolean;
+      AllowStationaryTurrets: boolean;
+      PistolFireDistancePref: number;
+      RifleFireDistancePref: number;
+      ShotgunFireDistancePref: number;
+      MAX_VISION_GRASS_METERS: number;
+      VisibleAngle: number;
       GrenadeThrowRangeMax: number;
-      AllowAimAtHead: true;
-      AllowGrenades: true;
     };
   };
 
