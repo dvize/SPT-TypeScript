@@ -1,5 +1,5 @@
 {
-  RoleTypes: ['sptbear', 'sptusec', 'assaultgroup', 'usec', 'bear'],
+  RoleTypes: ['pmcbot'],
   AIDifficultyModifier: 0,
   difficulty: {
     normal: {
