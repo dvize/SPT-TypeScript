@@ -29,32 +29,25 @@ export class LegendaryPlayer {
       return;
     }
 
-    //legendary player chance is 15 percent right now
-    let randomChance = gv.randomUtil.getChance100(
-      100 - gv.LegendaryPlayerModeChance
-    );
-    if (randomChance) {
-      //create array of bots based on player.info.side and player.info.settings.difficulty
-      let botarray: IBotBase[] = [];
-      let difficultyArray: string[] = ["easy", "normal", "hard", "impossible"];
+    //create array of bots based on player.info.side and player.info.settings.difficulty
+    let botarray: IBotBase[] = [];
+    let difficultyArray: string[] = ["easy", "normal", "hard", "impossible"];
 
-      //loop through the difficulty array and create 2 bots for each difficulty
-      for (let i = 0; i < difficultyArray.length; i++) {
-        let difficulty: string = difficultyArray[i];
+    //loop through the difficulty array and create 2 bots for each difficulty
+    for (let i = 0; i < difficultyArray.length; i++) {
+      let difficulty: string = difficultyArray[i];
 
-        let bot1: IBotBase = this.CreateBot(player, difficulty);
-        botarray.push(bot1);
+      let bot1: IBotBase = this.CreateBot(player, difficulty);
+      botarray.push(bot1);
 
-        // let bot2 = this.CreateBot(player, difficulty);
-        // botarray.push(bot2);
+      // let bot2 = this.CreateBot(player, difficulty);
+      // botarray.push(bot2);
 
-        //generate the key as it is a string value of player.info.side + player.info.settings.difficulty
-        let key: string =
-          bot1.Info.Settings.Role + bot1.Info.Settings.BotDifficulty;
+      //generate the key as it is a string value of legendary + player.info.settings.difficulty
+      let key: string = "legendary" + bot1.Info.Settings.BotDifficulty;
 
-        //push the botarray into the botgenerationcache using storemethod
-        gv.botGenerationCacheService.storeBots(key, botarray);
-      }
+      //push the botarray into the botgenerationcache using storemethod
+      gv.botGenerationCacheService.storeBots(key, botarray);
     }
   }
 

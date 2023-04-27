@@ -11,9 +11,13 @@ import { LegendaryPlayer as lp } from "./LegendaryPlayer";
 export class Overrides {
   // use (gv.botGenerationCacheService as any) to get around the private access modifier
   // this is a hacky way to do it, but it works
+  private static legendaryDifficultyArray: string[] = ["hard", "impossible"];
 
   static getBot(key: string): IBotBase {
-    gv.logger.warning(`requested bot type ${key} from cache`);
+    gv.config.DebugOutput &&
+      gv.logger.warning(`requested bot type ${key} from cache`);
+
+    //check if bot cache has requested bot type
     if ((gv.botGenerationCacheService as any).storedBots.has(key)) {
       const cachedOfType = (gv.botGenerationCacheService as any).storedBots.get(
         key
@@ -32,14 +36,24 @@ export class Overrides {
             cachedOfType[cachedOfType.length - 1].Info.Settings.Role = newrole;
             cachedOfType[cachedOfType.length - 1].Info.Side = "Savage";
 
-            gv.logger.info(`POOP: Substituting ${key} with ${newrole}!`);
+            gv.config.DebugOutput &&
+              gv.logger.info(`POOP: Substituting ${key} with ${newrole}!`);
             return cachedOfType.pop();
           }
         }
 
+        //this section is after we know we are not spawning for a substitute scav role
         if (gv.config.DebugOutput)
           gv.logger.info(`POOP: Not Substituting ${key}!`);
 
+        //legendary player chance is 15 percent right now
+        let randomChance = gv.randomUtil.getChance100(
+          gv.LegendaryPlayerModeChance
+        );
+        if (randomChance) {
+          this.grabLegendaryPlayer(key);
+        }
+        //this is still return the original cached bot
         return cachedOfType.pop();
       }
 
@@ -50,14 +64,49 @@ export class Overrides {
         )
       );
     }
+
+    return undefined;
+  }
+
+  //helper function to grab legendary player for use in getBot botcache
+  static grabLegendaryPlayer(key: string): IBotBase {
+    //grab random difficulty from difficultyarray
+    let randomDifficulty: string = gv.randomUtil.getArrayValue(
+      Overrides.legendaryDifficultyArray
+    );
+
+    //set key = "legendary" + random difficulty
+    key = "legendary" + randomDifficulty;
+
+    //check if bot cache has legendary player
+    if ((gv.botGenerationCacheService as any).storedBots.has(key)) {
+      const legendPlayer = (gv.botGenerationCacheService as any).storedBots.get(
+        key
+      );
+
+      if (legendPlayer.length > 0) {
+        //setup random role from curated config scav role list
+        let newrole: string = gv.randomUtil
+          .getArrayValue(gv.config.AIChanges.ScavAlternateRolesAllowed)
+          .toLowerCase();
+        newrole = RoleCase[newrole];
+
+        //assign new role and side to bot
+        legendPlayer[legendPlayer.length - 1].Info.Settings.Role = newrole;
+        legendPlayer[legendPlayer.length - 1].Info.Side = "Savage";
+
+        gv.config.DebugOutput &&
+          gv.logger.info(`POOP: Substituting ${key} with ${newrole}!`);
+        return legendPlayer.pop();
+      }
+    }
+
     gv.logger.error(
       (gv.botGenerationCacheService as any).localisationService.getText(
-        "bot-no_bot_type_in_cache",
+        "bot-cache_has_zero_bots_of_requested_type",
         key
       )
     );
-
-    return undefined;
   }
 
   //All functions that need to be run when the route "/raid/profile/save" is used should go in here, as config-reliant conditionals can't be used on the initial load function

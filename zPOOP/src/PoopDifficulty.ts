@@ -272,19 +272,19 @@ export class POOPDifficulty {
 
   static SetupHearingMultiplier(setting: Difficulty) {
     //guess these values aren't being used.
-    // setting.Change.FLASH_HEARING =
-    //   Number(setting.Hearing.FLASH_HEARING) /
-    //   gv.config.Difficulty.Multipliers.HearingMult;
-    // setting.Change.SMOKE_HEARING =
-    //   Number(setting.Hearing.SMOKE_HEARING) /
-    //   gv.config.Difficulty.Multipliers.HearingMult;
-    // setting.Change.STUN_HEARING =
-    //   Number(setting.Hearing.STUN_HEARING) *
-    //   gv.config.Difficulty.Multipliers.HearingMult;
+    setting.Change.FLASH_HEARING =
+      Number(setting.Hearing.FLASH_HEARING) /
+      gv.config.Difficulty.Multipliers.HearingMult;
+    setting.Change.SMOKE_HEARING =
+      Number(setting.Hearing.SMOKE_HEARING) /
+      gv.config.Difficulty.Multipliers.HearingMult;
+    setting.Change.STUN_HEARING =
+      Number(setting.Hearing.STUN_HEARING) *
+      gv.config.Difficulty.Multipliers.HearingMult;
     //this setting is null to?
-    // setting.Core.HearingSense =
-    //   Number(setting.Hearing.HearingSense) *
-    //   gv.config.Difficulty.Multipliers.HearingMult;
+    setting.Core.HearingSense =
+      Number(setting.Hearing.HearingSense) *
+      gv.config.Difficulty.Multipliers.HearingMult;
   }
 
   static SetupRecoilMultiplier(setting: Difficulty) {
