@@ -1,7 +1,7 @@
 {
 	"name": "AutoProfileBackup",
 	"author": "Lua",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"akiVersion": ">= 3.2.5 < 4.0.0",
 	"license": "CC BY-NC-SA 4.0",
 	"main": "src/mod.js",
