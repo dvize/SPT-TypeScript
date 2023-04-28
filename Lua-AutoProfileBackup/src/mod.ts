@@ -47,10 +47,10 @@ class Mod implements IPreAkiLoadMod, IPostDBLoadMod, IPostAkiLoadMod {
 
     if (modConfig?.AutoBackup?.OnRaidStart) {
       staticRouterModService.registerStaticRouter(
-        `${this.modName}-/client/match/offline/start`,
+        `${this.modName}-/client/raid/configuration`,
         [
           {
-            url: "/client/match/offline/start",
+            url: "/client/raid/configuration",
             action: (
               url: string,
               info: any,
