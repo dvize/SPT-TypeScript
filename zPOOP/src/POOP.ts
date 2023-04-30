@@ -18,7 +18,6 @@ import {
 import { Overrides } from "./Overrides";
 import { LegendaryPlayer as lp } from "./LegendaryPlayer";
 import JSON5 from "json5";
-import { SecureContainerHelper } from "../../../Server/project/src/helpers/SecureContainerHelper";
 
 class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
   preAkiLoad(container: DependencyContainer): void {

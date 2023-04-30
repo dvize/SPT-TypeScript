@@ -57,8 +57,15 @@ export class LegendaryPlayer {
   ) {
     //check if progressfile has consecutivesuccesful raids over const legendwinmin
     let winMinimum: number = gv.legendWinMin;
-    let successRaids: number = progressRecord.successfulConsecutiveRaids;
-    let failedRaids: number = progressRecord.failedConsecutiveRaids;
+    let successRaids: number;
+    let failedRaids: number;
+    try {
+      successRaids = progressRecord.successfulConsecutiveRaids;
+      failedRaids = progressRecord.failedConsecutiveRaids;
+    } catch (err) {
+      gv.logger.info("POOP: No progress file found at CheckLegendaryPlayer");
+      return;
+    }
 
     //if win minimum is reached, create legendary player
     if (successRaids >= winMinimum) {
@@ -148,15 +155,20 @@ export class LegendaryPlayer {
         if (err) throw err;
       }
     );
+    gv.logger.info("POOP: Saved Encrypted File: " + filePath);
   }
 
   static ReadFileEncrypted(filePath: string): any {
-    var fs = require("fs");
-    const jsonString = fs.readFileSync(filePath, "utf-8");
+    try {
+      const jsonString = fs.readFileSync(filePath, "utf-8");
 
-    //use decrypt on jsonstring
-    let decryptedData = this.decrypt(jsonString);
-    return decryptedData;
+      // use decrypt on jsonstring
+      let decryptedData = this.decrypt(jsonString);
+      return decryptedData;
+    } catch (err) {
+      console.error(`Error reading file: ${filePath}`, err);
+      return null;
+    }
   }
 
   static clone(data: any) {
@@ -167,6 +179,8 @@ export class LegendaryPlayer {
     const cipher = crypto.createCipheriv(algorithm, key, iv);
     let encrypted = cipher.update(JSON.stringify(data), "utf8", "hex");
     encrypted += cipher.final("hex");
+    gv.logger.info("POOP: Encrypted string");
+    gv.logger.info("POOP: " + encrypted);
     return encrypted;
   }
 
@@ -174,6 +188,7 @@ export class LegendaryPlayer {
     const decipher = crypto.createDecipheriv(algorithm, key, iv);
     let decrypted = decipher.update(encrypted, "hex", "utf8");
     decrypted += decipher.final("utf8");
+    gv.logger.info("POOP: Decrypted string");
     return JSON.parse(decrypted);
   }
 }

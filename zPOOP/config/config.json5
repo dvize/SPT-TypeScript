@@ -52,7 +52,7 @@
     //Overall Difficulty Modifier.  0.0 is default.  -1.0 is easy.  1.0 is hard.
     OverallDifficultyModifier: 0.0,
 
-    //Overall Difficulty Multiplier will take the specific difficulty value and multiply by this.  Use a value 0-1.0 to make it easier.  Use a value 1.0-2.0 to make it harder.
+    //Overall Difficulty Multiplier will take the specific difficulty value and multiply by this.  Use a value 0-1.0 to make it easier. A value of 1 is a normal value. Use a value 1.1-2.0 to make it harder.
     Multipliers: {
       AimSpeedMult: 1,
       ShotSpreadMult: 1,
@@ -73,6 +73,7 @@
       ShotgunFireDistancePref: 25,
       //The distance though which bots will see through foilage. 0.4 is default
       MAX_VISION_GRASS_METERS: 0,
+      //The bots visible angle. 320 is max and more angle is higher difficulty.
       VisibleAngle: 180,
       GrenadeThrowRangeMax: 20,
     },

@@ -51,7 +51,7 @@ export class Overrides {
           gv.LegendaryPlayerModeChance
         );
         if (randomChance) {
-          this.grabLegendaryPlayer(key);
+          Overrides.grabLegendaryPlayer(key);
         }
         //this is still return the original cached bot
         return cachedOfType.pop();

@@ -29,6 +29,7 @@ import {
   IBotType,
 } from "@spt-aki/models/eft/common/tables/IBotType";
 import { Difficulties } from "@spt-aki/models/eft/common/tables/IBotType";
+import { BotSettings } from "../types/models/eft/match/IGetRaidConfigurationRequestData";
 
 export class POOPDifficulty {
   static readAITemplate(): AITemplate[] {
@@ -55,6 +56,10 @@ export class POOPDifficulty {
           gv.logger.info(`POOP: Adding AITemplate ${file}`);
         //gv.config.DebugOutput && gv.logger.info(JSON.stringify(template));
         AITemplates.push(template);
+        gv.config.DebugOutput &&
+          gv.logger.info(
+            `POOP: Added AITemplate data ${JSON.stringify(template)}`
+          );
       });
     } catch (err) {
       gv.logger.error(`Failed to read directory ${directoryPath}: ${err}`);
@@ -95,6 +100,13 @@ export class POOPDifficulty {
         //if the AITemplate's RoleTypes array includes the botType, set it as the applicable template. we only want first applicable template, so break out of the loop
         if (AITemplates[template].RoleTypes.includes(botType)) {
           applicableTemplate = AITemplates[template];
+          gv.config.DebugOutput &&
+            gv.logger.info(
+              "POOP: Found applicable AITemplate : template = " +
+                template +
+                " botType = " +
+                botType
+            );
           break;
         }
       }
@@ -135,6 +147,7 @@ export class POOPDifficulty {
     }
 
     //setup CoreAITemplate - used when not overridden by AITemplate
+    gv.databaseServer.getTables().bots.core = CoreAITemplate;
   }
 
   //centralize difficulty changes + the hardcoded difficulty modifiers.
@@ -254,6 +267,9 @@ export class POOPDifficulty {
 
     //NEED TO WORK ON THIS
     gv.config.Difficulty.DirectValue.AllowStationaryTurrets;
+
+    gv.config.DebugOutput &&
+      gv.logger.info("POOP: Difficulty Setting: " + setting);
 
     return setting;
   }
