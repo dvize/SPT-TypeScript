@@ -7,6 +7,11 @@ import {
   pmcTypesBotGen,
 } from "./POOPClassDef";
 import { LegendaryPlayer as lp } from "./LegendaryPlayer";
+import { BotGenerationDetails } from "@spt-aki/models/spt/bots/BotGenerationDetails";
+import { IBotType } from "@spt-aki/models/eft/common/tables/IBotType";
+import { BotGenerator } from "@spt-aki/generators/BotGenerator";
+import { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
+import { Level } from "../../../Server/project/src/models/eft/common/IGlobals";
 
 export class Overrides {
   // use (gv.botGenerationCacheService as any) to get around the private access modifier
@@ -42,17 +47,6 @@ export class Overrides {
           }
         }
 
-        //this section is after we know we are not spawning for a substitute scav role
-        if (gv.config.DebugOutput)
-          gv.logger.info(`POOP: Not Substituting ${key}!`);
-
-        //legendary player chance is 15 percent right now
-        let randomChance = gv.randomUtil.getChance100(
-          gv.LegendaryPlayerModeChance
-        );
-        if (randomChance) {
-          Overrides.grabLegendaryPlayer(key);
-        }
         //this is still return the original cached bot
         return cachedOfType.pop();
       }
@@ -64,49 +58,7 @@ export class Overrides {
         )
       );
     }
-
     return undefined;
-  }
-
-  //helper function to grab legendary player for use in getBot botcache
-  static grabLegendaryPlayer(key: string): IBotBase {
-    //grab random difficulty from difficultyarray
-    let randomDifficulty: string = gv.randomUtil.getArrayValue(
-      Overrides.legendaryDifficultyArray
-    );
-
-    //set key = "legendary" + random difficulty
-    key = "legendary" + randomDifficulty;
-
-    //check if bot cache has legendary player
-    if ((gv.botGenerationCacheService as any).storedBots.has(key)) {
-      const legendPlayer = (gv.botGenerationCacheService as any).storedBots.get(
-        key
-      );
-
-      if (legendPlayer.length > 0) {
-        //setup random role from curated config scav role list
-        let newrole: string = gv.randomUtil
-          .getArrayValue(gv.config.AIChanges.ScavAlternateRolesAllowed)
-          .toLowerCase();
-        newrole = RoleCase[newrole];
-
-        //assign new role and side to bot
-        legendPlayer[legendPlayer.length - 1].Info.Settings.Role = newrole;
-        legendPlayer[legendPlayer.length - 1].Info.Side = "Savage";
-
-        gv.config.DebugOutput &&
-          gv.logger.info(`POOP: Substituting ${key} with ${newrole}!`);
-        return legendPlayer.pop();
-      }
-    }
-
-    gv.logger.error(
-      (gv.botGenerationCacheService as any).localisationService.getText(
-        "bot-cache_has_zero_bots_of_requested_type",
-        key
-      )
-    );
   }
 
   //All functions that need to be run when the route "/raid/profile/save" is used should go in here, as config-reliant conditionals can't be used on the initial load function
@@ -117,11 +69,14 @@ export class Overrides {
     let successfulConsecutiveRaids: number = 0;
     let failedConsecutiveRaids: number = 0;
 
+    //reset legendary spawned for next raid
+    gv.LegendarySpawned = false;
+
     //if gv.ProgressRecord is null, then we need to generate a new progress file
-    if (gv.progressRecord == null) {
+    if (!gv.progressRecord) {
       gv.logger.info(`POOP: Progress file not found, creating new file`);
       lp.CreateProgressFile(0, 0, sessionId, info);
-      gv.progressRecord = lp.ReadFileEncrypted(
+      gv.progressRecord = lp.ReadFile(
         `${gv.modFolder}/donottouch/progress.json`
       ); //assign progressFile to gv.progressRecord
     } else {
@@ -130,21 +85,18 @@ export class Overrides {
     }
 
     //read gv.progressRecord and set the values for successfulConsecutive raids, failedConsecutive raids, and runthroughs
-    if (gv.progressRecord) {
-      //Check if the raid was successful then increment successful raids
-      if (info.exit == "survived") {
-        successfulConsecutiveRaids++;
-        failedConsecutiveRaids = 0;
-      } else if (info.exit == "killed") {
-        failedConsecutiveRaids++;
-        successfulConsecutiveRaids = 0;
-      } else if (info.exit == "runner") {
-        gv.logger.info("POOP: Runner Status. Your raid was not counted.");
-      }
+    if (gv.progressRecord && info.exit === "survived") {
+      successfulConsecutiveRaids++;
+      failedConsecutiveRaids = 0;
+    } else if (gv.progressRecord && info.exit === "killed") {
+      failedConsecutiveRaids++;
+      successfulConsecutiveRaids = 0;
+    } else if (gv.progressRecord && info.exit === "runner") {
+      gv.logger.info("POOP: Runner Status. Your raid was not counted.");
     }
 
     //Update progress file
-    if (gv.progressRecord != null) {
+    if (gv.progressRecord) {
       gv.logger.info(
         `POOP: Updated progress file {SuccessfulConsecutiveRaids: ${successfulConsecutiveRaids}, FailedConsecutiveRaids: ${failedConsecutiveRaids}}`
       );
@@ -159,5 +111,138 @@ export class Overrides {
     lp.CheckLegendaryPlayer(gv.progressRecord, sessionId);
 
     return output;
+  }
+}
+
+export class CustomBotGenerator extends BotGenerator {
+  static generateBot(
+    sessionId: string,
+    bot: IBotBase,
+    botJsonTemplate: IBotType,
+    botGenerationDetails: BotGenerationDetails
+  ): IBotBase {
+    //check if random chance is passed from LegendaryPlayerModeChance and the bot requested is a pmc
+
+    gv.logger.info(`POOP: Checking if bot is a PMC`);
+    if (
+      gv.randomUtil.getChance100(gv.LegendaryPlayerModeChance) &&
+      botGenerationDetails.isPmc &&
+      //check if spawn is not the actual player id
+      gv.sessionID !== bot._id &&
+      gv.sessionID !== bot.aid
+    ) {
+      //if so, then we need to generate a legendary player from pmc
+      let player: IPmcData = gv.clone(gv.legendaryFile.pmcData);
+
+      bot = player;
+      bot.Info.GameVersion = "edge_of_darkness";
+      bot.Info.Settings.Role = botGenerationDetails.role;
+
+      //generate dog tag - this is causing undefined error
+      bot = gv.botGenerator.generateDogtag(bot);
+      //generate new id
+      bot = (gv.botGenerator as any).generateNewId(bot);
+      //generate inventory id
+      bot = (gv.botGenerator as any).generateInventoryID(bot);
+
+      gv.logger.info(
+        `POOP: Generated Legendary PMC ${bot.Info.Nickname} of type ${bot.Info.Settings.Role}`
+      );
+
+      return bot;
+    } else {
+      //this is the original code.. keep unless generating
+      const botRole = botGenerationDetails.role.toLowerCase();
+      const botLevel = (
+        gv.botGenerator as any
+      ).botLevelGenerator.generateBotLevel(
+        botJsonTemplate.experience.level,
+        botGenerationDetails,
+        bot
+      );
+
+      if (!botGenerationDetails.isPlayerScav) {
+        (gv.botGenerator as any).botEquipmentFilterService.filterBotEquipment(
+          botJsonTemplate,
+          botLevel.level,
+          botGenerationDetails
+        );
+      }
+
+      bot.Info.Nickname = (gv.botGenerator as any).generateBotNickname(
+        botJsonTemplate,
+        botGenerationDetails.isPlayerScav,
+        botRole
+      );
+
+      const skipChristmasItems = !(
+        gv.botGenerator as any
+      ).seasonalEventService.christmasEventEnabled();
+      if (skipChristmasItems) {
+        (
+          gv.botGenerator as any
+        ).seasonalEventService.removeChristmasItemsFromBotInventory(
+          botJsonTemplate.inventory,
+          botGenerationDetails.role
+        );
+      }
+
+      bot.Info.Experience = botLevel.exp;
+      bot.Info.Level = botLevel.level;
+      bot.Info.Settings.Experience = (gv.botGenerator as any).randomUtil.getInt(
+        botJsonTemplate.experience.reward.min,
+        botJsonTemplate.experience.reward.max
+      );
+      bot.Info.Settings.StandingForKill =
+        botJsonTemplate.experience.standingForKill;
+      bot.Info.Voice = (gv.botGenerator as any).randomUtil.getArrayValue(
+        botJsonTemplate.appearance.voice
+      );
+      bot.Health = (gv.botGenerator as any).generateHealth(
+        botJsonTemplate.health,
+        bot.Info.Side === "Savage"
+      );
+      bot.Skills = (gv.botGenerator as any).generateSkills(
+        <any>botJsonTemplate.skills
+      ); // TODO: fix bad type, bot jsons store skills in dict, output needs to be array
+      bot.Customization.Head = (
+        gv.botGenerator as any
+      ).randomUtil.getArrayValue(botJsonTemplate.appearance.head);
+      bot.Customization.Body = (
+        gv.botGenerator as any
+      ).weightedRandomHelper.getWeightedInventoryItem(
+        botJsonTemplate.appearance.body
+      );
+      bot.Customization.Feet = (
+        gv.botGenerator as any
+      ).weightedRandomHelper.getWeightedInventoryItem(
+        botJsonTemplate.appearance.feet
+      );
+      bot.Customization.Hands = (
+        gv.botGenerator as any
+      ).randomUtil.getArrayValue(botJsonTemplate.appearance.hands);
+      bot.Inventory = (
+        gv.botGenerator as any
+      ).botInventoryGenerator.generateInventory(
+        sessionId,
+        botJsonTemplate,
+        botRole,
+        botGenerationDetails.isPmc,
+        botLevel.level
+      );
+
+      if (gv.botHelper.isBotPmc(botRole)) {
+        (gv.botGenerator as any).getRandomisedGameVersionAndCategory(bot.Info);
+        bot = (gv.botGenerator as any).generateDogtag(bot);
+      }
+
+      // generate new bot ID
+      bot = (gv.botGenerator as any).generateId(bot);
+
+      // generate new inventory ID
+      bot = (gv.botGenerator as any).generateInventoryID(bot);
+    }
+
+    return bot;
   }
 }

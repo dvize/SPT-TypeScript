@@ -30,6 +30,7 @@ import {
 } from "@spt-aki/models/eft/common/tables/IBotType";
 import { Difficulties } from "@spt-aki/models/eft/common/tables/IBotType";
 import { BotSettings } from "../types/models/eft/match/IGetRaidConfigurationRequestData";
+import { BotPreset } from "../types/models/eft/common/IGlobals";
 
 export class POOPDifficulty {
   static readAITemplate(): AITemplate[] {
@@ -56,10 +57,6 @@ export class POOPDifficulty {
           gv.logger.info(`POOP: Adding AITemplate ${file}`);
         //gv.config.DebugOutput && gv.logger.info(JSON.stringify(template));
         AITemplates.push(template);
-        gv.config.DebugOutput &&
-          gv.logger.info(
-            `POOP: Added AITemplate data ${JSON.stringify(template)}`
-          );
       });
     } catch (err) {
       gv.logger.error(`Failed to read directory ${directoryPath}: ${err}`);
@@ -119,31 +116,29 @@ export class POOPDifficulty {
         continue;
       }
 
-      //apply the AITemplates.difficulty.normal values to the botType in the applicableTemplate
-      botTypes[botType].difficulty.normal =
-        applicableTemplate.difficulty.normal;
-
       //create the botType.difficulty.easy and botType.difficulty.hard and botType.difficulty.impossible and set them to appropriate botType.difficulty values
-      botTypes[botType].difficulty.easy = this.applyDifficultyChange(
-        botTypes[botType].difficulty.normal,
+      botTypes[botType].difficulty.easy = POOPDifficulty.applyDifficultyChange(
+        gv.clone(applicableTemplate.difficulty.normal),
         "easy",
         applicableTemplate.OverrideConfigMultipliers
       );
-      botTypes[botType].difficulty.easy = this.applyDifficultyChange(
-        botTypes[botType].difficulty.normal,
-        "normal",
-        applicableTemplate.OverrideConfigMultipliers
-      );
-      botTypes[botType].difficulty.hard = this.applyDifficultyChange(
-        botTypes[botType].difficulty.normal,
+      botTypes[botType].difficulty.normal =
+        POOPDifficulty.applyDifficultyChange(
+          gv.clone(applicableTemplate.difficulty.normal),
+          "normal",
+          applicableTemplate.OverrideConfigMultipliers
+        );
+      botTypes[botType].difficulty.hard = POOPDifficulty.applyDifficultyChange(
+        gv.clone(applicableTemplate.difficulty.normal),
         "hard",
         applicableTemplate.OverrideConfigMultipliers
       );
-      botTypes[botType].difficulty.impossible = this.applyDifficultyChange(
-        botTypes[botType].difficulty.normal,
-        "impossible",
-        applicableTemplate.OverrideConfigMultipliers
-      );
+      botTypes[botType].difficulty.impossible =
+        POOPDifficulty.applyDifficultyChange(
+          gv.clone(applicableTemplate.difficulty.normal),
+          "impossible",
+          applicableTemplate.OverrideConfigMultipliers
+        );
     }
 
     //setup CoreAITemplate - used when not overridden by AITemplate
@@ -156,40 +151,46 @@ export class POOPDifficulty {
     difficultyOption: string,
     OverrideConfigMultipliers: boolean
   ): Difficulty {
+    let diffSetting: Difficulty;
+    gv.logger.info("POOP: Applying difficulty change: " + difficultyOption);
     //switch the difficultyOption
     switch (difficultyOption) {
       case "easy":
         //apply the easy changes to the normal difficulty
-        return this.setDifficultyModifier(
+        diffSetting = POOPDifficulty.setDifficultyModifier(
           setting,
           gameDifficulty["easy"] +
             gv.config.Difficulty.OverallDifficultyModifier,
           OverrideConfigMultipliers
         );
+        return diffSetting;
       case "normal":
         //apply the normal changes to the normal difficulty
-        return this.setDifficultyModifier(
+        diffSetting = POOPDifficulty.setDifficultyModifier(
           setting,
           gameDifficulty["normal"] +
             gv.config.Difficulty.OverallDifficultyModifier,
           OverrideConfigMultipliers
         );
+        return diffSetting;
       case "hard":
         //apply the hard changes to the normal difficulty
-        return this.setDifficultyModifier(
+        diffSetting = POOPDifficulty.setDifficultyModifier(
           setting,
           gameDifficulty["hard"] +
             gv.config.Difficulty.OverallDifficultyModifier,
           OverrideConfigMultipliers
         );
+        return diffSetting;
       case "impossible":
         //apply the impossible changes to the normal difficulty
-        return this.setDifficultyModifier(
+        diffSetting = POOPDifficulty.setDifficultyModifier(
           setting,
           gameDifficulty["impossible"] +
             gv.config.Difficulty.OverallDifficultyModifier,
           OverrideConfigMultipliers
         );
+        return diffSetting;
       default:
         //apply no changes so it will default to normal
         return setting;
@@ -202,9 +203,14 @@ export class POOPDifficulty {
     OverrideConfigMultipliers: boolean
   ): Difficulty {
     //if we are not overriding the config multipliers, just return the setting
-    if (!OverrideConfigMultipliers) {
+    if (OverrideConfigMultipliers) {
       return setting;
     }
+
+    gv.config.DebugOutput &&
+      gv.logger.info(
+        "POOP: Setting DifficultyModifier = " + DifficultyModifier
+      );
 
     //set a floor for each of the multiplers in the difficulty
     for (let setting in gv.config.Difficulty.Multipliers) {
@@ -238,7 +244,7 @@ export class POOPDifficulty {
     POOPDifficulty.SetupRecoilMultiplier(setting);
 
     //setup hearing multiplier
-    POOPDifficulty.SetupHearingMultiplier(setting);
+    //POOPDifficulty.SetupHearingMultiplier(setting);
 
     //setup Visible Angle with floor 120 and max 320
     if (gv.config.Difficulty.DirectValue.VisibleAngle < 120) {
@@ -265,11 +271,10 @@ export class POOPDifficulty {
     //setup AllowGrenades
     setting.Core.CanGrenade = gv.config.Difficulty.DirectValue.AllowGrenades;
 
-    //NEED TO WORK ON THIS
-    gv.config.Difficulty.DirectValue.AllowStationaryTurrets;
-
-    gv.config.DebugOutput &&
-      gv.logger.info("POOP: Difficulty Setting: " + setting);
+    //Hopefully setting distance to 0 works
+    if (gv.config.Difficulty.DirectValue.AllowStationaryTurrets) {
+      setting.Cover.STATIONARY_WEAPON_MAX_DIST_TO_USE = 0;
+    }
 
     return setting;
   }
@@ -287,7 +292,6 @@ export class POOPDifficulty {
   }
 
   static SetupHearingMultiplier(setting: Difficulty) {
-    //guess these values aren't being used.
     setting.Change.FLASH_HEARING =
       Number(setting.Hearing.FLASH_HEARING) /
       gv.config.Difficulty.Multipliers.HearingMult;
@@ -297,7 +301,6 @@ export class POOPDifficulty {
     setting.Change.STUN_HEARING =
       Number(setting.Hearing.STUN_HEARING) *
       gv.config.Difficulty.Multipliers.HearingMult;
-    //this setting is null to?
     setting.Core.HearingSense =
       Number(setting.Hearing.HearingSense) *
       gv.config.Difficulty.Multipliers.HearingMult;

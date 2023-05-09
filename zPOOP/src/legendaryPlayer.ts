@@ -1,7 +1,12 @@
 import { IBotBase } from "@spt-aki/models/eft/common/tables/IBotBase";
 import { GlobalValues as gv } from "./GlobalValuesModule";
 import { POOPDifficulty as pd } from "./POOPDifficulty";
-import { progressRecord } from "./POOPClassDef";
+import {
+  RoleCase,
+  legendFile,
+  pmcTypesBotGen,
+  progressRecord,
+} from "./POOPClassDef";
 import { HashUtil } from "@spt-aki/utils/HashUtil";
 import * as crypto from "crypto";
 import * as fs from "fs";
@@ -9,47 +14,16 @@ import * as path from "path";
 import { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
 import { Difficulties } from "@spt-aki/models/eft/common/tables/IBotType";
 import { Item } from "@spt-aki/models/eft/common/tables/IItem";
-
-const passphrase = "mysecretpassphrase";
-const salt = crypto.randomBytes(16); // generate a random salt
-const key = crypto.pbkdf2Sync(passphrase, salt, 100000, 32, "sha256");
-
-const algorithm = "aes-256-cbc";
-const iv = crypto.randomBytes(16);
+import { PmcDurabilityArmor } from "../types/models/spt/config/IBotDurability";
+import {
+  Condition,
+  IGenerateBotsRequestData,
+} from "@spt-aki/models/eft/bot/IGenerateBotsRequestData";
+import { BotGenerationDetails } from "@spt-aki/models/spt/bots/BotGenerationDetails";
+import { BotGenerator } from "@spt-aki/generators/BotGenerator";
 
 export class LegendaryPlayer {
   //LEGENDARY PLAYER METHODS
-
-  //store legendary player into botcache
-  static PushLegendaryPlayer(SessionID: string) {
-    let player = this.ReadFileEncrypted(
-      `${gv.modFolder}/donottouch/legendary.json`
-    );
-    if (player == null) {
-      return;
-    }
-
-    //create array of bots based on player.info.side and player.info.settings.difficulty
-    let botarray: IBotBase[] = [];
-    let difficultyArray: string[] = ["easy", "normal", "hard", "impossible"];
-
-    //loop through the difficulty array and create 2 bots for each difficulty
-    for (let i = 0; i < difficultyArray.length; i++) {
-      let difficulty: string = difficultyArray[i];
-
-      let bot1: IBotBase = this.CreateBot(player, difficulty);
-      botarray.push(bot1);
-
-      // let bot2 = this.CreateBot(player, difficulty);
-      // botarray.push(bot2);
-
-      //generate the key as it is a string value of legendary + player.info.settings.difficulty
-      let key: string = "legendary" + bot1.Info.Settings.BotDifficulty;
-
-      //push the botarray into the botgenerationcache using storemethod
-      gv.botGenerationCacheService.storeBots(key, botarray);
-    }
-  }
 
   static CheckLegendaryPlayer(
     progressRecord: progressRecord,
@@ -72,13 +46,13 @@ export class LegendaryPlayer {
       gv.logger.info(
         `POOP: Updating with ${successRaids} successful raids, ${failedRaids} failed raids`
       );
-      this.CreateLegendBotFile(SessionID);
+      LegendaryPlayer.CreateLegendBotFile(SessionID);
     }
   }
 
   static CreateBot(player: IPmcData, difficulty: string): IBotBase {
-    let bot: IBotBase = this.clone(player);
-    this.PreparePlayerStashIDs(bot.Inventory.items);
+    let bot: IBotBase = gv.clone(player);
+    LegendaryPlayer.PreparePlayerStashIDs(bot.Inventory.items);
     bot.aid = gv.hashUtil.generate();
     bot._id = "pmc" + bot.aid;
     bot.Info.Settings.BotDifficulty = difficulty;
@@ -96,12 +70,17 @@ export class LegendaryPlayer {
   static CreateLegendBotFile(SessionID: string) {
     if (gv.config.EnableLegendaryPlayerMode) {
       let data: IPmcData = gv.profileHelper.getPmcProfile(SessionID);
-      let legendaryFile: IPmcData = gv.clone(data);
+      let legendaryFile: legendFile;
+      legendaryFile = {
+        SessionID: SessionID,
+        pmcData: gv.clone(data),
+      };
 
-      let items = legendaryFile.Inventory.items;
-      this.PreparePlayerStashIDs(items);
+      let items = legendaryFile.pmcData.Inventory.items;
+      LegendaryPlayer.PreparePlayerStashIDs(items);
+      gv.legendaryFile = legendaryFile;
 
-      this.SaveToFileEncrypted(
+      LegendaryPlayer.SaveToFile(
         legendaryFile,
         `${gv.modFolder}/donottouch/legendary.json`
       );
@@ -121,10 +100,13 @@ export class LegendaryPlayer {
       successfulConsecutiveRaids: successful,
       failedConsecutiveRaids: failed,
     };
-    this.SaveToFileEncrypted(
+    LegendaryPlayer.SaveToFile(
       progressFile,
       `${gv.modFolder}/donottouch/progress.json`
     );
+
+    //update the global progress file
+    gv.progressRecord = progressFile;
   }
 
   //TOOL METHODS
@@ -141,29 +123,25 @@ export class LegendaryPlayer {
     return newItems;
   }
 
-  static SaveToFileEncrypted(data: any, filePath: string) {
+  static SaveToFile(data: any, filePath: string) {
     var fs = require("fs");
-
-    //use encrypt from scoreboard
-    let hashedData = this.encrypt(data);
+    //gv.logger.info("POOP: Data: " + JSON.stringify(data, null, 4));
 
     //write file even if it exists
-    fs.writeFile(
-      gv.modFolder + filePath,
-      JSON.stringify(hashedData, null, 4),
-      function (err) {
-        if (err) throw err;
-      }
-    );
-    gv.logger.info("POOP: Saved Encrypted File: " + filePath);
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(data, null, 4));
+      gv.logger.info("Data written successfully!");
+    } catch (error) {
+      gv.logger.error("Error writing data:" + error);
+    }
+
+    gv.logger.info("POOP: Saved File: " + filePath);
   }
 
-  static ReadFileEncrypted(filePath: string): any {
+  static ReadFile(filePath: string): any {
     try {
       const jsonString = fs.readFileSync(filePath, "utf-8");
-
-      // use decrypt on jsonstring
-      let decryptedData = this.decrypt(jsonString);
+      let decryptedData = JSON.parse(jsonString);
       return decryptedData;
     } catch (err) {
       console.error(`Error reading file: ${filePath}`, err);
@@ -173,22 +151,5 @@ export class LegendaryPlayer {
 
   static clone(data: any) {
     return JSON.parse(JSON.stringify(data));
-  }
-
-  static encrypt(data: any) {
-    const cipher = crypto.createCipheriv(algorithm, key, iv);
-    let encrypted = cipher.update(JSON.stringify(data), "utf8", "hex");
-    encrypted += cipher.final("hex");
-    gv.logger.info("POOP: Encrypted string");
-    gv.logger.info("POOP: " + encrypted);
-    return encrypted;
-  }
-
-  static decrypt(encrypted: string) {
-    const decipher = crypto.createDecipheriv(algorithm, key, iv);
-    let decrypted = decipher.update(encrypted, "hex", "utf8");
-    decrypted += decipher.final("utf8");
-    gv.logger.info("POOP: Decrypted string");
-    return JSON.parse(decrypted);
   }
 }

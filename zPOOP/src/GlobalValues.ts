@@ -5,7 +5,6 @@ import { IInRaidConfig } from "@spt-aki/models/spt/config/IInraidConfig";
 import { BotHelper } from "@spt-aki/helpers/BotHelper";
 import { ProfileHelper } from "@spt-aki/helpers/ProfileHelper";
 import { IBotBase } from "@spt-aki/models/eft/common/tables/IBotBase";
-import { IGenerateBotsRequestData } from "@spt-aki/models/eft/bot/IGenerateBotsRequestData";
 import { IBotType } from "@spt-aki/models/eft/common/tables/IBotType";
 import { BotGenerationCacheService } from "@spt-aki/services/BotGenerationCacheService";
 import { RandomUtil } from "@spt-aki/utils/RandomUtil";
@@ -19,8 +18,12 @@ import {
   progressRecord,
   AITemplate,
   CoreAITemplate,
+  legendFile,
 } from "./POOPClassDef";
 import { ILocationBase } from "@spt-aki/models/eft/common/ILocationBase";
+import { BotController } from "@spt-aki/controllers/BotController";
+import { BotGenerationDetails } from "@spt-aki/models/spt/bots/BotGenerationDetails";
+import { BotGenerator } from "@spt-aki/generators/BotGenerator";
 
 export class GlobalValues {
   public static configServer: ConfigServer;
@@ -34,12 +37,13 @@ export class GlobalValues {
   public static botTypes: IBotType[];
   public static modFolder: string;
   public static baseAIDifficulty: IBotBase;
+  public static botController: BotController;
   public static config: POOPConfig;
   public static inRaidConfig: IInRaidConfig;
   public static progressRecord: progressRecord;
   public static sessionID: string;
   public static botGenerationCacheService: BotGenerationCacheService;
-  public static legendaryFile: IPmcData;
+  public static legendaryFile: legendFile;
   public static ScavAltRolesPickList: string[];
   public static modName: string = "POOP";
   public static hashUtil: HashUtil;
@@ -47,9 +51,11 @@ export class GlobalValues {
   public static jsonUtil: JsonUtil;
   public static AITemplates: AITemplate[];
   public static CoreAITemplate: CoreAITemplate;
+  public static botGenerator: BotGenerator;
 
-  public static legendWinMin: number = 10;
-  public static LegendaryPlayerModeChance: number = 15;
+  public static legendWinMin: number = 1;
+  public static LegendaryPlayerModeChance: number = 85;
+  public static LegendarySpawned: boolean = false;
 
   static clone(data: any) {
     return JSON.parse(JSON.stringify(data));

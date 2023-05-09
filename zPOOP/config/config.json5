@@ -1,4 +1,7 @@
 {
+  //Enable/Disable setting the Scavs to Boss AI Types
+  EnableReplacementScavAI: true,
+
   // Automatic difficulty will adjust based on raids survived or failed
   EnableAutomaticDifficulty: true,
 

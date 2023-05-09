@@ -1,6 +1,8 @@
+import { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
 import { Difficulties } from "@spt-aki/models/eft/common/tables/IBotType";
 
 export interface POOPConfig {
+  EnableReplacementScavAI: boolean;
   EnableAutomaticDifficulty: boolean;
   EnableLegendaryPlayerMode: boolean;
   AIChanges: {
@@ -58,6 +60,11 @@ export interface progressRecord {
   SessionID: string;
   successfulConsecutiveRaids: number;
   failedConsecutiveRaids: number;
+}
+
+export interface legendFile {
+  SessionID: string;
+  pmcData: IPmcData;
 }
 
 export const gameDifficulty: Record<string, number> = {

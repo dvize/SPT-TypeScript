@@ -15,9 +15,10 @@ import {
   Difficulty,
   Difficulties,
 } from "@spt-aki/models/eft/common/tables/IBotType";
-import { Overrides } from "./Overrides";
+import { CustomBotGenerator, Overrides } from "./Overrides";
 import { LegendaryPlayer as lp } from "./LegendaryPlayer";
 import JSON5 from "json5";
+import { BotGenerator } from "@spt-aki/generators/BotGenerator";
 
 class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
   preAkiLoad(container: DependencyContainer): void {
@@ -72,18 +73,31 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
       "aki"
     );
 
-    // The GetBot override to change scav bot types
-    container.afterResolution(
-      "BotGenerationCacheService",
-      (_t, result: BotGenerationCacheService) => {
-        result.getBot = Overrides.getBot;
-      },
-      { frequency: "Always" }
-    );
+    if (gv.config.EnableReplacementScavAI) {
+      // The GetBot override to change scav bot types
+      container.afterResolution(
+        "BotGenerationCacheService",
+        (_t, result: BotGenerationCacheService) => {
+          result.getBot = Overrides.getBot;
+        },
+        { frequency: "Always" }
+      );
+    }
+
+    if (gv.config.EnableLegendaryPlayerMode) {
+      // The generateBot override to customize output of legendary
+      container.afterResolution(
+        "BotGenerator",
+        (_t, result: CustomBotGenerator) => {
+          (result as any).generateBot = CustomBotGenerator.generateBot;
+        },
+        { frequency: "Always" }
+      );
+    }
   }
 
   postAkiLoad(container: DependencyContainer): void {
-    this.setupInitialValues(container);
+    POOP.setupInitialValues(container);
 
     //Setup Difficulty
     gv.CoreAITemplate = pd.readCoreTemplate();
@@ -116,7 +130,7 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
     gv.logger.info("POOP: Finished");
   }
 
-  setupInitialValues(container) {
+  static setupInitialValues(container) {
     gv.logger.info("POOP: SetupInitialValues");
     gv.profileHelper = container.resolve("ProfileHelper");
     gv.botHelper = container.resolve("BotHelper");
@@ -124,6 +138,7 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
     gv.botGenerationCacheService = container.resolve(
       "BotGenerationCacheService"
     );
+    gv.botController = container.resolve("BotController");
     gv.randomUtil = container.resolve("RandomUtil");
     gv.hashUtil = container.resolve("HashUtil");
     gv.databaseServer = container.resolve("DatabaseServer");
@@ -142,7 +157,7 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
 
     //Load Progress File and log issue if it doesn't exist
     try {
-      gv.progressRecord = lp.ReadFileEncrypted(
+      gv.progressRecord = lp.ReadFile(
         gv.modFolder + "/donottouch/progress.json"
       );
     } catch (error) {
@@ -151,7 +166,7 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
 
     //Load Legendary File and log issue if it doesn't exist
     try {
-      gv.legendaryFile = lp.ReadFileEncrypted(
+      gv.legendaryFile = lp.ReadFile(
         gv.modFolder + "/donottouch/legendary.json"
       );
     } catch (error) {
