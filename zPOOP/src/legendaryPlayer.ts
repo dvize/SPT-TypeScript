@@ -19,8 +19,6 @@ import {
   Condition,
   IGenerateBotsRequestData,
 } from "@spt-aki/models/eft/bot/IGenerateBotsRequestData";
-import { BotGenerationDetails } from "@spt-aki/models/spt/bots/BotGenerationDetails";
-import { BotGenerator } from "@spt-aki/generators/BotGenerator";
 
 export class LegendaryPlayer {
   //LEGENDARY PLAYER METHODS

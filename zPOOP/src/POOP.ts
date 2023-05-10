@@ -15,7 +15,7 @@ import {
   Difficulty,
   Difficulties,
 } from "@spt-aki/models/eft/common/tables/IBotType";
-import { CustomBotGenerator, Overrides } from "./Overrides";
+import { Overrides } from "./Overrides";
 import { LegendaryPlayer as lp } from "./LegendaryPlayer";
 import JSON5 from "json5";
 import { BotGenerator } from "@spt-aki/generators/BotGenerator";
@@ -88,8 +88,8 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
       // The generateBot override to customize output of legendary
       container.afterResolution(
         "BotGenerator",
-        (_t, result: CustomBotGenerator) => {
-          (result as any).generateBot = CustomBotGenerator.generateBot;
+        (_t, result: BotGenerator) => {
+          (result as any).generateBot = Overrides.generateBot;
         },
         { frequency: "Always" }
       );
@@ -138,6 +138,7 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
     gv.botGenerationCacheService = container.resolve(
       "BotGenerationCacheService"
     );
+    gv.botGenerator = container.resolve("BotGenerator");
     gv.botController = container.resolve("BotController");
     gv.randomUtil = container.resolve("RandomUtil");
     gv.hashUtil = container.resolve("HashUtil");

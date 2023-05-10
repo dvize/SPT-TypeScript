@@ -9,9 +9,7 @@ import {
 import { LegendaryPlayer as lp } from "./LegendaryPlayer";
 import { BotGenerationDetails } from "@spt-aki/models/spt/bots/BotGenerationDetails";
 import { IBotType } from "@spt-aki/models/eft/common/tables/IBotType";
-import { BotGenerator } from "@spt-aki/generators/BotGenerator";
 import { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
-import { Level } from "../../../Server/project/src/models/eft/common/IGlobals";
 
 export class Overrides {
   // use (gv.botGenerationCacheService as any) to get around the private access modifier
@@ -112,9 +110,7 @@ export class Overrides {
 
     return output;
   }
-}
 
-export class CustomBotGenerator extends BotGenerator {
   static generateBot(
     sessionId: string,
     bot: IBotBase,
@@ -124,31 +120,40 @@ export class CustomBotGenerator extends BotGenerator {
     //check if random chance is passed from LegendaryPlayerModeChance and the bot requested is a pmc
 
     gv.logger.info(`POOP: Checking if bot is a PMC`);
+    gv.logger.info(
+      `POOP: Bot Type: ${botGenerationDetails.role} and side: ${botGenerationDetails.side}`
+    );
     if (
       gv.randomUtil.getChance100(gv.LegendaryPlayerModeChance) &&
       botGenerationDetails.isPmc &&
       //check if spawn is not the actual player id
       gv.sessionID !== bot._id &&
-      gv.sessionID !== bot.aid
+      gv.sessionID !== bot.aid &&
+      gv.LegendarySpawned === false
     ) {
       //if so, then we need to generate a legendary player from pmc
       let player: IPmcData = gv.clone(gv.legendaryFile.pmcData);
-
+      const botRole = botGenerationDetails.role.toLowerCase();
       bot = player;
       bot.Info.GameVersion = "edge_of_darkness";
       bot.Info.Settings.Role = botGenerationDetails.role;
 
       //generate dog tag - this is causing undefined error
-      bot = gv.botGenerator.generateDogtag(bot);
+      if (gv.botHelper.isBotPmc(botRole)) {
+        (gv.botGenerator as any).getRandomisedGameVersionAndCategory(bot.Info);
+        bot = (gv.botGenerator as any).generateDogtag(bot);
+      }
+
       //generate new id
-      bot = (gv.botGenerator as any).generateNewId(bot);
+      bot = (gv.botGenerator as any).generateId(bot);
       //generate inventory id
       bot = (gv.botGenerator as any).generateInventoryID(bot);
 
       gv.logger.info(
-        `POOP: Generated Legendary PMC ${bot.Info.Nickname} of type ${bot.Info.Settings.Role}`
+        `POOP: Generated Legendary PMC ${bot.Info.Nickname} of type ${bot.Info.Settings.Role} and side ${bot.Info.Side}`
       );
 
+      gv.LegendarySpawned = true;
       return bot;
     } else {
       //this is the original code.. keep unless generating
@@ -169,7 +174,7 @@ export class CustomBotGenerator extends BotGenerator {
         );
       }
 
-      bot.Info.Nickname = (gv.botGenerator as any).generateBotNickname(
+      bot.Info.Nickname = (gv.botGenerator as any as any).generateBotNickname(
         botJsonTemplate,
         botGenerationDetails.isPlayerScav,
         botRole
@@ -189,13 +194,13 @@ export class CustomBotGenerator extends BotGenerator {
 
       bot.Info.Experience = botLevel.exp;
       bot.Info.Level = botLevel.level;
-      bot.Info.Settings.Experience = (gv.botGenerator as any).randomUtil.getInt(
+      bot.Info.Settings.Experience = gv.randomUtil.getInt(
         botJsonTemplate.experience.reward.min,
         botJsonTemplate.experience.reward.max
       );
       bot.Info.Settings.StandingForKill =
         botJsonTemplate.experience.standingForKill;
-      bot.Info.Voice = (gv.botGenerator as any).randomUtil.getArrayValue(
+      bot.Info.Voice = gv.randomUtil.getArrayValue(
         botJsonTemplate.appearance.voice
       );
       bot.Health = (gv.botGenerator as any).generateHealth(
@@ -205,9 +210,9 @@ export class CustomBotGenerator extends BotGenerator {
       bot.Skills = (gv.botGenerator as any).generateSkills(
         <any>botJsonTemplate.skills
       ); // TODO: fix bad type, bot jsons store skills in dict, output needs to be array
-      bot.Customization.Head = (
-        gv.botGenerator as any
-      ).randomUtil.getArrayValue(botJsonTemplate.appearance.head);
+      bot.Customization.Head = gv.randomUtil.getArrayValue(
+        botJsonTemplate.appearance.head
+      );
       bot.Customization.Body = (
         gv.botGenerator as any
       ).weightedRandomHelper.getWeightedInventoryItem(
@@ -218,9 +223,9 @@ export class CustomBotGenerator extends BotGenerator {
       ).weightedRandomHelper.getWeightedInventoryItem(
         botJsonTemplate.appearance.feet
       );
-      bot.Customization.Hands = (
-        gv.botGenerator as any
-      ).randomUtil.getArrayValue(botJsonTemplate.appearance.hands);
+      bot.Customization.Hands = gv.randomUtil.getArrayValue(
+        botJsonTemplate.appearance.hands
+      );
       bot.Inventory = (
         gv.botGenerator as any
       ).botInventoryGenerator.generateInventory(
