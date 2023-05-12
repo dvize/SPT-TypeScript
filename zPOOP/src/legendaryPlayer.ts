@@ -74,13 +74,14 @@ export class LegendaryPlayer {
     successful: number,
     failed: number,
     sessionID: string,
+    newDifficulty: number,
     data: IPmcData
   ) {
     let progressFile: progressRecord = {
       SessionID: sessionID,
       successfulConsecutiveRaids: successful,
       failedConsecutiveRaids: failed,
-      currentDifficulty: 0,
+      currentDifficulty: newDifficulty,
     };
     LegendaryPlayer.SaveToFile(
       progressFile,

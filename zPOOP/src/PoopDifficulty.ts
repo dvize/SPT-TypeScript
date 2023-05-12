@@ -120,23 +120,27 @@ export class POOPDifficulty {
       botTypes[botType].difficulty.easy = POOPDifficulty.applyDifficultyChange(
         gv.clone(applicableTemplate.difficulty.normal),
         "easy",
+        applicableTemplate.AIDifficultyModifier,
         applicableTemplate.OverrideConfigMultipliers
       );
       botTypes[botType].difficulty.normal =
         POOPDifficulty.applyDifficultyChange(
           gv.clone(applicableTemplate.difficulty.normal),
           "normal",
+          applicableTemplate.AIDifficultyModifier,
           applicableTemplate.OverrideConfigMultipliers
         );
       botTypes[botType].difficulty.hard = POOPDifficulty.applyDifficultyChange(
         gv.clone(applicableTemplate.difficulty.normal),
         "hard",
+        applicableTemplate.AIDifficultyModifier,
         applicableTemplate.OverrideConfigMultipliers
       );
       botTypes[botType].difficulty.impossible =
         POOPDifficulty.applyDifficultyChange(
           gv.clone(applicableTemplate.difficulty.normal),
           "impossible",
+          applicableTemplate.AIDifficultyModifier,
           applicableTemplate.OverrideConfigMultipliers
         );
     }
@@ -149,10 +153,18 @@ export class POOPDifficulty {
   static applyDifficultyChange(
     setting: Difficulty,
     difficultyOption: string,
+    AIDifficultyModifier: number,
     OverrideConfigMultipliers: boolean
   ): Difficulty {
     let diffSetting: Difficulty;
+    let progRecordDifficulty: number;
     gv.logger.info("POOP: Applying difficulty change: " + difficultyOption);
+    //check if gv.progressRecord.currentDifficulty is undefined or null, if so, set it to 0
+    if (!gv.progressRecord) {
+      progRecordDifficulty = 0;
+    } else {
+      progRecordDifficulty = gv.progressRecord.currentDifficulty;
+    }
     //switch the difficultyOption
     switch (difficultyOption) {
       case "easy":
@@ -160,7 +172,9 @@ export class POOPDifficulty {
         diffSetting = POOPDifficulty.setDifficultyModifier(
           setting,
           gameDifficulty["easy"] +
-            gv.config.Difficulty.OverallDifficultyModifier,
+            gv.config.Difficulty.OverallDifficultyModifier +
+            progRecordDifficulty +
+            AIDifficultyModifier,
           OverrideConfigMultipliers
         );
         return diffSetting;
@@ -169,7 +183,9 @@ export class POOPDifficulty {
         diffSetting = POOPDifficulty.setDifficultyModifier(
           setting,
           gameDifficulty["normal"] +
-            gv.config.Difficulty.OverallDifficultyModifier,
+            gv.config.Difficulty.OverallDifficultyModifier +
+            progRecordDifficulty +
+            AIDifficultyModifier,
           OverrideConfigMultipliers
         );
         return diffSetting;
@@ -178,7 +194,9 @@ export class POOPDifficulty {
         diffSetting = POOPDifficulty.setDifficultyModifier(
           setting,
           gameDifficulty["hard"] +
-            gv.config.Difficulty.OverallDifficultyModifier,
+            gv.config.Difficulty.OverallDifficultyModifier +
+            progRecordDifficulty +
+            AIDifficultyModifier,
           OverrideConfigMultipliers
         );
         return diffSetting;
@@ -187,7 +205,9 @@ export class POOPDifficulty {
         diffSetting = POOPDifficulty.setDifficultyModifier(
           setting,
           gameDifficulty["impossible"] +
-            gv.config.Difficulty.OverallDifficultyModifier,
+            gv.config.Difficulty.OverallDifficultyModifier +
+            progRecordDifficulty +
+            AIDifficultyModifier,
           OverrideConfigMultipliers
         );
         return diffSetting;

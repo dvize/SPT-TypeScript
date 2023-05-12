@@ -10,6 +10,7 @@ import { LegendaryPlayer as lp } from "./LegendaryPlayer";
 import { BotGenerationDetails } from "@spt-aki/models/spt/bots/BotGenerationDetails";
 import { IBotType } from "@spt-aki/models/eft/common/tables/IBotType";
 import { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
+import { POOPDifficulty as pd } from "./POOPDifficulty";
 
 export class Overrides {
   // use (gv.botGenerationCacheService as any) to get around the private access modifier
@@ -73,7 +74,7 @@ export class Overrides {
     //if gv.ProgressRecord is null, then we need to generate a new progress file
     if (!gv.progressRecord) {
       gv.logger.info(`POOP: Progress file not found, creating new file`);
-      lp.CreateProgressFile(0, 0, sessionId, info);
+      lp.CreateProgressFile(0, 0, sessionId, 0, info);
       gv.progressRecord = lp.ReadFile(
         `${gv.modFolder}/donottouch/progress.json`
       ); //assign progressFile to gv.progressRecord
@@ -93,6 +94,35 @@ export class Overrides {
       gv.logger.info("POOP: Runner Status. Your raid was not counted.");
     }
 
+    //grab difficulty from progress file
+    let newDifficulty: number = gv.progressRecord.currentDifficulty;
+
+    if (info.exit !== "runner") {
+      //check if automatic difficulty is enabled and adjust difficulty accordingly
+      if (gv.config.EnableAutomaticDifficulty) {
+        //if successfulConsecutiveRaids is positive on powercurve based on number
+        if (successfulConsecutiveRaids > 0) {
+          const power = 0.5; // Adjust power to change the difficulty curve
+          const difficultyIncrease = 0.1; // Adjust the difficulty increase to change the slope of the curve
+          const increase =
+            Math.pow(successfulConsecutiveRaids, power) * difficultyIncrease;
+          newDifficulty = Number((newDifficulty + increase).toFixed(2)); // round to 2 decimal places
+          gv.logger.info(`POOP: Increased difficulty to: ${newDifficulty}`);
+        } else if (failedConsecutiveRaids > 0) {
+          const power = 0.5; // Adjust power to change the difficulty curve
+          const difficultyDecrease = 0.1; // Adjust the difficulty decrease to change the slope of the curve
+          const decrease =
+            Math.pow(failedConsecutiveRaids, power) * difficultyDecrease;
+          newDifficulty = Number((newDifficulty - decrease).toFixed(2)); // round to 2 decimal places
+          gv.logger.info(`POOP: Decreased difficulty to: ${newDifficulty}`);
+        }
+
+        //regenerate difficulties
+        gv.progressRecord.currentDifficulty = newDifficulty;
+        pd.setupAITemplates(gv.botTypes, gv.CoreAITemplate, gv.AITemplates);
+      }
+    }
+
     //Update progress file
     if (gv.progressRecord) {
       gv.logger.info(
@@ -102,14 +132,10 @@ export class Overrides {
         successfulConsecutiveRaids,
         failedConsecutiveRaids,
         sessionId,
+        newDifficulty,
         info
       );
     }
-
-    //check if automatic difficulty is enabled and adjust difficulty accordingly
-    if (gv.config.EnableAutomaticDifficulty) {
-      //grab difficulty from progress file
-      let difficulty: string = gv.progressRecord.difficulty;
 
     //check if legendary player mode is enabled
     lp.CheckLegendaryPlayer(gv.progressRecord, sessionId);
@@ -133,7 +159,7 @@ export class Overrides {
       //check if spawn is not the actual player id
       gv.sessionID !== bot._id &&
       gv.sessionID !== bot.aid &&
-      gv.LegendarySpawned === false &&
+      gv.LegendarySpawned == false &&
       //check if legendary file is not null
       gv.legendaryFile &&
       botGenerationDetails.side === gv.legendaryFile.pmcData.Info.Side
