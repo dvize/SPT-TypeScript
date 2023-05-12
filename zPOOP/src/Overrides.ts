@@ -1,4 +1,4 @@
-import { GlobalValues as gv } from "./GlobalValuesModule";
+import { GlobalValues as gv } from "./GlobalValues";
 import { IBotBase } from "@spt-aki/models/eft/common/tables/IBotBase";
 import {
   RoleCase,
@@ -106,6 +106,12 @@ export class Overrides {
       );
     }
 
+    //check if automatic difficulty is enabled and adjust difficulty accordingly
+    if (gv.config.EnableAutomaticDifficulty) {
+      //grab difficulty from progress file
+      let difficulty: string = gv.progressRecord.difficulty;
+
+    //check if legendary player mode is enabled
     lp.CheckLegendaryPlayer(gv.progressRecord, sessionId);
 
     return output;
@@ -118,8 +124,6 @@ export class Overrides {
     botGenerationDetails: BotGenerationDetails
   ): IBotBase {
     //check if random chance is passed from LegendaryPlayerModeChance and the bot requested is a pmc
-
-    gv.logger.info(`POOP: Checking if bot is a PMC`);
     gv.logger.info(
       `POOP: Bot Type: ${botGenerationDetails.role} and side: ${botGenerationDetails.side}`
     );
@@ -129,16 +133,22 @@ export class Overrides {
       //check if spawn is not the actual player id
       gv.sessionID !== bot._id &&
       gv.sessionID !== bot.aid &&
-      gv.LegendarySpawned === false
+      gv.LegendarySpawned === false &&
+      //check if legendary file is not null
+      gv.legendaryFile &&
+      botGenerationDetails.side === gv.legendaryFile.pmcData.Info.Side
     ) {
       //if so, then we need to generate a legendary player from pmc
-      let player: IPmcData = gv.clone(gv.legendaryFile.pmcData);
+      let player: IPmcData = gv.legendaryFile.pmcData;
       const botRole = botGenerationDetails.role.toLowerCase();
-      bot = player;
+      bot = gv.clone(player);
       bot.Info.GameVersion = "edge_of_darkness";
       bot.Info.Settings.Role = botGenerationDetails.role;
 
-      //generate dog tag - this is causing undefined error
+      //have to set side to savage so player has to fight them.. causes dict error if set
+      //bot.Info.Side = "Savage";
+
+      //generate dog tag
       if (gv.botHelper.isBotPmc(botRole)) {
         (gv.botGenerator as any).getRandomisedGameVersionAndCategory(bot.Info);
         bot = (gv.botGenerator as any).generateDogtag(bot);
@@ -147,6 +157,7 @@ export class Overrides {
       //generate new id
       bot = (gv.botGenerator as any).generateId(bot);
       //generate inventory id
+      //bot = (gv.botGenerator as any).generateInventoryID(bot);
       bot = (gv.botGenerator as any).generateInventoryID(bot);
 
       gv.logger.info(

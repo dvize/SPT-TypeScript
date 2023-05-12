@@ -1,4 +1,4 @@
-import { GlobalValues as gv } from "./GlobalValuesModule";
+import { GlobalValues as gv } from "./GlobalValues";
 import { IBotType } from "@spt-aki/models/eft/common/tables/IBotType";
 import { Difficulty } from "@spt-aki/models/eft/common/tables/IBotType";
 

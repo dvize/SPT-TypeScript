@@ -53,7 +53,7 @@ export class GlobalValues {
   public static CoreAITemplate: CoreAITemplate;
   public static botGenerator: BotGenerator;
 
-  public static legendWinMin: number = 1;
+  public static legendWinMin: number = 10;
   public static LegendaryPlayerModeChance: number = 85;
   public static LegendarySpawned: boolean = false;
 

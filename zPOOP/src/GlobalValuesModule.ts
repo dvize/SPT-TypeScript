@@ -1,1 +1,0 @@
-export { GlobalValues } from './GlobalValues';

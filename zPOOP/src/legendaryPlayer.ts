@@ -1,5 +1,5 @@
 import { IBotBase } from "@spt-aki/models/eft/common/tables/IBotBase";
-import { GlobalValues as gv } from "./GlobalValuesModule";
+import { GlobalValues as gv } from "./GlobalValues";
 import { POOPDifficulty as pd } from "./POOPDifficulty";
 import {
   RoleCase,
@@ -48,23 +48,6 @@ export class LegendaryPlayer {
     }
   }
 
-  static CreateBot(player: IPmcData, difficulty: string): IBotBase {
-    let bot: IBotBase = gv.clone(player);
-    LegendaryPlayer.PreparePlayerStashIDs(bot.Inventory.items);
-    bot.aid = gv.hashUtil.generate();
-    bot._id = "pmc" + bot.aid;
-    bot.Info.Settings.BotDifficulty = difficulty;
-    if (bot.Info.Side.toLowerCase() == "usec") {
-      bot.Info.Settings.Role = "sptusec";
-    } else if (bot.Info.Side.toLowerCase() == "bear") {
-      bot.Info.Settings.Role = "sptbear";
-    }
-
-    //does bot side need to be savage to fix pmc spawn?
-    bot.Info.Side = "Savage";
-    return bot;
-  }
-
   static CreateLegendBotFile(SessionID: string) {
     if (gv.config.EnableLegendaryPlayerMode) {
       let data: IPmcData = gv.profileHelper.getPmcProfile(SessionID);
@@ -75,7 +58,7 @@ export class LegendaryPlayer {
       };
 
       let items = legendaryFile.pmcData.Inventory.items;
-      LegendaryPlayer.PreparePlayerStashIDs(items);
+      (gv.botGenerator as any).generateInventoryID(legendaryFile.pmcData);
       gv.legendaryFile = legendaryFile;
 
       LegendaryPlayer.SaveToFile(
@@ -97,6 +80,7 @@ export class LegendaryPlayer {
       SessionID: sessionID,
       successfulConsecutiveRaids: successful,
       failedConsecutiveRaids: failed,
+      currentDifficulty: 0,
     };
     LegendaryPlayer.SaveToFile(
       progressFile,
@@ -108,19 +92,6 @@ export class LegendaryPlayer {
   }
 
   //TOOL METHODS
-  static PreparePlayerStashIDs(items: any): Item[] {
-    let newItems = [];
-    for (let i = 0; i < items.length; i++) {
-      let item = items[i];
-      if (item._id == "hideout") {
-        continue;
-      }
-      item._id = gv.hashUtil.generate();
-      newItems.push(item);
-    }
-    return newItems;
-  }
-
   static SaveToFile(data: any, filePath: string) {
     var fs = require("fs");
     //gv.logger.info("POOP: Data: " + JSON.stringify(data, null, 4));
@@ -142,7 +113,7 @@ export class LegendaryPlayer {
       let decryptedData = JSON.parse(jsonString);
       return decryptedData;
     } catch (err) {
-      console.error(`Error reading file: ${filePath}`, err);
+      gv.logger.info(`POOP: No file exists at: ${filePath}. This is Normal`);
       return null;
     }
   }

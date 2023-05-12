@@ -1,6 +1,6 @@
 import { DependencyContainer } from "tsyringe";
 import { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
-import { GlobalValues as gv } from "./GlobalValuesModule";
+import { GlobalValues as gv } from "./GlobalValues";
 import {
   RoleCase,
   POOPConfig,

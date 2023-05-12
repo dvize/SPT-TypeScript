@@ -60,6 +60,7 @@ export interface progressRecord {
   SessionID: string;
   successfulConsecutiveRaids: number;
   failedConsecutiveRaids: number;
+  currentDifficulty: number;
 }
 
 export interface legendFile {

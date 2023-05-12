@@ -4,7 +4,7 @@ import { DynamicRouterModService } from "@spt-aki/services/mod/dynamicRouter/Dyn
 import { StaticRouterModService } from "@spt-aki/services/mod/staticRouter/StaticRouterModService";
 import { DependencyContainer } from "tsyringe";
 import { BotGenerationCacheService } from "@spt-aki/services/BotGenerationCacheService";
-import { GlobalValues as gv } from "./GlobalValuesModule";
+import { GlobalValues as gv } from "./GlobalValues";
 import { RoleCase, POOPConfig, AITemplate } from "./POOPClassDef";
 import { RecordSkills as rs } from "./RecordSkillChanges";
 import { POOPDifficulty as pd } from "./POOPDifficulty";
@@ -157,22 +157,10 @@ class POOP implements IPreAkiLoadMod, IPostAkiLoadMod {
     );
 
     //Load Progress File and log issue if it doesn't exist
-    try {
-      gv.progressRecord = lp.ReadFile(
-        gv.modFolder + "/donottouch/progress.json"
-      );
-    } catch (error) {
-      gv.logger.info("POOP: Progress file: " + error);
-    }
+    gv.progressRecord = lp.ReadFile(gv.modFolder + "/donottouch/progress.json");
 
     //Load Legendary File and log issue if it doesn't exist
-    try {
-      gv.legendaryFile = lp.ReadFile(
-        gv.modFolder + "/donottouch/legendary.json"
-      );
-    } catch (error) {
-      gv.logger.info("POOP: Legendary file: " + error);
-    }
+    gv.legendaryFile = lp.ReadFile(gv.modFolder + "/donottouch/legendary.json");
   }
 }
 
