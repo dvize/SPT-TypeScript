@@ -559,6 +559,8 @@ export class POOPDifficulty {
     bot.difficulty.normal.Mind.TALK_WITH_QUERY = config;
     bot.difficulty.hard.Mind.TALK_WITH_QUERY = config;
     bot.difficulty.impossible.Mind.TALK_WITH_QUERY = config;
+
+    gv.CoreAITemplate[botType];
   }
 
   static NoTalking() {

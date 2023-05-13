@@ -51,10 +51,10 @@
 
   //Difficulty Related Settings.  These are overall values.
   Difficulty: {
-    //Overall Difficulty Modifier.  0.0 is default.  -1.0 is easy.  1.0 is hard.
+    //Overall Difficulty Modifier.  0.0 is default.  -1.0 is easy.  1.0 is hard.  2.0 is very hard.  3.0 is insane.  4.0 is impossible.
     OverallDifficultyModifier: 0.0,
 
-    //Overall Difficulty Multiplier will take the specific difficulty value and multiply by this.  Use a value 0-1.0 to make it easier. A value of 1 is a normal value. Use a value 1.1-2.0 to make it harder.
+    //Overall Difficulty Multiplier will take the specific difficulty value and multiply by this.  Use a value 0-1.0 (can't be zero) to make it easier. A value of 1 is a normal value. Use a value higher than 1.0 (no limit) to make it harder.
     Multipliers: {
       AimSpeedMult: 1,
       ShotSpreadMult: 1,
