@@ -95,7 +95,10 @@ export class Overrides {
     }
 
     //grab difficulty from progress file
-    let newDifficulty: number = gv.progressRecord.currentDifficulty;
+    let newDifficulty: number =
+      gv.progressRecord.currentDifficulty !== null
+        ? gv.progressRecord.currentDifficulty
+        : 0;
 
     if (info.exit !== "runner") {
       //check if automatic difficulty is enabled and adjust difficulty accordingly
@@ -120,6 +123,23 @@ export class Overrides {
         //regenerate difficulties
         gv.progressRecord.currentDifficulty = newDifficulty;
         pd.setupAITemplates(gv.botTypes, gv.CoreAITemplate, gv.AITemplates);
+
+        //Have to redo the other settings since ai templates have changed
+        if (gv.config.AIChanges.RoguesNeutralToUsecs) {
+          pd.SetRogueNeutral();
+        }
+
+        if (gv.config.AIChanges.AllowHealthTweaks.Enabled) {
+          pd.AdjustHealthValues(
+            gv.config.AIChanges.AllowHealthTweaks.Multipliers.PMCHealthMult,
+            gv.config.AIChanges.AllowHealthTweaks.Multipliers.ScavHealthMult,
+            gv.config.AIChanges.AllowHealthTweaks.Multipliers.RaiderHealthMult,
+            gv.config.AIChanges.AllowHealthTweaks.Multipliers.BossHealthMult,
+            gv.config.AIChanges.AllowHealthTweaks.Multipliers.CultistHealthMult
+          );
+        }
+
+        pd.NoTalking();
       }
     }
 

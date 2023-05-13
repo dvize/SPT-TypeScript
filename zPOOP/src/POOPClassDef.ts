@@ -110,13 +110,15 @@ export const RoleCase: Record<string, string> = {
   usec: "usec",
 };
 
-export const PmcTypes: string[] = ["sptbear", "sptusec", "assaultgroup"];
+export const PmcTypes: string[] = ["bear", "usec"];
 
 export const RaiderTypes: string[] = ["pmcbot"];
 
 export const RogueTypes: string[] = ["exusec"];
 
 export const ScavTypes: string[] = ["assault", "cursedassault", "marksman"];
+
+export const CultistTypes: string[] = ["sectantwarrior", "sectantpriest"];
 
 export const assaultTypesBotGen: string[] = [
   "assaulteasy",

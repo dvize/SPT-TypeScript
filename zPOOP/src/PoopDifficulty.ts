@@ -14,6 +14,7 @@ import {
   CoreAITemplate,
   Core,
   gameDifficulty,
+  CultistTypes,
 } from "./POOPClassDef";
 import { IBotBase } from "@spt-aki/models/eft/common/tables/IBotBase";
 import { IHealthTreatmentRequestData } from "@spt-aki/models/eft/health/IHealthTreatmentRequestData";
@@ -25,12 +26,10 @@ import { BodyParts } from "@spt-aki/models/eft/common/IGlobals";
 import JSON5 from "json5";
 import { IBotConfig } from "@spt-aki/models/spt/config/IBotConfig";
 import {
-  Difficulty,
   IBotType,
+  Difficulties,
+  Difficulty,
 } from "@spt-aki/models/eft/common/tables/IBotType";
-import { Difficulties } from "@spt-aki/models/eft/common/tables/IBotType";
-import { BotSettings } from "../types/models/eft/match/IGetRaidConfigurationRequestData";
-import { BotPreset } from "../types/models/eft/common/IGlobals";
 
 export class POOPDifficulty {
   static readAITemplate(): AITemplate[] {
@@ -527,6 +526,22 @@ export class POOPDifficulty {
       POOPDifficulty.ConvertStringToIBotBaseArray(PmcTypes),
       PMCMult
     );
+    POOPDifficulty.changeHealth(
+      POOPDifficulty.ConvertStringToIBotBaseArray(ScavTypes),
+      ScavMult
+    );
+    POOPDifficulty.changeHealth(
+      POOPDifficulty.ConvertStringToIBotBaseArray(RaiderTypes),
+      RaiderMult
+    );
+    POOPDifficulty.changeHealth(
+      POOPDifficulty.ConvertStringToIBotBaseArray(BossTypes),
+      BossMul
+    );
+    POOPDifficulty.changeHealth(
+      POOPDifficulty.ConvertStringToIBotBaseArray(CultistTypes),
+      CultistMult
+    );
   }
 
   static ConvertStringToIBotBaseArray(botArray: string[]): IBotBase[] {
@@ -537,29 +552,53 @@ export class POOPDifficulty {
     return botBaseArray;
   }
 
+  static setBotTalkConfig(botType: string, config: boolean) {
+    let bot: IBotType = gv.botTypes[botType];
+
+    bot.difficulty.easy.Mind.TALK_WITH_QUERY = config;
+    bot.difficulty.normal.Mind.TALK_WITH_QUERY = config;
+    bot.difficulty.hard.Mind.TALK_WITH_QUERY = config;
+    bot.difficulty.impossible.Mind.TALK_WITH_QUERY = config;
+  }
+
   static NoTalking() {
     //need to make sure difficulty settings don't override this
-
-    const botTypes = [
-      { types: ScavTypes, name: "Scavs" },
-      { types: PmcTypes, name: "PMCs" },
-      { types: RaiderTypes, name: "Raiders" },
-      { types: RogueTypes, name: "Rogues" },
-      { types: BossTypes, name: "Bosses" },
-      { types: FollowerTypes, name: "Followers" },
-    ];
-    const config = gv.config.AIChanges.AllowBotsToTalk;
-
-    for (let { types, name } of botTypes) {
-      if (!config[name]) {
-        for (let botName in gv.botTypes) {
-          if (types.includes(botName)) {
-            for (let Element of ["Easy", "Normal", "Hard", "Impossible"]) {
-              gv.botTypes[botName].difficulty[Element].Mind.CAN_TALK = false;
-            }
-          }
-        }
-      }
+    //go through ScavTypes, PmcTypes, RaiderTypes, RogueTypes, BossTypes, and FollowerTypes and set CAN_TALK based on gv.config.AIChanges.AllowBotsToTalk
+    for (let scav in ScavTypes) {
+      POOPDifficulty.setBotTalkConfig(
+        ScavTypes[scav],
+        gv.config.AIChanges.AllowBotsToTalk.Scavs
+      );
+    }
+    for (let pmc in PmcTypes) {
+      POOPDifficulty.setBotTalkConfig(
+        PmcTypes[pmc],
+        gv.config.AIChanges.AllowBotsToTalk.PMCs
+      );
+    }
+    for (let raider in RaiderTypes) {
+      POOPDifficulty.setBotTalkConfig(
+        RaiderTypes[raider],
+        gv.config.AIChanges.AllowBotsToTalk.Raiders
+      );
+    }
+    for (let rogue in RogueTypes) {
+      POOPDifficulty.setBotTalkConfig(
+        RogueTypes[rogue],
+        gv.config.AIChanges.AllowBotsToTalk.Rogues
+      );
+    }
+    for (let boss in BossTypes) {
+      POOPDifficulty.setBotTalkConfig(
+        BossTypes[boss],
+        gv.config.AIChanges.AllowBotsToTalk.Bosses
+      );
+    }
+    for (let follower in FollowerTypes) {
+      POOPDifficulty.setBotTalkConfig(
+        FollowerTypes[follower],
+        gv.config.AIChanges.AllowBotsToTalk.Followers
+      );
     }
   }
 }
