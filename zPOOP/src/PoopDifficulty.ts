@@ -282,7 +282,7 @@ export class POOPDifficulty {
     setting.Grenade.MAX_THROW_POWER =
       gv.config.Difficulty.DirectValue.GrenadeThrowRangeMax;
 
-    if (gv.config.Difficulty.DirectValue.AllowAimAtHead) {
+    if (!gv.config.Difficulty.DirectValue.AllowAimAtHead) {
       //this sets to // 4 - randomly + center + without head
       setting.Aiming.AIMING_TYPE = 4;
     }
@@ -376,15 +376,15 @@ export class POOPDifficulty {
   }
 
   static SetupVisionSpeedMultiplier(setting: Difficulty) {
-    setting.Move.BASE_ROTATE_SPEED =
-      Number(setting.Move.BASE_ROTATE_SPEED) *
-      gv.config.Difficulty.Multipliers.VisionSpeedMult;
-    setting.Look.WAIT_NEW__LOOK_SENSOR =
-      Number(setting.Look.WAIT_NEW__LOOK_SENSOR) /
-      gv.config.Difficulty.Multipliers.VisionSpeedMult;
-    setting.Look.WAIT_NEW_SENSOR =
-      Number(setting.Look.WAIT_NEW_SENSOR) /
-      gv.config.Difficulty.Multipliers.VisionSpeedMult;
+    // setting.Move.BASE_ROTATE_SPEED =
+    //   Number(setting.Move.BASE_ROTATE_SPEED) *
+    //   gv.config.Difficulty.Multipliers.VisionSpeedMult;
+    // setting.Look.WAIT_NEW__LOOK_SENSOR =
+    //   Number(setting.Look.WAIT_NEW__LOOK_SENSOR) /
+    //   gv.config.Difficulty.Multipliers.VisionSpeedMult;
+    // setting.Look.WAIT_NEW_SENSOR =
+    //   Number(setting.Look.WAIT_NEW_SENSOR) /
+    //   gv.config.Difficulty.Multipliers.VisionSpeedMult;
 
     setting.Core.GainSightCoef =
       Number(setting.Core.GainSightCoef) /
