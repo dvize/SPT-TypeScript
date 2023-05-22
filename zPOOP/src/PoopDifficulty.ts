@@ -263,7 +263,7 @@ export class POOPDifficulty {
     POOPDifficulty.SetupRecoilMultiplier(setting);
 
     //setup hearing multiplier
-    //POOPDifficulty.SetupHearingMultiplier(setting);
+    POOPDifficulty.SetupHearingMultiplier(setting);
 
     //setup Visible Angle with floor 120 and max 320
     if (gv.config.Difficulty.DirectValue.VisibleAngle < 120) {
@@ -310,18 +310,19 @@ export class POOPDifficulty {
       gv.config.Difficulty.Multipliers.GrenadePrecisionMult;
   }
 
+  //wierd that these values cause an error
   static SetupHearingMultiplier(setting: Difficulty) {
-    setting.Change.FLASH_HEARING =
-      Number(setting.Hearing.FLASH_HEARING) /
-      gv.config.Difficulty.Multipliers.HearingMult;
-    setting.Change.SMOKE_HEARING =
-      Number(setting.Hearing.SMOKE_HEARING) /
-      gv.config.Difficulty.Multipliers.HearingMult;
-    setting.Change.STUN_HEARING =
-      Number(setting.Hearing.STUN_HEARING) *
-      gv.config.Difficulty.Multipliers.HearingMult;
+    // setting.Change.FLASH_HEARING =
+    //   Number(setting.Hearing.FLASH_HEARING) *
+    //   gv.config.Difficulty.Multipliers.HearingMult;
+    // setting.Change.SMOKE_HEARING =
+    //   Number(setting.Hearing.SMOKE_HEARING) *
+    //   gv.config.Difficulty.Multipliers.HearingMult;
+    // setting.Change.STUN_HEARING =
+    //   Number(setting.Hearing.STUN_HEARING) *
+    //   gv.config.Difficulty.Multipliers.HearingMult;
     setting.Core.HearingSense =
-      Number(setting.Hearing.HearingSense) *
+      Number(setting.Core.HearingSense) *
       gv.config.Difficulty.Multipliers.HearingMult;
   }
 
@@ -356,7 +357,7 @@ export class POOPDifficulty {
   static SetupFullAutoFireRateMultiplier(setting: Difficulty) {
     //how long hold down the trigger with automatic fire
     setting.Shoot.BASE_AUTOMATIC_TIME =
-      Number(setting.Shoot.BASE_AUTOMATIC_TIME) *
+      Number(setting.Shoot.BASE_AUTOMATIC_TIME) /
       gv.config.Difficulty.Multipliers.FullAutoFireRateMult;
   }
 
@@ -375,6 +376,7 @@ export class POOPDifficulty {
       gv.config.Difficulty.Multipliers.VisibleDistanceMult;
   }
 
+  //makes them move wierdly if too high
   static SetupVisionSpeedMultiplier(setting: Difficulty) {
     // setting.Move.BASE_ROTATE_SPEED =
     //   Number(setting.Move.BASE_ROTATE_SPEED) *
@@ -408,12 +410,13 @@ export class POOPDifficulty {
     setting.Change.SMOKE_SCATTERING =
       Number(setting.Change.SMOKE_SCATTERING) *
       gv.config.Difficulty.Multipliers.ShotSpreadMult;
-    setting.Core.ScatteringClosePerMeter =
-      Number(setting.Core.ScatteringClosePerMeter) *
-      gv.config.Difficulty.Multipliers.ShotSpreadMult;
-    setting.Core.ScatteringPerMeter =
-      Number(setting.Core.ScatteringPerMeter) *
-      gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    //these values make them look side to side for some reason.
+    // setting.Core.ScatteringClosePerMeter =
+    //   Number(setting.Core.ScatteringClosePerMeter) *
+    //   gv.config.Difficulty.Multipliers.ShotSpreadMult;
+    // setting.Core.ScatteringPerMeter =
+    //   Number(setting.Core.ScatteringPerMeter) *
+    //   gv.config.Difficulty.Multipliers.ShotSpreadMult;
     setting.Scattering.HandDamageScatteringMinMax =
       Number(setting.Scattering.HandDamageScatteringMinMax) /
       gv.config.Difficulty.Multipliers.ShotSpreadMult;
