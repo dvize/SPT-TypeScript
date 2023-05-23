@@ -558,10 +558,10 @@ export class POOPDifficulty {
   static setBotTalkConfig(botType: string, config: boolean) {
     let bot: IBotType = gv.botTypes[botType];
 
-    bot.difficulty.easy.Mind.CAN_TALK = config;
-    bot.difficulty.normal.Mind.CAN_TALK = config;
-    bot.difficulty.hard.Mind.CAN_TALK = config;
-    bot.difficulty.impossible.Mind.CAN_TALK = config;
+    bot.difficulty["easy"].Mind.CAN_TALK = config;
+    bot.difficulty["normal"].Mind.CAN_TALK = config;
+    bot.difficulty["hard"].Mind.CAN_TALK = config;
+    bot.difficulty["impossible"].Mind.CAN_TALK = config;
 
     gv.CoreAITemplate[botType];
   }
