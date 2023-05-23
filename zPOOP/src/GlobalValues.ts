@@ -54,7 +54,7 @@ export class GlobalValues {
   public static botGenerator: BotGenerator;
 
   public static legendWinMin: number = 10;
-  public static LegendaryPlayerModeChance: number = 5;
+  public static LegendaryPlayerModeChance: number = 2;
   public static LegendarySpawned: boolean = false;
 
   static clone(data: any) {
