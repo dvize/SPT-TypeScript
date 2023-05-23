@@ -26,15 +26,15 @@
     // Self Explanatory.  (true/false)
     RoguesNeutralToUsecs: false,
 
-    //Allow health multipliers to be used. (Number Value)
+    //Allow health multipliers to be used.
     AllowHealthTweaks: {
-      Enabled: false,
+      Enabled: false, //(true/false)
       Multipliers: {
-        PMCHealthMult: 1,
-        ScavHealthMult: 1,
-        RaiderHealthMult: 1,
-        BossHealthMult: 1,
-        CultistHealthMult: 1,
+        PMCHealthMult: 1, //(Number Value)
+        ScavHealthMult: 1, //(Number Value)
+        RaiderHealthMult: 1, //(Number Value)
+        BossHealthMult: 1, //(Number Value)
+        CultistHealthMult: 1, //(Number Value)
       },
     },
 
@@ -69,17 +69,17 @@
     },
     //Basically set either true/false or the number value you want to use.
     DirectValue: {
-      AllowAimAtHead: true,
-      AllowGrenades: true,
-      AllowStationaryTurrets: true,
-      PistolFireDistancePref: 15,
-      RifleFireDistancePref: 50,
-      ShotgunFireDistancePref: 25,
+      AllowAimAtHead: true, //(true/false)
+      AllowGrenades: true, //(true/false)
+      AllowStationaryTurrets: true, //(true/false)
+      PistolFireDistancePref: 15, //(Number Value)
+      RifleFireDistancePref: 50, //(Number Value)
+      ShotgunFireDistancePref: 25, //(Number Value)
       //The distance though which bots will see through foilage. 0.4 is default
-      MAX_VISION_GRASS_METERS: 0,
+      MAX_VISION_GRASS_METERS: 0, //(Number Value)
       //The bots visible angle. 320 is max and more angle is higher difficulty.
-      VisibleAngle: 280,
-      GrenadeThrowRangeMax: 20,
+      VisibleAngle: 280, //(Number Value)
+      GrenadeThrowRangeMax: 20, //(Number Value)
     },
   },
 
