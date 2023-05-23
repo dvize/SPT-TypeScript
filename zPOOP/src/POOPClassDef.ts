@@ -27,6 +27,7 @@ export interface POOPConfig {
       Rogues: boolean;
       Followers: boolean;
     };
+    ChanceSayFkUonContact: number;
   };
   Difficulty: {
     OverallDifficultyModifier: number;
@@ -796,6 +797,7 @@ export interface Mind {
   CAN_RECEIVE_PLAYER_REQUESTS_SAVAGE: boolean;
   CAN_RECEIVE_PLAYER_REQUESTS_USEC: boolean;
   CAN_STAND_BY: boolean;
+  CAN_TALK: boolean;
   CAN_TAKE_ITEMS: boolean;
   CAN_THROW_REQUESTS: boolean;
   CAN_USE_MEDS: boolean;

@@ -1,24 +1,10 @@
-import { IBotBase } from "@spt-aki/models/eft/common/tables/IBotBase";
 import { GlobalValues as gv } from "./GlobalValues";
-import { POOPDifficulty as pd } from "./POOPDifficulty";
-import {
-  RoleCase,
-  legendFile,
-  pmcTypesBotGen,
-  progressRecord,
-} from "./POOPClassDef";
-import { HashUtil } from "@spt-aki/utils/HashUtil";
-import * as crypto from "crypto";
+import { legendFile, progressRecord } from "./POOPClassDef";
 import * as fs from "fs";
 import * as path from "path";
 import { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
 import { Difficulties } from "@spt-aki/models/eft/common/tables/IBotType";
 import { Item } from "@spt-aki/models/eft/common/tables/IItem";
-import { PmcDurabilityArmor } from "../types/models/spt/config/IBotDurability";
-import {
-  Condition,
-  IGenerateBotsRequestData,
-} from "@spt-aki/models/eft/bot/IGenerateBotsRequestData";
 
 export class LegendaryPlayer {
   //LEGENDARY PLAYER METHODS
