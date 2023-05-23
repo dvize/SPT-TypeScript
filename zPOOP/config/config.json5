@@ -47,7 +47,7 @@
       Rogues: true,
       Followers: true,
     },
-    //10 is the default value but you can change it here.  (Number Value)
+    //10 is the default value but you can change it here.  (Number Value 0 to 100)
     ChanceSayFkUonContact: 10,
   },
 
