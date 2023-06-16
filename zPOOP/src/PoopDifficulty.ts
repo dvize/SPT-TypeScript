@@ -145,6 +145,7 @@ export class POOPDifficulty {
     }
 
     //setup CoreAITemplate - used when not overridden by AITemplate
+    POOPDifficulty.setupCoreAITemplate(CoreAITemplate);
     gv.databaseServer.getTables().bots.core = CoreAITemplate;
   }
 
@@ -216,6 +217,12 @@ export class POOPDifficulty {
     }
   }
 
+  static setupCoreAITemplate(CoreAITemplate: CoreAITemplate) {
+    //setup the CoreAITemplate
+
+    CoreAITemplate.CAN_SHOOT_TO_HEAD =
+      gv.config.Difficulty.DirectValue.CanAimForHead;
+  }
   static setDifficultyModifier(
     setting: Difficulty,
     DifficultyModifier: number,

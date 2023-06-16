@@ -42,6 +42,7 @@ export interface POOPConfig {
       GrenadePrecisionMult: number;
     };
     DirectValue: {
+      CanAimForHead: boolean;
       AimingType: number | string;
       AllowGrenades: boolean;
       AllowStationaryTurrets: boolean;

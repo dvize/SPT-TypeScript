@@ -69,6 +69,7 @@
     },
     //Basically set either true/false or the number value you want to use.
     DirectValue: {
+      CanAimForHead: true, //(true/false)
       //"random" it will choose a random number for aiming type for each difficulty for a role // 1 - randomly + center // 2 - randomly except for legs + center // 3 - first noticed part of the body
       // 4 - randomly + center + without head // 5 - randomly except for legs + center + without heads //6 - head first
       AimingType: 'random', //(Number Value)
