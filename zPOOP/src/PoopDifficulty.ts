@@ -282,9 +282,11 @@ export class POOPDifficulty {
     setting.Grenade.MAX_THROW_POWER =
       gv.config.Difficulty.DirectValue.GrenadeThrowRangeMax;
 
-    if (!gv.config.Difficulty.DirectValue.AllowAimAtHead) {
-      //this sets to // 4 - randomly + center + without head
-      setting.Aiming.AIMING_TYPE = 4;
+    //setup aim type to random  or config value
+    if (gv.config.Difficulty.DirectValue.AimingType == "random") {
+      setting.Aiming.AIMING_TYPE = gv.randomUtil.getInt(1, 5);
+    } else {
+      setting.Aiming.AIMING_TYPE = gv.config.Difficulty.DirectValue.AimingType;
     }
 
     //setup AllowGrenades
@@ -305,53 +307,22 @@ export class POOPDifficulty {
     setting.Grenade.GrenadePrecision =
       Number(setting.Grenade.GrenadePrecision) /
       gv.config.Difficulty.Multipliers.GrenadePrecisionMult;
-    setting.Grenade.GrenadePerMeter =
-      Number(setting.Grenade.GrenadePerMeter) /
-      gv.config.Difficulty.Multipliers.GrenadePrecisionMult;
   }
 
-  //wierd that these values cause an error
   static SetupHearingMultiplier(setting: Difficulty) {
-    // setting.Change.FLASH_HEARING =
-    //   Number(setting.Hearing.FLASH_HEARING) *
-    //   gv.config.Difficulty.Multipliers.HearingMult;
-    // setting.Change.SMOKE_HEARING =
-    //   Number(setting.Hearing.SMOKE_HEARING) *
-    //   gv.config.Difficulty.Multipliers.HearingMult;
-    // setting.Change.STUN_HEARING =
-    //   Number(setting.Hearing.STUN_HEARING) *
-    //   gv.config.Difficulty.Multipliers.HearingMult;
     setting.Core.HearingSense =
       Number(setting.Core.HearingSense) *
       gv.config.Difficulty.Multipliers.HearingMult;
   }
 
   static SetupRecoilMultiplier(setting: Difficulty) {
-    setting.Scattering.RecoilYMax =
-      Number(setting.Scattering.RecoilYMax) *
-      gv.config.Difficulty.Multipliers.RecoilMult;
-    setting.Scattering.RecoilYCoef =
-      Number(setting.Scattering.RecoilYCoef) /
-      gv.config.Difficulty.Multipliers.RecoilMult;
-    setting.Scattering.RecoilYCoefSppedDown =
-      Number(setting.Scattering.RecoilYCoefSppedDown) *
-      gv.config.Difficulty.Multipliers.RecoilMult;
-    setting.Scattering.RecoilControlCoefShootDone =
-      Number(setting.Scattering.RecoilControlCoefShootDone) /
-      gv.config.Difficulty.Multipliers.RecoilMult;
-    setting.Scattering.RecoilControlCoefShootDoneAuto =
-      Number(setting.Scattering.RecoilControlCoefShootDoneAuto) /
-      gv.config.Difficulty.Multipliers.RecoilMult;
-    setting.Shoot.HORIZONT_RECOIL_COEF =
-      Number(setting.Shoot.HORIZONT_RECOIL_COEF) /
-      gv.config.Difficulty.Multipliers.RecoilMult;
     //on rate of fire how much recoil is added.
     setting.Shoot.RECOIL_DELTA_PRESS =
       Number(setting.Shoot.RECOIL_DELTA_PRESS) /
       gv.config.Difficulty.Multipliers.RecoilMult;
-    setting.Shoot.RECOIL_PER_METER =
+    /* setting.Shoot.RECOIL_PER_METER =
       Number(setting.Shoot.RECOIL_PER_METER) /
-      gv.config.Difficulty.Multipliers.RecoilMult;
+      gv.config.Difficulty.Multipliers.RecoilMult; */
   }
 
   static SetupFullAutoFireRateMultiplier(setting: Difficulty) {
@@ -378,16 +349,6 @@ export class POOPDifficulty {
 
   //makes them move wierdly if too high
   static SetupVisionSpeedMultiplier(setting: Difficulty) {
-    // setting.Move.BASE_ROTATE_SPEED =
-    //   Number(setting.Move.BASE_ROTATE_SPEED) *
-    //   gv.config.Difficulty.Multipliers.VisionSpeedMult;
-    // setting.Look.WAIT_NEW__LOOK_SENSOR =
-    //   Number(setting.Look.WAIT_NEW__LOOK_SENSOR) /
-    //   gv.config.Difficulty.Multipliers.VisionSpeedMult;
-    // setting.Look.WAIT_NEW_SENSOR =
-    //   Number(setting.Look.WAIT_NEW_SENSOR) /
-    //   gv.config.Difficulty.Multipliers.VisionSpeedMult;
-
     setting.Core.GainSightCoef =
       Number(setting.Core.GainSightCoef) /
       gv.config.Difficulty.Multipliers.VisionSpeedMult;
@@ -395,57 +356,14 @@ export class POOPDifficulty {
 
   static SetupShotSpreadMultiplier(setting: Difficulty) {
     //method that has all the shot spread multipliers
-    setting.Aiming.SCATTERING_DIST_MODIF =
-      Number(setting.Aiming.SCATTERING_DIST_MODIF) /
-      gv.config.Difficulty.Multipliers.ShotSpreadMult;
-    setting.Aiming.SCATTERING_DIST_MODIF_CLOSE =
-      Number(setting.Aiming.SCATTERING_DIST_MODIF_CLOSE) /
-      gv.config.Difficulty.Multipliers.ShotSpreadMult;
-    setting.Aiming.SCATTERING_HAVE_DAMAGE_COEF =
-      Number(setting.Aiming.SCATTERING_HAVE_DAMAGE_COEF) /
-      gv.config.Difficulty.Multipliers.ShotSpreadMult;
-    setting.Change.FLASH_SCATTERING =
-      Number(setting.Change.FLASH_SCATTERING) *
-      gv.config.Difficulty.Multipliers.ShotSpreadMult;
-    setting.Change.SMOKE_SCATTERING =
-      Number(setting.Change.SMOKE_SCATTERING) *
-      gv.config.Difficulty.Multipliers.ShotSpreadMult;
-    //these values make them look side to side for some reason.
-    // setting.Core.ScatteringClosePerMeter =
-    //   Number(setting.Core.ScatteringClosePerMeter) *
-    //   gv.config.Difficulty.Multipliers.ShotSpreadMult;
-    // setting.Core.ScatteringPerMeter =
-    //   Number(setting.Core.ScatteringPerMeter) *
-    //   gv.config.Difficulty.Multipliers.ShotSpreadMult;
-    setting.Scattering.HandDamageScatteringMinMax =
-      Number(setting.Scattering.HandDamageScatteringMinMax) /
-      gv.config.Difficulty.Multipliers.ShotSpreadMult;
-    setting.Scattering.AMPLITUDE_FACTOR =
-      Number(setting.Scattering.AMPLITUDE_FACTOR) /
-      gv.config.Difficulty.Multipliers.ShotSpreadMult;
-    setting.Scattering.AMPLITUDE_SPEED =
-      Number(setting.Scattering.AMPLITUDE_SPEED) /
-      gv.config.Difficulty.Multipliers.ShotSpreadMult;
-    setting.Scattering.BloodFall =
-      Number(setting.Scattering.BloodFall) /
-      gv.config.Difficulty.Multipliers.ShotSpreadMult;
     setting.Scattering.MaxScatter =
       Number(setting.Scattering.MaxScatter) /
       gv.config.Difficulty.Multipliers.ShotSpreadMult;
     setting.Scattering.MinScatter =
       Number(setting.Scattering.MinScatter) /
       gv.config.Difficulty.Multipliers.ShotSpreadMult;
-    setting.Scattering.WorkingScatter =
-      Number(setting.Scattering.WorkingScatter) /
-      gv.config.Difficulty.Multipliers.ShotSpreadMult;
     setting.Shoot.AUTOMATIC_FIRE_SCATTERING_COEF =
       Number(setting.Shoot.AUTOMATIC_FIRE_SCATTERING_COEF) /
-      gv.config.Difficulty.Multipliers.ShotSpreadMult;
-    setting.Scattering.SpeedDown =
-      Number(setting.Scattering.SpeedDown) *
-      gv.config.Difficulty.Multipliers.ShotSpreadMult;
-    setting.Scattering.SpeedUp =
-      Number(setting.Scattering.SpeedUp) *
       gv.config.Difficulty.Multipliers.ShotSpreadMult;
   }
 
