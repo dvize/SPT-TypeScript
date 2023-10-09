@@ -1,23 +1,26 @@
 {
     "name": "Fins Eerie Silence",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "main": "src/mod.js",
     "license": "See License file",
     "author": "Fin, Props",
-	"akiVersion": "3.4.*",
-	    "scripts": {
+	"akiVersion": "3.7.*",
+    "scripts": {
         "setup": "npm i",
-        "build": "node ./packageBuild.ts"
+        "build": "node ./build.mjs",
+        "buildinfo": "node ./build.mjs --verbose"
     },
     "devDependencies": {
-        "@types/node": "16.18.10",
-        "@typescript-eslint/eslint-plugin": "5.46.1",
-        "@typescript-eslint/parser": "5.46.1",
-        "bestzip": "2.2.1",
-        "eslint": "8.30.0",
-        "fs-extra": "11.1.0",
-        "glob": "8.0.3",
-        "tsyringe": "4.7.0",
-        "typescript": "4.9.4"
+        "@types/node": "20.4.5",
+        "@typescript-eslint/eslint-plugin": "6.2.0",
+        "@typescript-eslint/parser": "6.2.0",
+        "archiver": "^6.0",
+        "eslint": "8.46.0",
+        "fs-extra": "^11.1",
+        "ignore": "^5.2",
+        "os": "^0.1",
+        "tsyringe": "4.8.0",
+        "typescript": "5.1.6",
+        "winston": "^3.9"
     }
 }
