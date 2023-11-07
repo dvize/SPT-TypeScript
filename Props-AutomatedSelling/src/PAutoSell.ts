@@ -268,7 +268,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 				 const saleSum = pmcData.TradersInfo[mytrader._id].salesSum + moneyTotalConverted;
 				 Logger.info(`PAutoSell: Adding ${moneyTotalConverted} to ${mytrader.nickname} new salesSum (${saleSum})`);
 				 pmcData.TradersInfo[mytrader._id].salesSum = saleSum;
-				 traderHelper.lvlUp(mytrader._id, sessionId);
+				 traderHelper.lvlUp(mytrader._id, pmcData);
 
 				 //save the changes to the pmc profile
 
