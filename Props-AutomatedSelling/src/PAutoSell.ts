@@ -1,32 +1,36 @@
 import { IPreAkiLoadMod } from "@spt-aki/models/external/IPreAkiLoadMod";
 import { IPostAkiLoadMod } from "@spt-aki/models/external/IPostAkiLoadMod";
-import { DependencyContainer, container } from 'tsyringe';
-import { ILogger } from "@spt-aki/models/spt/utils/ILogger";
+import { DependencyContainer } from 'tsyringe';
 import { DynamicRouterModService } from "@spt-aki/services/mod/dynamicRouter/DynamicRouterModService";
 import { StaticRouterModService } from "@spt-aki/services/mod/staticRouter/StaticRouterModService";
 import { ProfileHelper } from "@spt-aki/helpers/ProfileHelper";
-import { JsonUtil } from "@spt-aki/utils/JsonUtil";
 import { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
 import { HashUtil } from "@spt-aki/utils/HashUtil";
 import { RagfairPriceService } from "@spt-aki/services/RagfairPriceService";
 import { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
-import { Item, Upd } from '@spt-aki/models/eft/common/tables/IItem';
+import { Item, Location, Upd } from '@spt-aki/models/eft/common/tables/IItem';
 import { SaveServer } from '@spt-aki/servers/SaveServer';
 import { ItemHelper } from "@spt-aki/helpers/ItemHelper";
 import { ITemplateItem } from '@spt-aki/models/eft/common/tables/ITemplateItem';
 import { LocaleService } from "@spt-aki/services/LocaleService";
 import { TradeHelper } from '@spt-aki/helpers/TradeHelper';
 import { TraderHelper} from '@spt-aki/helpers/TraderHelper';
+import { JsonUtil } from "@spt-aki/utils/JsonUtil";
+import { RandomUtil } from "@spt-aki/utils/RandomUtil";
+import { TraderData, TraderInfo } from "@spt-aki/models/eft/common/tables/IBotBase";
+import { ITraderBase } from "@spt-aki/models/eft/common/tables/ITrader";
+import { ITrader } from '@spt-aki/models/eft/common/tables/ITrader';
+import { Info } from '../types/models/eft/common/tables/IBotBase';
+import { AddItem } from '../types/models/eft/inventory/IAddItemRequestData';
 
 let Logger;
-let config;
+let config : Config;
 let profileHelper: ProfileHelper;
 let hashUtil: HashUtil;
 let ragfairPriceService: RagfairPriceService;
 let moneyTotal: number;
-let jsonUtil: JsonUtil;
-let pmcData;
-let itemsModList;
+let pmcData: IPmcData;
+let itemsModList: Item[];
 let saveServer: SaveServer;
 let itemHelper: ItemHelper;
 let databaseServer: DatabaseServer;
@@ -37,9 +41,12 @@ let traderHelper: TraderHelper;
 let moneyTotalExchanged: number;
 let containers;
 let actualElement: number;
+let jsonUtil: JsonUtil;
+let traderId: string;
+let randomUtil: RandomUtil;
 
 const modName = "PAutoSell";
-let modFolder;
+let modFolder: string;
 
 let traderKey =
 {
@@ -53,6 +60,9 @@ let traderKey =
 	"peacekeeper" : "5935c25fb3acc3127c3d8cd9",
 	"skier" : "58330581ace78e27b8b10cee"
 }
+
+let traderSellingTable : Record<string, number>;
+
 
 class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 
@@ -94,11 +104,14 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 	setupInitialValues(container: DependencyContainer) {
 		
 		ragfairPriceService = container.resolve("RagfairPriceService");
-		config = require("../config/config.json");
+		jsonUtil = container.resolve("JsonUtil");
+		const fs = require("fs");
+		const configPath = `${modFolder}/config/config.json5`;
+		const jsonString = fs.readFileSync(configPath, "utf8");
+		config = jsonUtil.deserializeJson5(jsonString, configPath);
 		Logger.info('PAutoSell: SetupInitialValues');
 		profileHelper = container.resolve("ProfileHelper");
 		hashUtil = container.resolve("HashUtil");
-		jsonUtil = container.resolve("JsonUtil");
 		saveServer = container.resolve("SaveServer");
 		itemHelper = container.resolve("ItemHelper");
 		databaseServer = container.resolve("DatabaseServer");
@@ -106,282 +119,261 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 		localeService = container.resolve("LocaleService");
 		tradeHelper = container.resolve("TradeHelper");
 		traderHelper = container.resolve("TraderHelper");
+		randomUtil = container.resolve("RandomUtil");
 
 		this.checkContainerRestrictions();
 	}
 
-	checkContainerRestrictions() : void
-	{
-
-		let validContainerTypesList: string[] = [
+	checkContainerRestrictions(): void {
+		const validContainerTypesList = [
 			"5795f317245977243854e041", //Common Container
 			"5448bf274bdc2dfc2f8b456a", //Portable Container
 			"5448e53e4bdc2d60728b4567" //Backpack
-		]
+		];
 		
-		let filteredItems = [];
-		//convert database.items to array and filter out items that are not in validContainerTypesList
-		filteredItems = Object.values(database.items).filter((itemtemp: ITemplateItem) => {
-			return validContainerTypesList.includes(itemtemp._parent);
-		});
-
-		//go through all items in filteredItems list and remove container restrictions
-		if (config.RemoveContainerRestriction === true) 
-		{
-			for (let i = 0; i < filteredItems.length; i++) 
-			{
-				let myItem = filteredItems[i];
-				myItem._props.Grids[0]._props.filters = [];
-				Logger.info(`PAutoSell: Removing Container Restriction from ${myItem._id} (${myItem._name})`);
-			}
+		const filteredItems = Object.values(database.items).filter((itemtemp: ITemplateItem) =>
+		  validContainerTypesList.includes(itemtemp._parent)
+		);
+	  
+		if (config.RemoveContainerRestriction) {
+		  filteredItems.forEach((myItem : ITemplateItem) => {
+			myItem._props.Grids[0]._props.filters = [];
+			Logger.info(`PAutoSell: Removing Container Restriction from ${myItem._id} (${myItem._name})`);
+		  });
 		}
-	}
+	  }
 
-	//main Top function
-	exchangeItems(url, info, sessionId, output) 
-	{
-		//use save server to set items in profile
-		saveServer.saveProfile(sessionId);
-		saveServer.loadProfile(sessionId);
-		
-		pmcData = profileHelper.getPmcProfile(sessionId);
+	  exchangeItems(url: string, info, sessionId: string, output) {
+		this.setupProfile(sessionId);
+
+		//reset moneyTotal to 0
+		traderSellingTable = {
+			"5a7c2eca46aef81a7ca2145d" : 0,
+			"5ac3b934156ae10c4430e83c" : 0,
+			"5c0647fdd443bc2504c2d371" : 0,
+			"54cb50c76803fa8b248b4571" : 0,
+			"54cb57776803fa99248b456e" : 0,
+			"579dc571d53a0658a154fbec" : 0,
+			"638f541a29ffd1183d187f57" : 0,
+			"5935c25fb3acc3127c3d8cd9" : 0,
+			"58330581ace78e27b8b10cee" : 0,
+		};
+
+		const pmcData = profileHelper.getPmcProfile(sessionId);
 		const items = pmcData.Inventory.items;
-		itemsModList = PAutoSell.clone(pmcData.Inventory.items);
-
-		//grab the containers list from config.containers.labels
-		containers = [];
-		
-		for (let contA = 0; contA < items.length; contA++) {
-			const myContainer = items[contA];
-			if (myContainer.upd && myContainer.upd.Tag && myContainer.upd.Tag.Name) {
-				if (config.Containers.Labels.map(label => label.toLowerCase()).includes(myContainer.upd.Tag.Name.toLowerCase())) {
-				Logger.info(`PAutoSell: Found Tagged Container: ${myContainer.upd.Tag.Name}`);
-				containers.push(myContainer);
+		const itemsModList = PAutoSell.clone(items);
+	
+		const containers = this.findTaggedContainers(items);
+	
+		for (const container of containers) {
+			actualElement = this.findActualElement(container);
+	
+			for (const item of items) {
+				if (item.parentId === container._id) {
+					const itemTpl = item._tpl.toLowerCase();
+	
+					if (config.IgnoreFollowingItemTPLInContainers.map(i => i.toLowerCase()).includes(itemTpl)) {
+						continue;
+					}
+	
+					traderId = PAutoSell.FindAvailableTrader(item);
+					this.sellItem(item, items, itemsModList, sessionId, actualElement, traderId);
 				}
 			}
+
+			const currency = config.Containers.Currency[actualElement].toLowerCase();
+			this.processMoneyExchange(container, items, itemsModList, sessionId, traderId);
 		}
-		
-		//peacekeperp 0 and therapist container 1
-		//for each item.parent_id where it matches the _id in the container list, sell the item with its associated currency
-		for (let currentContainerPlace = 0; currentContainerPlace < containers.length; currentContainerPlace++) 
-		{
-			let currentContainer = containers[currentContainerPlace];
-			moneyTotal = 0;
-			moneyTotalExchanged = 0;
-			let firstslotId;
-			let firstItemLocation;
-			let firstContainerId;
-			
-			//loop through all the config.containers.labels and set the actualElement to the current container
-			for (let i = 0; i < config.Containers.Labels.length; i++)
-			{
-				if (config.Containers.Labels[i].toLowerCase() === currentContainer.upd.Tag.Name.toLowerCase())
-				{
-					actualElement = i;
-				}
-			}
-
-			
-			for (let i = 0; i < items.length; i++) 
-			{
-				let item = items[i];
-				//Logger.error(`PAutoSell: Checking Item: ${PAutoSell.getItemName(item._tpl)}`);
-				//its detecting if the parent_id of the item is the same as the _id of the container. But 
-				if (item.parentId === currentContainer._id) {
-
-					Logger.info(`item.parentId: ${item.parentId} currentContainer._id: ${currentContainer._id}`);
-
-					//if the item._tpl(lowercase) is in the config.containers.IgnoreFollowingItemTPLInContainers list (lowercase), continue the loop without doing anything else
-					const ignoreList = config.IgnoreFollowingItemTPLInContainers;
-					let found = false;
-
-					for (let it = 0; it < ignoreList.length; it++) {
-					if (ignoreList[it].toLowerCase() === item._tpl.toLowerCase()) {
-						found = true;
-						break;
-					}
-					}
-
-					//continue to next item in the outer for loop if found is true
-					if (found) {
-					continue;
-					}
-					
-					//Logger.info(`PAutoSell: Found Item in Container: ${PAutoSell.getItemName(item._tpl)}`);
-					//set the slot id of newitem to existing item slot id if it exists
-					if (!firstslotId){
-						//if item.slotId is not null or undefined and the item.slotId is main, or Pockets, or SecuredContainer, set it to the first slot
-						if (item.slotId) {
-							firstslotId = item.slotId;
-						}
-					}
-					//set the location of the first item in the container to the new item location
-					if (!firstItemLocation) {
-						firstItemLocation = item.location;
-					}
-					
-					if(!firstContainerId){
-						firstContainerId = currentContainer._id;
-					}
-					
-					//set the currency string var based off the current position in Config.Containers.Currency list
-					let tempname = PAutoSell.getItemName(item._tpl);
-					Logger.error(`PAutoSell: Trying to Sell Item: ${tempname} , ID: ${item._id}`);
-					this.sellItem(item, items, itemsModList, sessionId, actualElement);
-				}
-			}
-			
-			let currency: string = config.Containers.Currency[actualElement];
-			currency.toLowerCase();
-
-			PAutoSell.replaceCurrency(currency, moneyTotal, items, firstslotId, firstItemLocation, firstContainerId, itemsModList);
-
-			//if there is a trader associated with this container, add selling to the history of the trader
-			if(config.Containers.Trader[actualElement] != null && config.Containers.Trader[actualElement] != "")
-			{
-				Logger.info(`PAutoSell: actualElement is ${actualElement}`);
-				Logger.info(`PAutoSell: config.Containers.Trader[actualElement] is ${config.Containers.Trader[actualElement]}`);
-				Logger.info(`PAutoSell: traderKey[config.Containers.Trader[actualElement].toLowerCase()] is ${traderKey[config.Containers.Trader[actualElement].toLowerCase()]}`);
-				let mytrader = traderHelper.getTrader(traderKey[config.Containers.Trader[actualElement].toLowerCase()], sessionId);
-				let newexchangerate = 0;
-				 // set current sale sum
-				 Logger.info(`PAutoSell: Converting to Trader Currency is ${mytrader.currency}`);
-
-				 //convert moneyTotal to mytrader.currency.  should always be rubles to whatever currency so just * by the exchange rate
-				 switch(mytrader.currency)
-				 {
-					 case "RUB":
-						newexchangerate = 1;
-						break;
-					case "EUR":
-						newexchangerate = 1/134;
-						break;
-					case "USD":
-						newexchangerate = 1/121;
-						break;
-					default:
-						newexchangerate = 1;
-						break;
-				 }
-
-				 let moneyTotalConverted = Math.floor(moneyTotal * newexchangerate);
-				 const saleSum = pmcData.TradersInfo[mytrader._id].salesSum + moneyTotalConverted;
-				 Logger.info(`PAutoSell: Adding ${moneyTotalConverted} to ${mytrader.nickname} new salesSum (${saleSum})`);
-				 pmcData.TradersInfo[mytrader._id].salesSum = saleSum;
-				 traderHelper.lvlUp(mytrader._id, pmcData);
-
-				 //save the changes to the pmc profile
-
-				saveServer.saveProfile(sessionId);
-				 //Object.assign(output.profileChanges[sessionId].traderRelations, { [mytrader._id]: { "salesSum": saleSum } });
-			}
-
-		}
-
-		// need to replace the items in the profile with the new items
+	
 		pmcData.Inventory.items = itemsModList;
-
+	
+		saveServer.saveProfile(sessionId);
+	}
+	
+	setupProfile(sessionId: string) {
 		saveServer.saveProfile(sessionId);
 		saveServer.loadProfile(sessionId);
-		
 	}
+	
+	findTaggedContainers(items) {
+		return items.filter(item => {
+			const tagName = (item.upd?.Tag?.Name || '').toLowerCase();
+			return config.Containers.Labels.map(label => label.toLowerCase()).includes(tagName);
+		});
+	}
+	
+	findActualElement(container) {
+		const actualElement = config.Containers.Labels.findIndex(label => label.toLowerCase() === container.upd.Tag.Name.toLowerCase());
+		Logger.info(`actualElement: ${actualElement}`);
+		return config.Containers.Labels.findIndex(label => label.toLowerCase() === container.upd.Tag.Name.toLowerCase());
+	}
+	
+	sellItem(item, items, itemsModList, sessionId, actualElement, traderId) {
+		//increment selling table for trader based on item, the config.priceMultiplier, and the stack size
 
-	sellItem(item: Item, items: Item[], itemsModList, sessionId: string, actualElement) {
-		//get the price of the item
-		let price = PAutoSell.getPrice(item._tpl, items, item, sessionId, actualElement);
-		//get the stack of the item if it exists otherwise set it to 1
-		let stack = item.upd ? item.upd.StackObjectsCount ? item.upd.StackObjectsCount : 1 : 1;
+		const stack = item.upd?.StackObjectsCount || 1;
+		traderSellingTable[traderId] += Math.floor(PAutoSell.getPrice(item._tpl, items, item, sessionId, traderId) * stack * config.PriceMultiplier);
 
-
-		//remove the item from the pmcInventory
 		PAutoSell.removeItemFromPlayerInventory(items, item, itemsModList);
-
-		// add price * stack to moneyTotal unless it is ammo
-		if (item.parentId == "5485a8684bdc2da71d8b4567")
-		{
-			Logger.info(`PAutoSell: Found Ammo, not multiplying by stack size`);
-			moneyTotal +=  Math.floor(price * config.PriceMultiplier);
-		}
-		else
-		{
-			moneyTotal += Math.floor(price * stack * config.PriceMultiplier);
-		}
-		
-		Logger.info(`PAutoSell: moneyTotal: ${moneyTotal}`);
 	}
 
-	//replace currency function based on string
-	static replaceCurrency(currency: string, moneyTotal: number, items: Item[], firstslotId: any, firstItemLocation: any, firstContainerId: any, itemsModList) {
-		Logger.info(`PAutoSell: Replacing Currency: ${currency} , Total: ${moneyTotal}`)
-		//define new item to replace values in
-		
-		let itemtpl: string;
-		let total: number;
-		let exchangeRate: number;
-		
+	//find traders that the item's parent is in the buy list for and then return one of them randomly from traderKey
+	private static FindAvailableTrader(item: Item) : string {
+		let listofTraders : ITraderBase[] = [];
+		let iitem : [boolean, ITemplateItem] = itemHelper.getItem(item._tpl);
 
-		//if the firstitemlocation is not undefined or null then assign its value to newItem.location
+		Logger.info(`PAutoSell: Finding Trader for Item: ${PAutoSell.getItemName(item._tpl)}`);
+		// Get an array of traderKey values
+		const traderValues = Object.values(traderKey);
+
+		for (const traderId of traderValues) {
+			const trader: ITraderBase = databaseServer.getTables().traders[traderId]?.base;
+			Logger.info(`PAutoSell: Checking item against Trader: ${trader.nickname}`);
+			if (trader) {
+				// Check if the item parent/category is contained within the trader's buy list
+				if (itemHelper.doesItemOrParentsIdMatch(item._tpl, trader.items_buy.category)) {
+					// Add them to the list of traders that will buy the item
+					Logger.info(`PAutoSell: Trader ${trader.nickname} Found for Item: ${PAutoSell.getItemName(item._tpl)}`);
+					listofTraders.push(trader);
+				}
+			}
+		}
+
+		//pick a random trader from the list of traders that will buy the item
+		let traderToUse : ITraderBase = randomUtil.getArrayValue(listofTraders);
+		Logger.info(`PAutoSell: Final Trader Found for Item: ${traderToUse.nickname}`);
+		return traderToUse._id;
+	}
+
+	//process for all traders at the end
+	processMoneyExchange(container, items, itemsModList, sessionId, traderId) {
 		
+		//we have finished selling all items so actually process transaction from trader selling table
+		//loop through tradersellingtable values
+
+		let moneyTotal : number = 0;
+
+		for (const [key, value] of Object.entries(traderSellingTable)) {
+			const trader = traderHelper.getTrader(key, sessionId);
+
+			Logger.info(`PAutoSell: Trader ${trader.nickname} has ${value} to process`);
+
+			//update trader sales history by value
+			if(value > 0){
+				this.updateTraderSalesSum(value, trader);
+				moneyTotal += value;
+			}
+		}
+
+		// grab the money total and check if currency exchange is needed
+		const currency = config.Containers.Currency[actualElement].toLowerCase();
+
+		//method checks currency
+		PAutoSell.addMoneyToInventory(items, currency, moneyTotal, container.slotId, container.location, container._id, itemsModList);
+
+		saveServer.saveProfile(sessionId);
+	}
+	
+	updateTraderSalesSum(moneyTotal, myTrader : ITraderBase) {
+		// Check if pmcData, tradersinfo, and the specific trader exists
+		if (pmcData.TradersInfo[myTrader._id]) {
+			const newExchangeRate = this.getExchangeRate(myTrader.currency);
+			let moneyTotalConverted = Math.floor(moneyTotal * newExchangeRate);
+
+			const saleSum = pmcData.TradersInfo[myTrader._id].salesSum + moneyTotalConverted;
+
+			pmcData.TradersInfo[myTrader._id].salesSum = saleSum;
+			traderHelper.lvlUp(myTrader._id, pmcData);
+
+		} else {
+			// Need to create that trade data for the trader in the profile
+
+			Logger.info(`PAutoSell: Creating Trader Data for ${myTrader.nickname} since it does not exist`)
+			let newTraderData: Record<string, TraderInfo> = {
+				[myTrader._id]: {
+					salesSum: 0,
+					standing: 1,
+					unlocked: true,
+					disabled: false,
+					loyaltyLevel: 1,
+					nextResupply: 0
+				} as TraderInfo
+			};
+
+			let cloneData = PAutoSell.clone(pmcData.TradersInfo);
+			cloneData[myTrader._id] = newTraderData[myTrader._id];
 			
+			//add the newTraderData to the pmcData.TradersInfo dictionary
+			pmcData.TradersInfo = cloneData;
+
+			//recursively call updateTraderSalesSum to update the trader sales sum
+			this.updateTraderSalesSum(moneyTotal, myTrader);
+		}
+	}
+	
+	getExchangeRate(currency) {
+		switch (currency) {
+			case "EUR": return 1 / 134;
+			case "USD": return 1 / 121;
+			default: return 1;
+		}
+	}
+
+	static addMoneyToInventory(items, currency, moneyTotal, firstslotId, firstItemLocation, firstContainerId, itemsModList) {
+		let itemtpl;
+		let total;
+		let exchangeRate;
+	
 		switch (currency) {
 			case "roubles":
 				exchangeRate = 1;
 				moneyTotalExchanged = moneyTotal * exchangeRate;
-
 				itemtpl = "5449016a4bdc2d6f028b456f";
-				PAutoSell.addItemToPlayerInventory(items, itemtpl, firstItemLocation, firstslotId, firstContainerId, moneyTotalExchanged, itemsModList);
 				break;
-
+	
 			case "dollars":
-				exchangeRate = 1/121;  //1 dollar = 121 roubles
+				exchangeRate = 1 / 121;
 				moneyTotalExchanged = Math.floor(moneyTotal * exchangeRate);
-
 				itemtpl = "5696686a4bdc2da3298b456a";
-				PAutoSell.addItemToPlayerInventory(items, itemtpl, firstItemLocation, firstslotId, firstContainerId, moneyTotalExchanged, itemsModList);
 				break;
-
+	
 			case "euros":
-				exchangeRate = 1/134;  //1 Euro = 134 roubles
+				exchangeRate = 1 / 134;
 				moneyTotalExchanged = Math.floor(moneyTotal * exchangeRate);
-
 				itemtpl = "569668774bdc2da2298b4568";
-				PAutoSell.addItemToPlayerInventory(items, itemtpl, firstItemLocation, firstslotId, firstContainerId, moneyTotalExchanged, itemsModList);
 				break;
-				
-			case "default":
+	
+			default:
 				exchangeRate = 1;
 				moneyTotalExchanged = moneyTotal * exchangeRate;
-
 				itemtpl = "5449016a4bdc2d6f028b456f";
-				PAutoSell.addItemToPlayerInventory(items, itemtpl, firstItemLocation, firstslotId, firstContainerId, moneyTotalExchanged, itemsModList);
 				break;
 		}
 	
+		PAutoSell.addItemToPlayerInventory(items, itemtpl, firstItemLocation, firstslotId, firstContainerId, moneyTotalExchanged, itemsModList);
 	}
-
+	
+	
 	static getItemName(itemtpl: string) 
 	{
 		//return localeService.getLocaleDb().templates.items[itemtpl].Name;  //this is the old way of getting the name
 		return localeService.getLocaleDb()[`${itemtpl} Name`];  		//this is the new way of getting the name
 	}
 
-	static getPrice(itemTpl: string, items, item, sessionId, actualElement): number
+	static getPrice(itemTpl: string, items: Item[], item: Item, sessionId: string, traderId: string): number 
 	{
 		let price: number = 0;
 
 		//check if config.Containers.Trader[actualElement] has a value that is not null, undefined or ""
-		if (config.Containers.Trader[actualElement] != null && config.Containers.Trader[actualElement] != undefined && config.Containers.Trader[actualElement] != "") 
+		if (traderId != null && traderId != undefined && traderId != "") 
 		{
-			try
-			{
+			try {
 				let childIds = itemHelper.findAndReturnChildrenByItems(items, item._id);
-
-				let trader = traderHelper.getTrader(traderKey[config.Containers.Trader[actualElement].toLowerCase()], sessionId);
-				Logger.info(`PAutoSell: Trader Found for Container: ${trader.nickname}`);
-
-				//price = traderHelper.getRawItemPrice(pmcData, item);
-				//Logger.info(`PAutoSell: Package price for item(s): ${PAutoSell.getItemName(item._tpl)} is ${price}`);
-				
+				let trader = traderHelper.getTrader(traderId, sessionId);
+	
+			//price = traderHelper.getRawItemPrice(pmcData, item);
+			//Logger.info(`PAutoSell: Package price for item(s): ${PAutoSell.getItemName(item._tpl)} is ${price}`);
+			
 				for (let i = 0; i < childIds.length; i++) {
 					let childId = childIds[i];
 					let childItem = items.find(x => x._id === childId);
@@ -396,46 +388,25 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 					else{
 						Logger.info(`PAutoSell: Trader Price for child item(s): ${PAutoSell.getItemName(childItem._tpl)} is ${childPrice}`);
 					}
-
+					
 					price += childPrice;
 				}
 					
 			}
-			catch(e){
+			catch(e)
+			{
 				Logger.error(`PAutoSell: Error getting price for item: ${itemTpl}`);
-				Logger.error(e);
 			}
-
 		}
-		else {
-				try{
-					//I think findandreturnchildren includes the original parent item as well.. wierd.
-					//price = ragfairPriceService.getFleaPriceForItem(itemTpl);
-					//Logger.info(`PAutoSell: Price for item: ${PAutoSell.getItemName(itemTpl)} is ${price}`);
-		
-					let childIds = itemHelper.findAndReturnChildrenByItems(items, item._id);
-		
-					//navigate through childIds and sum the price of each item to current price
-					for (let i = 0; i < childIds.length; i++) {
-						let childId = childIds[i];
-						let childItem = items.find(x => x._id === childId);
-						let childPrice = ragfairPriceService.getFleaPriceForItem(childItem._tpl);
-						price += childPrice;
-						Logger.info(`PAutoSell: RagFair Price for child item(s): ${PAutoSell.getItemName(childItem._tpl)} is ${childPrice}`);
-					}
-						
-				}
-				catch(e){
-					Logger.error(`PAutoSell: Error getting price for item: ${itemTpl}`);
-					Logger.error(e);
-				}
-			}	
+		else 
+		{
+					Logger.error(`PAutoSell: Error getting price as no trader for item: ${itemTpl}`);
+		}
 
 		return price;
-
 	}
 
-	static addItemToPlayerInventory(items: Item[], itemtpl, firstItemLocation, firstslotId, firstContainerId, total, itemsModList) 
+	static addItemToPlayerInventory(items: Item[], itemtpl: string, firstItemLocation: number | Location, firstslotId: string, firstContainerId: string, total: number, itemsModList: Item[]) 
 	{
 		Logger.info(`PAutoSell: Adding Item to Player Inventory: ${PAutoSell.getItemName(itemtpl)} with money count of ${total}`);
 		let newItem: Item;
@@ -467,7 +438,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 
 	}
 
-	static removeItemFromPlayerInventory(pmcInventory: Item[], item: Item, itemsModList) {
+	static removeItemFromPlayerInventory(pmcInventory: Item[], item: Item, itemsModList: Item[]) {
 		
 		// search player pmcInventory and splice the given item
 		
@@ -486,7 +457,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 				}
 				
 				
-				const recursiveSplice = (childIds, itemsModList) => {
+				const recursiveSplice = (childIds: string[], itemsModList: Item[]) => {
 					if (childIds.length === 0) return;
 				  
 					let childId = childIds.shift();
@@ -509,16 +480,6 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 	
 	}
 	
-
-	static serialize(data: { err: number; errmsg: any; data: any; }, prettify = false) {
-		if (prettify) {
-			return JSON.stringify(data, null, "\t");
-		}
-		else {
-			return JSON.stringify(data);
-		}
-	}
-
 	static clone(data: any) {
 		return JSON.parse(JSON.stringify(data));
 	}
@@ -526,3 +487,13 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 }
 
 module.exports = { mod: new PAutoSell() }
+
+interface Config {
+    PriceMultiplier: number;
+    Containers: {
+        Labels: string[];
+        Currency: string[];
+    };
+    RemoveContainerRestriction: boolean;
+    IgnoreFollowingItemTPLInContainers: string[];
+}

@@ -1,0 +1,16 @@
+{
+	//Set to false if you do not want the backup profile to run
+	"Enabled": false,
+
+	"BackupSavedLog": true,
+	"MaximumBackupDeleteLog": true,
+	"MaximumBackupPerProfile": 50,
+
+	//this is where it sets the backup to run.  Self explanatory.
+	"AutoBackup":
+	{
+		"OnGameStart": true,
+		"OnRaidStart": true,
+		"OnRaidEnd": true
+	}
+}

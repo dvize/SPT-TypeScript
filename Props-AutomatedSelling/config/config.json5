@@ -1,0 +1,23 @@
+{
+    //price multiplier for all items.  1.0 is default.  0.5 is half price, 2.0 is double price.
+    PriceMultiplier: 1.0,
+  
+    Containers: {
+      //Name these labels to what your tagged containers in-game are. The first custom label (case roubles) uses the first listed currency (roubles)
+      //Change this as needed to match your containers.  You can add as many as you want.
+      Labels: ['case roubles', 'case euros', 'case dollars'],
+  
+      //Use only euros, roubles, dollars (exact letters) in the order you want the labeled containers to return money.. eg. dollarStuff container returns items in dollars.
+      Currency: ['roubles', 'euros', 'dollars'],
+    },
+  
+    //True if you don't want regular container restrictions",
+    RemoveContainerRestriction: true,
+  
+    //You can add item ids here from the website https://db.sp-tarkov.com/search/ if you want to ignore selling them.
+    IgnoreFollowingItemTPLInContainers: [
+      '5449016a4bdc2d6f028b456f', //roubles, so it doesn't sell your money again duh
+      '5696686a4bdc2da3298b456a', //dollars
+      '569668774bdc2da2298b4568', //euros
+    ],
+  }

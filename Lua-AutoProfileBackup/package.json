@@ -1,26 +1,30 @@
 {
-	"name": "AutoProfileBackup",
-	"author": "Lua",
-	"version": "1.2.0",
-	"akiVersion": ">= 3.2.5 < 4.0.0",
-	"license": "CC BY-NC-SA 4.0",
-	"main": "src/mod.js",
+    "name": "AutoProfileBackup",
+    "version": "1.3.0",
+    "main": "src/mod.js",
+    "license": "CC BY-NC-SA 4.0",
+    "author": "Lua",
+    "akiVersion": "~3.7",
+	"loadBefore": [],
+	"loadAfter": [],
+	"incompatibilities": [],
+	"contributors": [],
     "scripts": {
-		"setup": "npm i",
-		"build": "node ./packageBuild.ts"
-	},
-    "devDependencies": {
-        "@types/node": "16.18.10",
-		"@typescript-eslint/eslint-plugin": "5.46.1",
-		"@typescript-eslint/parser": "5.46.1",
-        "copyfiles": "2.4.1",
-        "eslint": "8.30.0",
-        "tsyringe": "4.7.0",
-        "typescript": "4.9.4",
-        "bestzip": "2.2.1"
+        "setup": "npm i",
+        "build": "node ./build.mjs",
+        "buildinfo": "node ./build.mjs --verbose"
     },
-	"dependencies": {
-		"i18n": "^0.15.1",
-		"path": "^0.12.7"
-  }
+    "devDependencies": {
+        "@types/node": "18.18.4",
+        "@typescript-eslint/eslint-plugin": "6.7.5",
+        "@typescript-eslint/parser": "6.7.5",
+        "archiver": "^6.0",
+        "eslint": "8.51.0",
+        "fs-extra": "^11.1",
+        "ignore": "^5.2",
+        "os": "^0.1",
+        "tsyringe": "4.8.0",
+        "typescript": "5.2.2",
+        "winston": "3.11.0"
+    }
 }
