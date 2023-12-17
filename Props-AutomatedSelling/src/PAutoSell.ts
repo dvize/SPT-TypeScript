@@ -48,6 +48,7 @@ let actualElement: number;
 let jsonUtil: JsonUtil;
 let traderId: string;
 let randomUtil: RandomUtil;
+let firstItemLocation: number | Location;
 
 const modName = "PAutoSell";
 let modFolder: string;
@@ -179,7 +180,12 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 			for (const item of items) {
 				if (item.parentId === container._id) {
 					const itemTpl = item._tpl.toLowerCase();
-	
+					
+					//assign firstItemLocation only if it is undefined
+					if (firstItemLocation == undefined) {
+						firstItemLocation = item.location;
+					}
+
 					if (config.IgnoreFollowingItemTPLInContainers.map(i => i.toLowerCase()).includes(itemTpl)) {
 						continue;
 					}
