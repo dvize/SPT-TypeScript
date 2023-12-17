@@ -17,11 +17,15 @@ import { TradeHelper } from '@spt-aki/helpers/TradeHelper';
 import { TraderHelper} from '@spt-aki/helpers/TraderHelper';
 import { JsonUtil } from "@spt-aki/utils/JsonUtil";
 import { RandomUtil } from "@spt-aki/utils/RandomUtil";
-import { TraderData, TraderInfo } from "@spt-aki/models/eft/common/tables/IBotBase";
+import { TraderData } from "@spt-aki/models/eft/itemEvent/IItemEventRouterBase";
+import { TraderInfo } from "@spt-aki/models/eft/common/tables/IBotBase";
 import { ITraderBase } from "@spt-aki/models/eft/common/tables/ITrader";
 import { ITrader } from '@spt-aki/models/eft/common/tables/ITrader';
-import { Info } from '../types/models/eft/common/tables/IBotBase';
-import { AddItem } from '../types/models/eft/inventory/IAddItemRequestData';
+import { Info } from '@spt-aki/models/eft/common/tables/IBotBase';
+import { AddItem } from '@spt-aki/models/eft/inventory/IAddItemRequestData';
+import { VFS } from "@spt-aki/utils/VFS";
+import { jsonc } from "jsonc";
+import path from "path";
 
 let Logger;
 let config : Config;
@@ -48,14 +52,15 @@ let randomUtil: RandomUtil;
 const modName = "PAutoSell";
 let modFolder: string;
 
+
 let traderKey =
 {
 	"mechanic" : "5a7c2eca46aef81a7ca2145d",
 	"ragman" : "5ac3b934156ae10c4430e83c",
 	"jaeger" : "5c0647fdd443bc2504c2d371",
 	"prapor" : "54cb50c76803fa8b248b4571",
+	//"fence" : "579dc571d53a0658a154fbec",
 	"therapist" : "54cb57776803fa99248b456e",
-	"fence" : "579dc571d53a0658a154fbec",
 	"lighthousekeeper" : "638f541a29ffd1183d187f57",
 	"peacekeeper" : "5935c25fb3acc3127c3d8cd9",
 	"skier" : "58330581ace78e27b8b10cee"
@@ -65,6 +70,9 @@ let traderSellingTable : Record<string, number>;
 
 
 class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
+
+	private modConfig: any;
+    private vfs: VFS;
 
 	preAkiLoad(container: DependencyContainer): void {
 		Logger = container.resolve("WinstonLogger");
@@ -105,10 +113,10 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 		
 		ragfairPriceService = container.resolve("RagfairPriceService");
 		jsonUtil = container.resolve("JsonUtil");
-		const fs = require("fs");
-		const configPath = `${modFolder}/config/config.json5`;
-		const jsonString = fs.readFileSync(configPath, "utf8");
-		config = jsonUtil.deserializeJson5(jsonString, configPath);
+
+		 // Get VFS to read in configs
+		 this.vfs = container.resolve<VFS>("VFS");
+		config = jsonc.parse(this.vfs.readFile(path.resolve(__dirname, "../config/config.jsonc")));
 		Logger.info('PAutoSell: SetupInitialValues');
 		profileHelper = container.resolve("ProfileHelper");
 		hashUtil = container.resolve("HashUtil");
@@ -153,13 +161,13 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 			"5c0647fdd443bc2504c2d371" : 0,
 			"54cb50c76803fa8b248b4571" : 0,
 			"54cb57776803fa99248b456e" : 0,
-			"579dc571d53a0658a154fbec" : 0,
+			//"579dc571d53a0658a154fbec" : 0,
 			"638f541a29ffd1183d187f57" : 0,
 			"5935c25fb3acc3127c3d8cd9" : 0,
 			"58330581ace78e27b8b10cee" : 0,
 		};
 
-		const pmcData = profileHelper.getPmcProfile(sessionId);
+		pmcData = profileHelper.getPmcProfile(sessionId);
 		const items = pmcData.Inventory.items;
 		const itemsModList = PAutoSell.clone(items);
 	
@@ -276,18 +284,10 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 	
 	updateTraderSalesSum(moneyTotal, myTrader : ITraderBase) {
 		// Check if pmcData, tradersinfo, and the specific trader exists
-		if (pmcData.TradersInfo[myTrader._id]) {
-			const newExchangeRate = this.getExchangeRate(myTrader.currency);
-			let moneyTotalConverted = Math.floor(moneyTotal * newExchangeRate);
 
-			const saleSum = pmcData.TradersInfo[myTrader._id].salesSum + moneyTotalConverted;
-
-			pmcData.TradersInfo[myTrader._id].salesSum = saleSum;
-			traderHelper.lvlUp(myTrader._id, pmcData);
-
-		} else {
-			// Need to create that trade data for the trader in the profile
-
+		//if pmcData.TradersInfo[myTrader._id] is undefined then create trade data first
+		if (pmcData.TradersInfo[myTrader._id] == undefined || pmcData.TradersInfo[myTrader._id] == null) 
+		{
 			Logger.info(`PAutoSell: Creating Trader Data for ${myTrader.nickname} since it does not exist`)
 			let newTraderData: Record<string, TraderInfo> = {
 				[myTrader._id]: {
@@ -308,7 +308,19 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod  {
 
 			//recursively call updateTraderSalesSum to update the trader sales sum
 			this.updateTraderSalesSum(moneyTotal, myTrader);
+			return;
 		}
+
+		if (pmcData.TradersInfo[myTrader._id]) {
+			const newExchangeRate = this.getExchangeRate(myTrader.currency);
+			let moneyTotalConverted = Math.floor(moneyTotal * newExchangeRate);
+
+			const saleSum = pmcData.TradersInfo[myTrader._id].salesSum + moneyTotalConverted;
+
+			pmcData.TradersInfo[myTrader._id].salesSum = saleSum;
+			traderHelper.lvlUp(myTrader._id, pmcData);
+
+		} 
 	}
 	
 	getExchangeRate(currency) {
