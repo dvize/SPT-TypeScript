@@ -1,25 +1,27 @@
-import fs from "fs";
-import { DependencyContainer } from "tsyringe";
-import { IPreAkiLoadMod } from "@spt-aki/models/external/IPreAkiLoadMod";
-import { IPostDBLoadMod } from "@spt-aki/models/external/IPostDBLoadMod";
-import { IPostAkiLoadMod } from "@spt-aki/models/external/IPostAkiLoadMod";
-import { SaveServer } from "@spt-aki/servers/SaveServer";
-import { ILogger } from "@spt-aki/models/spt/utils/ILogger";
+import fs from "node:fs";
+import type { DependencyContainer } from "tsyringe";
+import type { IPreAkiLoadMod } from "@spt-aki/models/external/IPreAkiLoadMod";
+import type { IPostDBLoadMod } from "@spt-aki/models/external/IPostDBLoadMod";
+import type { IPostAkiLoadMod } from "@spt-aki/models/external/IPostAkiLoadMod";
+import type { SaveServer } from "@spt-aki/servers/SaveServer";
+import type { ILogger } from "@spt-aki/models/spt/utils/ILogger";
 import { LogBackgroundColor } from "@spt-aki/models/spt/logging/LogBackgroundColor";
 import { LogTextColor } from "@spt-aki/models/spt/logging/LogTextColor";
-import { StaticRouterModService } from "@spt-aki/services/mod/staticRouter/StaticRouterModService";
-import { VFS } from "@spt-aki/utils/VFS";
+import type { StaticRouterModService } from "@spt-aki/services/mod/staticRouter/StaticRouterModService";
+import type { VFS } from "@spt-aki/utils/VFS";
+import type { modConfig, AutoBackup } from "./interface";
 
 import { jsonc } from "jsonc";
-import path from "path";
-import { Watermark } from "@spt-aki/utils/Watermark";
+
+import path from "node:path";
+import type { Watermark } from "@spt-aki/utils/Watermark";
 
 import pkg from "../package.json";
 
 class Mod implements IPreAkiLoadMod, IPostDBLoadMod, IPostAkiLoadMod 
 {
     readonly modName = `${pkg.author}-${pkg.name}`;
-    private modConfig: any;
+    private modConfig: modConfig;
     private logger: ILogger;
     private vfs: VFS;
     protected profilePath: string;
@@ -48,10 +50,10 @@ class Mod implements IPreAkiLoadMod, IPostDBLoadMod, IPostAkiLoadMod
                         url: "/client/game/start",
                         action: (
                             url: string,
-                            info: any,
+                            info: string,
                             sessionID: string,
                             output: string
-                        ): any => 
+                        ): string => 
                         {
                             this.onEvent("onGameStart", sessionID);
                             return output;
@@ -71,10 +73,10 @@ class Mod implements IPreAkiLoadMod, IPostDBLoadMod, IPostAkiLoadMod
                         url: "/client/raid/configuration",
                         action: (
                             url: string,
-                            info: any,
+                            info: string,
                             sessionID: string,
                             output: string
-                        ): any => 
+                        ): string => 
                         {
                             this.onEvent("onRaidStart", sessionID);
                             return output;
@@ -94,10 +96,10 @@ class Mod implements IPreAkiLoadMod, IPostDBLoadMod, IPostAkiLoadMod
                         url: "/raid/profile/save",
                         action: (
                             url: string,
-                            info: any,
+                            info: string,
                             sessionID: string,
                             output: string
-                        ): any => 
+                        ): string => 
                         {
                             this.onEvent("onRaidEnd", sessionID);
                             return output;
@@ -166,10 +168,7 @@ class Mod implements IPreAkiLoadMod, IPostDBLoadMod, IPostAkiLoadMod
         {
             const profileList = this.vfs
                 .getFilesOfType(sessionPath, "json")
-                .sort(function (a, b) 
-                {
-                    return fs.statSync(a).ctimeMs - fs.statSync(b).ctimeMs;
-                });
+                .sort((a, b) => fs.statSync(a).ctimeMs - fs.statSync(b).ctimeMs);
             let delCount = 0;
             let fileName = "";
 
