@@ -2,9 +2,10 @@
   "name": "DoorBreacher",
   "version": "1.1.2",
   "main": "src/mod.js",
+  "isBundleMod": true,
   "license": "CC BY-NC-SA 4.0",
   "author": "Tron, Props",
-  "akiVersion": "3.7.*",
+  "akiVersion": "3.8.*",
   "scripts": {
         "setup": "npm i",
         "build": "node ./build.mjs",
