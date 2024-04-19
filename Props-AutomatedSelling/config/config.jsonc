@@ -1,14 +1,15 @@
 {
+    //Keep items if they are not sold to traders?  Otherwise we will just give you the handbook value
+    "KeepUnsoldItems": false,
+
     //price multiplier for all items.  1.0 is default.  0.5 is half price, 2.0 is double price.
     "PriceMultiplier": 1.0,
   
     "Containers": {
-      //Name these labels to what your tagged containers in-game are. The first custom label (case roubles) uses the first listed currency (roubles)
+      //Name these labels to what your tagged containers in-game are. The first custom label (junk items) means we will consider an item with the tag "junk items" as a container.
       //Change this as needed to match your containers.  You can add as many as you want.
-      "Labels": ["case roubles", "case euros", "case dollars"],
-  
-      //Use only euros, roubles, dollars (exact letters) in the order you want the labeled containers to return money.. eg. dollarStuff container returns items in dollars.
-      "Currency": ["roubles", "euros", "dollars"]
+      "Labels": ["junk items", "dog tags", "shit ammo"]
+
     },
   
     //True if you don't want regular container restrictions",
