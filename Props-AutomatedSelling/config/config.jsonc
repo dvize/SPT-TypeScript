@@ -1,7 +1,4 @@
 {
-    //Keep items if they are not sold to traders?  Otherwise we will just give you the handbook value
-    "KeepUnsoldItems": false,
-
     //price multiplier for all items.  1.0 is default.  0.5 is half price, 2.0 is double price.
     "PriceMultiplier": 1.0,
   

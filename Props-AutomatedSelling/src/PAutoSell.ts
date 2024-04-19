@@ -29,7 +29,6 @@ import type { TProfileChanges } from "@spt-aki/models/eft/itemEvent/IItemEventRo
 
 
 interface Config {
-    KeepUnsoldItems: boolean;
     PriceMultiplier: number;
     Containers: ContainersConfig;
     RemoveContainerRestriction: boolean;
@@ -196,13 +195,8 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 						this.sellItem(item, traderId, sessionID, allPlayerItems);
 					}
 					else {
-						if (!this.modConfig.KeepUnsoldItems) {
-							this.logger.info(`PAutoSell: No trader found for item: ${this.getItemName(item._tpl)}, Selling for handbook value`);
-							this.sellItemForHandbookValue(item, allPlayerItems);
-						}
-						else {
-							this.logger.info(`PAutoSell: Keeping unsold item: ${this.getItemName(item._tpl)}`);
-						}
+						this.logger.info(`PAutoSell: No trader found for item: ${this.getItemName(item._tpl)}, Selling for handbook value`);
+						this.sellItemForHandbookValue(item, allPlayerItems);
 					}
 				}
 			});
