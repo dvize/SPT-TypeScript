@@ -1,10 +1,10 @@
-import { PreAkiModLoader } from "@spt-aki/loaders/PreAkiModLoader";
-import { Item } from "@spt-aki/models/eft/common/tables/IItem";
-import { ITraderBase, ITraderAssort } from "@spt-aki/models/eft/common/tables/ITrader";
-import { ITraderConfig, UpdateTime } from "@spt-aki/models/spt/config/ITraderConfig";
-import { IDatabaseTables } from "@spt-aki/models/spt/server/IDatabaseTables";
-import { ImageRouter } from "@spt-aki/routers/ImageRouter";
-import { JsonUtil } from "@spt-aki/utils/JsonUtil";
+import type { PreAkiModLoader } from "@spt-aki/loaders/PreAkiModLoader";
+import type { Item } from "@spt-aki/models/eft/common/tables/IItem";
+import type { ITraderBase, ITraderAssort } from "@spt-aki/models/eft/common/tables/ITrader";
+import type { ITraderConfig, UpdateTime } from "@spt-aki/models/spt/config/ITraderConfig";
+import type { IDatabaseTables } from "@spt-aki/models/spt/server/IDatabaseTables";
+import type { ImageRouter } from "@spt-aki/routers/ImageRouter";
+import type { JsonUtil } from "@spt-aki/utils/JsonUtil";
 
 export class TraderHelper
 {
@@ -15,6 +15,8 @@ export class TraderHelper
      * @param imageRouter image router class - used to register the trader image path so we see their image on trader page
      * @param traderImageName Filename of the trader icon to use
      */
+
+     //biome-ignore lint/suspicious/noExplicitAny: baseJson comes from base.json, so no type
      public registerProfileImage(baseJson: any, modName: string, preAkiModLoader: PreAkiModLoader, imageRouter: ImageRouter, traderImageName: string): void
      {
          // Reference the mod "res" folder
@@ -28,14 +30,20 @@ export class TraderHelper
      * Add record to trader config to set the refresh time of trader in seconds (default is 60 minutes)
      * @param traderConfig trader config to add our trader to
      * @param baseJson json file for trader (db/base.json)
-     * @param refreshTimeSeconds How many sections between trader stock refresh
+     * @param refreshTimeSecondsMin How many seconds between trader stock refresh min time
+     * @param refreshTimeSecondsMax How many seconds between trader stock refresh max time
      */
-    public setTraderUpdateTime(traderConfig: ITraderConfig, baseJson: any, refreshTimeSeconds: number): void
+
+     //biome-ignore lint/suspicious/noExplicitAny: baseJson comes from base.json, so no type
+    public setTraderUpdateTime(traderConfig: ITraderConfig, baseJson: any, refreshTimeSecondsMin: number, refreshTimeSecondsMax: number): void
     {
         // Add refresh time in seconds to config
         const traderRefreshRecord: UpdateTime = {
             traderId: baseJson._id,
-            seconds: refreshTimeSeconds };
+            seconds: {
+                min: refreshTimeSecondsMin,
+                max: refreshTimeSecondsMax
+            } };
 
         traderConfig.updateTime.push(traderRefreshRecord);
     }
@@ -46,7 +54,8 @@ export class TraderHelper
      * @param tables database
      * @param jsonUtil json utility class
      */
-    // rome-ignore lint/suspicious/noExplicitAny: traderDetailsToAdd comes from base.json, so no type
+
+     //biome-ignore lint/suspicious/noExplicitAny: traderDetailsToAdd comes from base.json, so no type
     public addTraderToDb(traderDetailsToAdd: any, tables: IDatabaseTables, jsonUtil: JsonUtil): void
     {
         // Add trader to trader table, key is the traders id
@@ -164,6 +173,8 @@ export class TraderHelper
      * @param location Location of trader (e.g. "Here in the cat shop")
      * @param description Description of trader
      */
+
+    //biome-ignore lint/suspicious/noExplicitAny: baseJson comes from base.json, so no type
     public addTraderToLocales(baseJson: any, tables: IDatabaseTables, fullName: string, firstName: string, nickName: string, location: string, description: string)
     {
         // For each language, add locale for the new trader

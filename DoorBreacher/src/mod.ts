@@ -1,20 +1,25 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-import { DependencyContainer } from "tsyringe";
-import { IPostDBLoadMod } from "@spt-aki/models/external/IPostDBLoadMod";
-import { CustomItemService } from "@spt-aki/services/mod/CustomItemService";
-import {
+import type { DependencyContainer } from "tsyringe";
+import type { IPostDBLoadMod } from "@spt-aki/models/external/IPostDBLoadMod";
+import type { CustomItemService } from "@spt-aki/services/mod/CustomItemService";
+import { ITemplateItem, Props } from "@spt-aki/models/eft/common/tables/ITemplateItem";
+import type {
   LocaleDetails,
   NewItemDetails,
 } from "@spt-aki/models/spt/mod/NewItemDetails";
-import { IPostAkiLoadMod } from "@spt-aki/models/external/IPostAkiLoadMod";
-import { ILogger } from "@spt-aki/models/spt/utils/ILogger";
-import { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
-import { HashUtil } from "@spt-aki/utils/HashUtil";
-import { ITemplateItem } from "../types/models/eft/common/tables/ITemplateItem";
+import type { IPostAkiLoadMod } from "@spt-aki/models/external/IPostAkiLoadMod";
+import type { ILogger } from "@spt-aki/models/spt/utils/ILogger";
+import type { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
+import type { HashUtil } from "@spt-aki/utils/HashUtil";
 import { Money } from "@spt-aki/models/enums/Money";
 import { TraderHelper } from "./traderHelpers";
 import { FluentAssortConstructor } from "./fluentTraderAssortCreator";
-import { ItemsJson } from "./items.type";
+import type { ItemsJson} from './items.type';
+import type { VFS } from "@spt-aki/utils/VFS";
+
+import { jsonc } from "jsonc";
+import path from "path";
+
 
 let logger: ILogger;
 
@@ -24,6 +29,7 @@ class Mod implements IPostDBLoadMod, IPostAkiLoadMod {
   private traderHelper: TraderHelper;
   private fluentTraderAssortHelper: FluentAssortConstructor;
   private traderID: string;
+  private itemsJson: ItemsJson;
 
   public postDBLoad(container: DependencyContainer): void {
     // Resolve containers
@@ -38,18 +44,23 @@ class Mod implements IPostDBLoadMod, IPostAkiLoadMod {
       logger
     );
 
-    //read the items.json file with type ItemsJson
-    const itemsjson = require("../database/templates/items.json") as ItemsJson;
+    // Get VFS to read in configs
+    const vfs = container.resolve<VFS>("VFS");
+    const itemsJsonPath = path.resolve(__dirname, '../database/templates/items.jsonc');
+
+    // Read the items.json file with type ItemsJson
+    this.itemsJson = jsonc.parse(vfs.readFile(itemsJsonPath)) as ItemsJson;
 
     //set trader id we want to add assort items to
     this.traderID = "5a7c2eca46aef81a7ca2145d"; //existing trader Mechanic
 
-    setupItems(itemsjson, CustomItem);
+    setupItems(this.itemsJson, CustomItem);
     handleAssorts(
       CustomItem,
       this.db,
       this.fluentTraderAssortHelper,
-      this.traderID
+      this.traderID,
+      this.itemsJson
     );
   }
 
@@ -58,7 +69,7 @@ class Mod implements IPostDBLoadMod, IPostAkiLoadMod {
     // logger.info("DoorBreacher: Added the following items:");
     // logger.info(item["doorbreacher"]._props);
     // logger.info(item["doorbreacherbox"]._props);
-    ModifyAmmoPropForWeapons(this.db);
+    ModifyAmmoPropForWeapons(this.db, this.itemsJson);
     logger.info("DoorBreacher: Finished Modifying Ammo Properties for Weapons");
   }
 }
@@ -109,7 +120,7 @@ function setupItems(itemsjson: ItemsJson, CustomItem: CustomItemService) {
   CustomItem.createItem(DoorBreacherBox);
 }
 
-function ModifyAmmoPropForWeapons(db: DatabaseServer) {
+function ModifyAmmoPropForWeapons(db: DatabaseServer, itemsjson: ItemsJson) {
   const WeaponProperties = [
     { name: "patron_in_weapon", index: 0 },
     { name: "patron_in_weapon_000", index: 1 },
@@ -144,7 +155,7 @@ function ModifyAmmoPropForWeapons(db: DatabaseServer) {
             `DoorBreacher added to: ${item._name} in chamber: ${chamberName}`
           );
           chambers[indexInChambers]._props.filters[0].Filter.push(
-            "doorbreacher"
+            itemsjson.doorbreacher._id.toString()
           );
         }
       }
@@ -157,7 +168,7 @@ function ModifyAmmoPropForWeapons(db: DatabaseServer) {
       filterIncludes12G(item._props.Cartridges[0]._props.filters[0].Filter)
     ) {
       logger.info(`DoorBreacher added to: ${item._name} in Cartridges`);
-      item._props.Cartridges[0]._props.filters[0].Filter.push("doorbreacher");
+      item._props.Cartridges[0]._props.filters[0].Filter.push(itemsjson.doorbreacher._id.toString());
     }
   }
 }
@@ -166,32 +177,33 @@ function handleAssorts(
   CustomItem: CustomItemService,
   db: DatabaseServer,
   assortHelper: FluentAssortConstructor,
-  traderID: string
+  traderID: string,
+  itemsjson: ItemsJson
 ) {
   const targetTrader = db.getTables().traders[traderID];
 
   //create assort for doorbreacher. no money, add barter only later
   assortHelper
-    .createSingleAssortItem("doorbreacher")
+    .createSingleAssortItem(itemsjson.doorbreacher._id)
     .addStackCount(100)
     .addUnlimitedStackCount()
     .addLoyaltyLevel(1)
     .addMoneyCost(Money.ROUBLES, 10000)
     .export(targetTrader);
 
-  //create assort for doorbreacherbox
-  assortHelper
-    .createSingleAssortItem("doorbreacherbox")
+  //create assort for doorbreacherbox - disable because it keeps selling 0 /5 rounds
+  /* assortHelper
+    .createSingleAssortItem(itemsjson.doorbreacherbox._id)
     .addStackCount(100)
     .addUnlimitedStackCount()
     .addLoyaltyLevel(1)
     .addMoneyCost(Money.ROUBLES, 50000)
-    .export(targetTrader);
+    .export(targetTrader); */
 
   //create barter item for doorbreacher
   const electricWire = "5c06779c86f77426e00dd782";
   assortHelper
-    .createSingleAssortItem("doorbreacher")
+    .createSingleAssortItem(itemsjson.doorbreacher._id)
     .addStackCount(100)
     .addUnlimitedStackCount()
     .addBarterCost(electricWire, 1)
