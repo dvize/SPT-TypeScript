@@ -6,16 +6,11 @@ import type { StaticRouterModService } from "@spt-aki/services/mod/staticRouter/
 import type { ProfileHelper } from "@spt-aki/helpers/ProfileHelper";
 import type { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
 import type { HashUtil } from "@spt-aki/utils/HashUtil";
-import type { RagfairPriceService } from "@spt-aki/services/RagfairPriceService";
 import type { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
 import type { Item, Location, Upd } from '@spt-aki/models/eft/common/tables/IItem';
-import type { SaveServer } from '@spt-aki/servers/SaveServer';
-import type { ItemHelper } from "@spt-aki/helpers/ItemHelper";
 import type { ITemplateItem } from '@spt-aki/models/eft/common/tables/ITemplateItem';
 import type { LocaleService } from "@spt-aki/services/LocaleService";
-import type { TradeHelper } from '@spt-aki/helpers/TradeHelper';
 import type { TraderHelper} from '@spt-aki/helpers/TraderHelper';
-import type { JsonUtil } from "@spt-aki/utils/JsonUtil";
 import type { RandomUtil } from "@spt-aki/utils/RandomUtil";
 import type { AbstractWinstonLogger } from '@spt-aki/utils/logging/AbstractWinstonLogger';
 import type { InventoryHelper } from "@spt-aki/helpers/InventoryHelper";
@@ -44,15 +39,10 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
     private logger: AbstractWinstonLogger;
     private profileHelper: ProfileHelper;
     private hashUtil: HashUtil;
-    private ragfairPriceService: RagfairPriceService;
-    private saveServer: SaveServer;
 	private localeService: LocaleService;
-    private itemHelper: ItemHelper;
 	private handbookHelper: HandbookHelper;
     private databaseServer: DatabaseServer;
-    private tradeHelper: TradeHelper;
     private traderHelper: TraderHelper;
-    private jsonUtil: JsonUtil;
 	private inventoryHelper: InventoryHelper;
     private randomUtil: RandomUtil;
     private modConfig: Config;
@@ -101,14 +91,9 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
         this.profileHelper = container.resolve<ProfileHelper>("ProfileHelper");
 		this.inventoryHelper = container.resolve<InventoryHelper>("InventoryHelper");
         this.hashUtil = container.resolve<HashUtil>("HashUtil");
-        this.ragfairPriceService = container.resolve<RagfairPriceService>("RagfairPriceService");
-        this.saveServer = container.resolve<SaveServer>("SaveServer");
-        this.itemHelper = container.resolve<ItemHelper>("ItemHelper");
 		this.handbookHelper = container.resolve<HandbookHelper>("HandbookHelper");
         this.databaseServer = container.resolve<DatabaseServer>("DatabaseServer");
-        this.tradeHelper = container.resolve<TradeHelper>("TradeHelper");
         this.traderHelper = container.resolve<TraderHelper>("TraderHelper");
-        this.jsonUtil = container.resolve<JsonUtil>("JsonUtil");
         this.randomUtil = container.resolve<RandomUtil>("RandomUtil");
         this.vfs = container.resolve<VFS>("VFS");
     }
