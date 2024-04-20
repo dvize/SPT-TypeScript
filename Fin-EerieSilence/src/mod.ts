@@ -2,81 +2,88 @@
 // copyright: Fin
 // authors: Fin, Props (updated)
 
-import { DependencyContainer } from "tsyringe";
-import { IPostDBLoadMod } from "@spt-aki/models/external/IPostDBLoadMod";
-import { ILogger } from "@spt-aki/models/spt/utils/ILogger";
-import { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
+import { inject, type DependencyContainer } from "tsyringe";
+import type { IPostDBLoadMod } from "@spt-aki/models/external/IPostDBLoadMod";
+import type { AbstractWinstonLogger } from '@spt-aki/utils/logging/AbstractWinstonLogger';
+import type { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
+import type { VFS } from "@spt-aki/utils/VFS";
+import { jsonc } from "jsonc";
+import path from "node:path";
+import type { ITemplateItem } from "@spt-aki/models/eft/common/tables/ITemplateItem";
+
+interface ModConfig {
+  distortion_Multiplier: number;
+  ambient_noise_reduction_multiplier: number;
+  maximum_helmet_deafness: string;
+  full_Stat_Control: boolean;
+  stats: Stats;
+}
+
+interface Stats {
+  CompressorTreshold: number;
+  CompressorAttack: number;
+  CompressorRelease: number;
+  CompressorGain: number;
+  CutoffFreq: number;
+  Resonance: number;
+  CompressorVolume: number;
+  DryVolume: number;
+}
 
 //Code
-class Mod implements IPostDBLoadMod {
-  private config = require("../config/config.json");
+class FESMod implements IPostDBLoadMod {
+  private modConfig: ModConfig;
+  private logger: AbstractWinstonLogger;
+  private vfs: VFS;
 
-  public postDBLoad(container: DependencyContainer): void {
-    //Get DB Server after load.
-    let databaseServer = container.resolve<DatabaseServer>("DatabaseServer");
-    const logger = container.resolve<ILogger>("WinstonLogger");
+  public async postDBLoad(container: DependencyContainer): Promise<void> {
+    this.logger = container.resolve<AbstractWinstonLogger>("WinstonLogger");
+    this.vfs = container.resolve<VFS>("VFS");
 
-    this.quieterHeadsets(databaseServer, logger);
+    this.modConfig = await this.loadConfig();
+    this.logger.info("FESMod: Config loaded successfully");
+    const databaseServer = container.resolve<DatabaseServer>("DatabaseServer");
+    this.quieterHeadsets(databaseServer);
   }
 
-  public quieterHeadsets(databaseServer, logger): void {
-    const config = require("../config/config.json");
-    var database = databaseServer.getTables();
-
-    logger.info(
-      "EerieSilence: Searching for Headphone and Deafness Related Items"
-    );
-
-    for (let itemID in database.templates.items) {
-      let item = database.templates.items[itemID];
-      let itemname = item._name;
-
-      //check if the parent is of type headphone
-      if (item._parent == "5645bcb74bdc2ded0b8b4578") {
-        if (config.full_Stat_Control) {
-          for (let stat in config.stats) {
-            item._props[stat] = config.stats[stat];
-          }
-          //logger.info(`EerieSilence: Setting full stats for ${itemname}`);
-        } else {
-          item._props.Distortion =
-            item._props.Distortion * config.distortion_Multiplier;
-          item._props.AmbientVolume =
-            item._props.AmbientVolume *
-            config.ambient_noise_reduction_multiplier;
-          //logger.info(`EerieSilence: Setting custom Distortion and AmbientVolume for ${itemname}`);
-        }
-      }
-
-      //also if they item has DeafStrength Property
-      if (
-        item._props.DeafStrength &&
-        item._parent == "5a341c4086f77401f2541505"
-      ) {
-        switch (config.maximum_helmet_deafness.toLowerCase()) {
-          case "high": {
-            item._props.DeafStrength = "High";
-            //logger.info(`EerieSilence: Setting High DeafStrength for ${itemname}`);
-            break;
-          }
-
-          case "low": {
-            item._props.DeafStrength = "Low";
-            //logger.info(`EerieSilence: Setting Low DeafStrength for ${itemname}`);
-            break;
-          }
-          case "none": {
-            item._props.DeafStrength = "None";
-            //logger.info(`EerieSilence: Setting None DeafStrength for ${itemname}`);
-            break;
-          }
-          default: {
-            break;
-          }
-        }
-      }
+  private async loadConfig(): Promise<ModConfig> {
+    const configFile = path.resolve(__dirname, "../config/config.jsonc");
+    try {
+      const configContent = await this.vfs.readFile(configFile);
+      return jsonc.parse(configContent);
+    } catch (error) {
+      this.logger.error(`FESMod: Error loading config from ${configFile}: ${error}`);
+      throw new Error('FESMod: Configuration load failed');
     }
+  }
+
+  public quieterHeadsets(databaseServer: DatabaseServer): void {
+    const database = databaseServer.getTables();
+    this.logger.info("FESMod: Processing Headphone and Deafness Related Items");
+
+    // biome-ignore lint/complexity/noForEach: <explanation>
+    Object.entries(database.templates.items).forEach(([itemID, item]: [string, ITemplateItem]) => {
+      if (item._parent === "5645bcb74bdc2ded0b8b4578") {
+        this.applyAudioSettings(item);
+      }
+      if (item._props.DeafStrength && item._parent === "5a341c4086f77401f2541505") {
+        this.applyDeafStrength(item);
+      }
+    });
+  }
+
+  private applyAudioSettings(item: ITemplateItem): void {
+    if (this.modConfig.full_Stat_Control) {
+      Object.assign(item._props, this.modConfig.stats);
+    } else {
+      item._props.Distortion *= this.modConfig.distortion_Multiplier;
+      item._props.AmbientVolume *= this.modConfig.ambient_noise_reduction_multiplier;
+    }
+  }
+
+  private applyDeafStrength(item: ITemplateItem): void {
+    item._props.DeafStrength = this.modConfig.maximum_helmet_deafness;
   }
 }
 
-module.exports = { mod: new Mod() };
+module.exports = { mod: new FESMod() };

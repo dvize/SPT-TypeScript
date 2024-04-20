@@ -1,15 +1,15 @@
 {
-	"": "Lower values reduce distortion",
+	//Lower values reduce distortion
 	"distortion_Multiplier": 0,
 	
 	
-	"": "Higher values make ambient noises quieter",
+	//Higher values make ambient noises quieter
 	"ambient_noise_reduction_multiplier": 4,
 	
-	"": "Options are 'High', 'Low', or 'None' ",
+	//Options are 'High', 'Low', or 'None'
 	"maximum_helmet_deafness": "Low",
 	
-	"": "Setting this to true will set all headsets to have these values",
+	//Setting this to true will set all headsets to have these values
 	"full_Stat_Control": false,
 	"stats":{
 		"CompressorTreshold": -31,
