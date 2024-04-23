@@ -2,11 +2,8 @@
 import type { DependencyContainer } from "tsyringe";
 import type { IPostDBLoadMod } from "@spt-aki/models/external/IPostDBLoadMod";
 import type { CustomItemService } from "@spt-aki/services/mod/CustomItemService";
-import { ITemplateItem, Props } from "@spt-aki/models/eft/common/tables/ITemplateItem";
-import type {
-  LocaleDetails,
-  NewItemDetails,
-} from "@spt-aki/models/spt/mod/NewItemDetails";
+import { type ITemplateItem, Props } from "@spt-aki/models/eft/common/tables/ITemplateItem";
+import type { LocaleDetails, NewItemDetails} from "@spt-aki/models/spt/mod/NewItemDetails";
 import type { IPostAkiLoadMod } from "@spt-aki/models/external/IPostAkiLoadMod";
 import type { ILogger } from "@spt-aki/models/spt/utils/ILogger";
 import type { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
@@ -18,10 +15,26 @@ import type { ItemsJson} from './items.type';
 import type { VFS } from "@spt-aki/utils/VFS";
 
 import { jsonc } from "jsonc";
-import path from "path";
+import path from "node:path";
 
 
 let logger: ILogger;
+
+interface Filter {
+  Filter: string[];
+}
+
+interface Chamber {
+  _name: string;
+  _props: {
+      filters: Filter[];
+  };
+}
+
+interface WeaponProperty {
+  name: string;
+  index: number;
+}
 
 class Mod implements IPostDBLoadMod, IPostAkiLoadMod {
   //declare private variable db of DatabaseServer type
@@ -66,9 +79,7 @@ class Mod implements IPostDBLoadMod, IPostAkiLoadMod {
 
   //Check if our item is in the server or not
   public postAkiLoad(container: DependencyContainer): void {
-    // logger.info("DoorBreacher: Added the following items:");
-    // logger.info(item["doorbreacher"]._props);
-    // logger.info(item["doorbreacherbox"]._props);
+
     ModifyAmmoPropForWeapons(this.db, this.itemsJson);
     logger.info("DoorBreacher: Finished Modifying Ammo Properties for Weapons");
   }
@@ -96,79 +107,85 @@ function setupItems(itemsjson: ItemsJson, CustomItem: CustomItemService) {
     locales: DoorBreacherLocale,
   };
 
-  //make locale for DoorBreacherBox
-  const DoorBreacherBoxLocale: Record<string, LocaleDetails> = {
-    en: {
-      name: "12/70 Door-Breaching 5-Round Box",
-      shortName: "Breach",
-      description:
-        "A 5-round box of 12ga door breaching shells. The door-breaching round is designed to destroy deadbolts, locks, and hinges without risking lives by ricocheting or penetrating through doors.  These frangible rounds are made of a dense sintered material which can destroy a lock or hinge and then immediately disperse.",
-    },
-  };
+  // //make locale for DoorBreacherBox
+  // const DoorBreacherBoxLocale: Record<string, LocaleDetails> = {
+  //   en: {
+  //     name: "12/70 Door-Breaching 5-Round Box",
+  //     shortName: "Breach",
+  //     description:
+  //       "A 5-round box of 12ga door breaching shells. The door-breaching round is designed to destroy deadbolts, locks, and hinges without risking lives by ricocheting or penetrating through doors.  These frangible rounds are made of a dense sintered material which can destroy a lock or hinge and then immediately disperse.",
+  //   },
+  // };
 
-  //add new custom item
-  const DoorBreacherBox: NewItemDetails = {
-    newItem: itemsjson.doorbreacherbox,
-    fleaPriceRoubles: 40000,
-    handbookPriceRoubles: 50000,
-    handbookParentId: "5b47574386f77428ca22b33c",
-    locales: DoorBreacherBoxLocale,
-  };
+  // //add new custom item
+  // const DoorBreacherBox: NewItemDetails = {
+  //   newItem: itemsjson.doorbreacherbox,
+  //   fleaPriceRoubles: 40000,
+  //   handbookPriceRoubles: 50000,
+  //   handbookParentId: "5b47574386f77428ca22b33c",
+  //   locales: DoorBreacherBoxLocale,
+  // };
 
   //create the items
   CustomItem.createItem(DoorBreacher);
-  CustomItem.createItem(DoorBreacherBox);
+  //CustomItem.createItem(DoorBreacherBox);
 }
 
-function ModifyAmmoPropForWeapons(db: DatabaseServer, itemsjson: ItemsJson) {
-  const WeaponProperties = [
-    { name: "patron_in_weapon", index: 0 },
-    { name: "patron_in_weapon_000", index: 1 },
-    { name: "patron_in_weapon_001", index: 2 },
-    { name: "Cartridges", index: 3 },
+function ModifyAmmoPropForWeapons(db: DatabaseServer, itemsJson: ItemsJson) {
+  const weaponProperties = [
+    { name: "Chambers", index: 0 },  // Handles "patron_in_weapon" and its variants
+    { name: "Cartridges", index: 1 },  // Directly under _props
   ];
 
-  const chambersExist = (item) =>
-    item._props.Chambers && item._props.Chambers.length > 0;
+  const is12GaugeAmmo = (filters) => {
+    return filters ? filters.some(filter => filter.Filter?.includes("560d5e524bdc2d25448b4571")) : false;
+  };
 
-  const filterIncludes12G = (filterArray) =>
-    filterArray.includes("560d5e524bdc2d25448b4571");
+  const addDoorBreacher = (item, filters, weaponPropName) => {
+    logger.info(`DoorBreacher added to: ${item._name} in weaponPropName: ${weaponPropName}`);
+    filters[0].Filter.push(itemsJson.doorbreacher._id.toString());
+  };
 
-  for (const item of Object.values(db.getTables().templates.items)) {
-    if (chambersExist(item)) {
-      for (const Property of WeaponProperties) {
-        const chamberName = Property.name;
-        const chambers = item._props.Chambers;
+  const processChambers = (item, weaponPropName) => {
+    const chambers = item._props[weaponPropName];
+    if (!chambers || chambers.length === 0) {
+      return;
+    }
 
-        //check if the chamber name exists in the item
-        const isModFilterExist = (Chambers) =>
-          Chambers.findIndex((chamber) => chamber._name === chamberName);
+    for (const chamber of chambers) {
+      if (!chamber._props.filters || chamber._props.filters.length === 0) {
+        return;
+      }
 
-        //check if the chamber name exists in the item and if the filter includes 12G
-        const indexInChambers = isModFilterExist(chambers);
-        if (
-          indexInChambers > -1 &&
-          filterIncludes12G(chambers[indexInChambers]._props.filters[0].Filter)
-        ) {
-          //write to console the chamber name and the item.name
-          logger.info(
-            `DoorBreacher added to: ${item._name} in chamber: ${chamberName}`
-          );
-          chambers[indexInChambers]._props.filters[0].Filter.push(
-            itemsjson.doorbreacher._id.toString()
-          );
-        }
+      if (is12GaugeAmmo(chamber._props.filters)) {
+        addDoorBreacher(item, chamber._props.filters, weaponPropName);
       }
     }
-    // check if Cartridges exist in items, it includes 12g slug already, and add doorbreacher to it
-    if (
-      //make sure there is a cartridge and its length is greater than 0 before checking the filter
-      item._props.Cartridges &&
-      item._props.Cartridges.length > 0 &&
-      filterIncludes12G(item._props.Cartridges[0]._props.filters[0].Filter)
-    ) {
-      logger.info(`DoorBreacher added to: ${item._name} in Cartridges`);
-      item._props.Cartridges[0]._props.filters[0].Filter.push(itemsjson.doorbreacher._id.toString());
+  };
+
+  const processCartridges = (item, weaponPropName) => {
+    const cartridges = item._props[weaponPropName];
+    if (!cartridges || cartridges.length === 0) {
+      return;
+    }
+
+    if (!cartridges[0]._props.filters || cartridges[0]._props.filters.length === 0) {
+      return;
+    }
+
+    if (is12GaugeAmmo(cartridges[0]._props.filters)) {
+      addDoorBreacher(item, cartridges[0]._props.filters, weaponPropName);
+    }
+  };
+
+  // Iterate over all items
+  for (const item of Object.values(db.getTables().templates.items)) {
+    for (const prop of weaponProperties) {
+      if (prop.name === "Chambers" && item._props[prop.name]) {
+        processChambers(item, prop.name);
+      } else if (prop.name === "Cartridges" && item._props[prop.name]) {
+        processCartridges(item, prop.name);
+      }
     }
   }
 }
