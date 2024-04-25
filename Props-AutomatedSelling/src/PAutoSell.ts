@@ -6,11 +6,16 @@ import type { StaticRouterModService } from "@spt-aki/services/mod/staticRouter/
 import type { ProfileHelper } from "@spt-aki/helpers/ProfileHelper";
 import type { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
 import type { HashUtil } from "@spt-aki/utils/HashUtil";
+import type { RagfairPriceService } from "@spt-aki/services/RagfairPriceService";
 import type { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
 import type { Item, Location, Upd } from '@spt-aki/models/eft/common/tables/IItem';
+import type { SaveServer } from '@spt-aki/servers/SaveServer';
+import type { ItemHelper } from "@spt-aki/helpers/ItemHelper";
 import type { ITemplateItem } from '@spt-aki/models/eft/common/tables/ITemplateItem';
 import type { LocaleService } from "@spt-aki/services/LocaleService";
+import type { TradeHelper } from '@spt-aki/helpers/TradeHelper';
 import type { TraderHelper} from '@spt-aki/helpers/TraderHelper';
+import type { JsonUtil } from "@spt-aki/utils/JsonUtil";
 import type { RandomUtil } from "@spt-aki/utils/RandomUtil";
 import type { AbstractWinstonLogger } from '@spt-aki/utils/logging/AbstractWinstonLogger';
 import type { InventoryHelper } from "@spt-aki/helpers/InventoryHelper";
@@ -24,6 +29,7 @@ import type { TProfileChanges } from "@spt-aki/models/eft/itemEvent/IItemEventRo
 
 
 interface Config {
+    KeepUnsoldItems: boolean;
     PriceMultiplier: number;
     Containers: ContainersConfig;
     RemoveContainerRestriction: boolean;
@@ -39,10 +45,15 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
     private logger: AbstractWinstonLogger;
     private profileHelper: ProfileHelper;
     private hashUtil: HashUtil;
+    private ragfairPriceService: RagfairPriceService;
+    private saveServer: SaveServer;
 	private localeService: LocaleService;
+    private itemHelper: ItemHelper;
 	private handbookHelper: HandbookHelper;
     private databaseServer: DatabaseServer;
+    private tradeHelper: TradeHelper;
     private traderHelper: TraderHelper;
+    private jsonUtil: JsonUtil;
 	private inventoryHelper: InventoryHelper;
     private randomUtil: RandomUtil;
     private modConfig: Config;
@@ -66,7 +77,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 		const dynamicRouterModService = container.resolve<DynamicRouterModService>("DynamicRouterModService");
 		const staticRouterModService = container.resolve<StaticRouterModService>("StaticRouterModService");
 		
-		// testing static router but won't show unless logout server.  Testing only so i don't have to run raids.
+		//testing static router but won't show unless logout server.  Testing only so i don't have to run raids.
 		// staticRouterModService.registerStaticRouter("StaticAkiRaidSave PAutoSellTesting", [{
 		// 	url: "/singleplayer/settings/raid/menu",
 		// 	action: (url, info, sessionID, output) => {
@@ -91,9 +102,14 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
         this.profileHelper = container.resolve<ProfileHelper>("ProfileHelper");
 		this.inventoryHelper = container.resolve<InventoryHelper>("InventoryHelper");
         this.hashUtil = container.resolve<HashUtil>("HashUtil");
+        this.ragfairPriceService = container.resolve<RagfairPriceService>("RagfairPriceService");
+        this.saveServer = container.resolve<SaveServer>("SaveServer");
+        this.itemHelper = container.resolve<ItemHelper>("ItemHelper");
 		this.handbookHelper = container.resolve<HandbookHelper>("HandbookHelper");
         this.databaseServer = container.resolve<DatabaseServer>("DatabaseServer");
+        this.tradeHelper = container.resolve<TradeHelper>("TradeHelper");
         this.traderHelper = container.resolve<TraderHelper>("TraderHelper");
+        this.jsonUtil = container.resolve<JsonUtil>("JsonUtil");
         this.randomUtil = container.resolve<RandomUtil>("RandomUtil");
         this.vfs = container.resolve<VFS>("VFS");
     }
@@ -180,8 +196,13 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 						this.sellItem(item, traderId, sessionID, allPlayerItems);
 					}
 					else {
-						this.logger.info(`PAutoSell: No trader found for item: ${this.getItemName(item._tpl)}, Selling for handbook value`);
-						this.sellItemForHandbookValue(item, allPlayerItems);
+						if (!this.modConfig.KeepUnsoldItems) {
+							this.logger.info(`PAutoSell: No trader found for item: ${this.getItemName(item._tpl)}, Selling for handbook value`);
+							this.sellItemForHandbookValue(item, allPlayerItems);
+						}
+						else {
+							this.logger.info(`PAutoSell: Keeping unsold item: ${this.getItemName(item._tpl)}`);
+						}
 					}
 				}
 			});
@@ -201,6 +222,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 
 		//log total roubles earned
 		this.logger.info(`PAutoSell: Total Roubles earned: ${currencyAmount} and sent to stash`);
+		
 		//generate a new item with the currency
 		const playerMoney: Item = {
 			_id: this.hashUtil.generate(),
@@ -295,21 +317,16 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 		}
 		
 		const trader = this.databaseServer.getTables().traders[traderId].base;
-		const price = this.traderHelper.getHighestSellToTraderPrice(item._tpl) * this.modConfig.PriceMultiplier;
+		const price = this.traderHelper.getHighestSellToTraderPrice(item._tpl) * this.modConfig.PriceMultiplier; //apparently price already includes currency conversion to rubles
 		const itemName = this.getItemName(item._tpl);
 
-		//need to get currency from trader and apply exchange rate
-		const currency = trader.currency; // "RUB", "USD", "EUR"
-		const exchangeRate = this.getCurrencyExchangeRate(currency);
-		const adjustedAmount = Math.floor(price * exchangeRate);
-
-		this.logger.info(`Selling item ${itemName} to trader ${trader.nickname} for ${price} ${trader.currency} \n and after currency exchange adjusted to ${adjustedAmount} roubles`);
+		this.logger.info(`Selling item ${itemName} to trader ${trader.nickname} for ${price} RUB`);
 
 		// Update the sales sum for the trader
 		this.updateTraderSalesSum(traderId, price, sessionId);
 
 		// Add the money to total roubles ongoing total
-		this.totalRoubles += adjustedAmount;
+		this.totalRoubles += price;
 
 		// Remove the item from the inventory
 		this.removeItemFromInventory(item);

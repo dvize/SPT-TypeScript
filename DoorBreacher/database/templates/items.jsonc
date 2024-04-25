@@ -140,7 +140,6 @@
     "_id": "660ed60d5effc350b86bb289",  //unique mongo id for doorbreacher box
     "_name": "doorbreacherbox",
     "_parent": "543be5cb4bdc2deb348b4568", // Ammo Box
-    "_proto": "5748538b2459770af276a261",   //??
     "_type": "Item",
     "_props": {
       "Name": "ammo_box_12x70_default",
@@ -203,7 +202,7 @@
       "StackSlots": [
         {
           "_name": "cartridges",
-          "_id": "661425ea74397af50600f4c7", //? unique id for stack slot
+          "_id": "6627cd20915ff02066761f3f", //? unique id for stack slot
           "_parent": "660ed60d5effc350b86bb289", //doorbreacher box
           "_max_count": 5,
           "_props": {
