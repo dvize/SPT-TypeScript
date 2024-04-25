@@ -107,28 +107,28 @@ function setupItems(itemsjson: ItemsJson, CustomItem: CustomItemService) {
     locales: DoorBreacherLocale,
   };
 
-  // //make locale for DoorBreacherBox
-  // const DoorBreacherBoxLocale: Record<string, LocaleDetails> = {
-  //   en: {
-  //     name: "12/70 Door-Breaching 5-Round Box",
-  //     shortName: "Breach",
-  //     description:
-  //       "A 5-round box of 12ga door breaching shells. The door-breaching round is designed to destroy deadbolts, locks, and hinges without risking lives by ricocheting or penetrating through doors.  These frangible rounds are made of a dense sintered material which can destroy a lock or hinge and then immediately disperse.",
-  //   },
-  // };
+  //make locale for DoorBreacherBox
+  const DoorBreacherBoxLocale: Record<string, LocaleDetails> = {
+    en: {
+      name: "12/70 Door-Breaching 5-Round Box",
+      shortName: "Breach",
+      description:
+        "A 5-round box of 12ga door breaching shells. The door-breaching round is designed to destroy deadbolts, locks, and hinges without risking lives by ricocheting or penetrating through doors.  These frangible rounds are made of a dense sintered material which can destroy a lock or hinge and then immediately disperse.",
+    },
+  };
 
-  // //add new custom item
-  // const DoorBreacherBox: NewItemDetails = {
-  //   newItem: itemsjson.doorbreacherbox,
-  //   fleaPriceRoubles: 40000,
-  //   handbookPriceRoubles: 50000,
-  //   handbookParentId: "5b47574386f77428ca22b33c",
-  //   locales: DoorBreacherBoxLocale,
-  // };
+  //add new custom item
+  const DoorBreacherBox: NewItemDetails = {
+    newItem: itemsjson.doorbreacherbox,
+    fleaPriceRoubles: 40000,
+    handbookPriceRoubles: 50000,
+    handbookParentId: "5b47574386f77428ca22b33c",
+    locales: DoorBreacherBoxLocale,
+  };
 
   //create the items
   CustomItem.createItem(DoorBreacher);
-  //CustomItem.createItem(DoorBreacherBox);
+  CustomItem.createItem(DoorBreacherBox);
 }
 
 function ModifyAmmoPropForWeapons(db: DatabaseServer, itemsJson: ItemsJson) {
@@ -208,14 +208,14 @@ function handleAssorts(
     .addMoneyCost(Money.ROUBLES, 10000)
     .export(targetTrader);
 
-  //create assort for doorbreacherbox - disable because it keeps selling 0 /5 rounds
-  /* assortHelper
-    .createSingleAssortItem(itemsjson.doorbreacherbox._id)
-    .addStackCount(100)
-    .addUnlimitedStackCount()
-    .addLoyaltyLevel(1)
-    .addMoneyCost(Money.ROUBLES, 50000)
-    .export(targetTrader); */
+  //create assort for doorbreacherbox - no assort since no other trader sells a packl
+  // assortHelper
+  //   .createSingleAssortItem(itemsjson.doorbreacherbox._id)
+  //   .addStackCount(100)
+  //   .addUnlimitedStackCount()
+  //   .addLoyaltyLevel(1)
+  //   .addMoneyCost(Money.ROUBLES, 50000)
+  //   .export(targetTrader);
 
   //create barter item for doorbreacher
   const electricWire = "5c06779c86f77426e00dd782";
@@ -227,5 +227,4 @@ function handleAssorts(
     .addLoyaltyLevel(1)
     .export(targetTrader);
 
-  //create barter item for doorbreacherbox
 }

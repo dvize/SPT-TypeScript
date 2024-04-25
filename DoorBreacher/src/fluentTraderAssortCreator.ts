@@ -1,174 +1,111 @@
-import { Item } from "@spt-aki/models/eft/common/tables/IItem";
-import { IBarterScheme, ITrader } from "@spt-aki/models/eft/common/tables/ITrader";
-import { Money } from "@spt-aki/models/enums/Money";
-import { ILogger } from "@spt-aki/models/spt/utils/ILogger";
-import { HashUtil } from "@spt-aki/utils/HashUtil";
+import type { Item, IBarterScheme, ITrader } from "@spt-aki/models/eft/common/tables";
+import type { Money } from "@spt-aki/models/enums/Money";
+import type { ILogger } from "@spt-aki/models/spt/utils/ILogger";
+import type { HashUtil } from "@spt-aki/utils/HashUtil";
 
-export class FluentAssortConstructor
-{
+export class FluentAssortConstructor {
     protected itemsToSell: Item[] = [];
     protected barterScheme: Record<string, IBarterScheme[][]> = {};
-    protected loyaltyLevel: Record<string, number> = {};
+    protected loyaltyLevels: Record<string, number> = {};
     protected hashUtil: HashUtil;
     protected logger: ILogger;
 
-    constructor(hashutil: HashUtil, logger: ILogger)
-    {
-        this.hashUtil = hashutil
+    constructor(hashUtil: HashUtil, logger: ILogger) {
+        this.hashUtil = hashUtil;
         this.logger = logger;
     }
-    
-    /**
-     * Start selling item with tpl
-     * @param itemTpl Tpl id of the item you want trader to sell
-     * @param itemId Optional - set your own Id, otherwise unique id will be generated
-     */
-    public createSingleAssortItem(itemTpl: string, itemId = undefined): FluentAssortConstructor
-    {
-        // Create item ready for insertion into assort table
-        const newItemToAdd: Item = {
-            _id: !itemId ? this.hashUtil.generate(): itemId,
+
+    public createSingleAssortItem(itemTpl: string, itemId = undefined): FluentAssortConstructor {
+        const newItem: Item = {
+            _id: itemId || this.hashUtil.generate(),
             _tpl: itemTpl,
-            parentId: "hideout", // Should always be "hideout"
-            slotId: "hideout", // Should always be "hideout"
-            upd: {
-                UnlimitedCount: false,
-                StackObjectsCount: 100
-            }
+            parentId: "hideout",
+            slotId: "hideout",
+            upd: { UnlimitedCount: false, StackObjectsCount: 100 }
         };
-
-        this.itemsToSell.push(newItemToAdd);
-
+        this.itemsToSell.push(newItem);
         return this;
     }
 
-    public createComplexAssortItem(items: Item[]): FluentAssortConstructor
-    {
-        items[0].parentId = "hideout";
-        items[0].slotId = "hideout";
-
-        if (!items[0].upd)
-        {
-            items[0].upd = {}
+    public addStackCount(stackCount: number, itemId?: string): FluentAssortConstructor {
+        const item = itemId ? this.itemsToSell.find(i => i._id === itemId) : this.itemsToSell[0];
+        if (item) {
+            item.upd.StackObjectsCount = stackCount;
         }
-
-        items[0].upd.UnlimitedCount = false;
-        items[0].upd.StackObjectsCount = 100;
-
-        this.itemsToSell.push(...items);
-
         return this;
     }
 
-    public addStackCount(stackCount: number): FluentAssortConstructor
-    {
-        this.itemsToSell[0].upd.StackObjectsCount = stackCount;
-
-        return this;
-    }
-
-    public addUnlimitedStackCount(): FluentAssortConstructor
-    {
-        this.itemsToSell[0].upd.StackObjectsCount = 999999;
-        this.itemsToSell[0].upd.UnlimitedCount = true;
-
-        return this;
-    }
-
-    public makeStackCountUnlimited(): FluentAssortConstructor
-    {
-        this.itemsToSell[0].upd.StackObjectsCount = 999999;
-
-        return this;
-    }
-
-    public addBuyRestriction(maxBuyLimit: number): FluentAssortConstructor
-    {
-        this.itemsToSell[0].upd.BuyRestrictionMax = maxBuyLimit;
-        this.itemsToSell[0].upd.BuyRestrictionCurrent = 0;
-
-        return this;
-    }
-
-    public addLoyaltyLevel(level: number)
-    {
-        this.loyaltyLevel[this.itemsToSell[0]._id] = level;
-
-        return this;
-    }
-
-    public addMoneyCost(currencyType: Money, amount: number): FluentAssortConstructor
-    {
-        this.barterScheme[this.itemsToSell[0]._id] = [
-            [
-                {
-                    count: amount,
-                    _tpl: currencyType
-                }
-            ]
-        ];
-
-        return this;
-    }
-
-    public addBarterCost(itemTpl: string, count: number): FluentAssortConstructor
-    {
-        const sellableItemId = this.itemsToSell[0]._id;
-
-        // No data at all, create
-        if (Object.keys(this.barterScheme).length === 0)
-        {
-            this.barterScheme[sellableItemId] = [[
-                {
-                    count: count,
-                    _tpl: itemTpl
-                }
-            ]];
+    public addUnlimitedStackCount(itemId?: string): FluentAssortConstructor {
+        const item = itemId ? this.itemsToSell.find(i => i._id === itemId) : this.itemsToSell[0];
+        if (item) {
+            item.upd.StackObjectsCount = 999999;
+            item.upd.UnlimitedCount = true;
         }
-        else
-        {
-            // Item already exists, add to
-            const existingData = this.barterScheme[sellableItemId][0].find(x => x._tpl === itemTpl);
-            if (existingData)
-            {
-                // itemtpl already a barter for item, add to count
-                existingData.count+= count;
+        return this;
+    }
+
+    public addBuyRestriction(maxBuyLimit: number, itemId?: string): FluentAssortConstructor {
+        const item = itemId ? this.itemsToSell.find(i => i._id === itemId) : this.itemsToSell[0];
+        if (item) {
+            item.upd.BuyRestrictionMax = maxBuyLimit;
+            item.upd.BuyRestrictionCurrent = 0;
+        }
+        return this;
+    }
+
+    public addLoyaltyLevel(level: number, itemId?: string): FluentAssortConstructor {
+        const item = itemId ? this.itemsToSell.find(i => i._id === itemId) : this.itemsToSell[0];
+        if (item) {
+            this.loyaltyLevels[item._id] = level;
+        }
+        return this;
+    }
+
+    public addMoneyCost(currencyType: Money, amount: number, itemId?: string): FluentAssortConstructor {
+        const item = itemId ? this.itemsToSell.find(i => i._id === itemId) : this.itemsToSell[0];
+        if (item) {
+            this.barterScheme[item._id] = [[{ count: amount, _tpl: currencyType }]];
+        }
+        return this;
+    }
+
+    public addBarterCost(itemTpl: string, count: number, itemId?: string): FluentAssortConstructor {
+        const item = itemId ? this.itemsToSell.find(i => i._id === itemId) : this.itemsToSell[0];
+        if (!this.barterScheme[item._id]) {
+            this.barterScheme[item._id] = [[{ count, _tpl: itemTpl }]];
+        } else {
+            let scheme = this.barterScheme[item._id][0].find(s => s._tpl === itemTpl);
+            if (scheme) {
+                scheme.count += count;
+            } else {
+                this.barterScheme[item._id][0].push({ count, _tpl: itemTpl });
             }
-            else
-            {
-                // No barter for item, add it fresh
-                this.barterScheme[sellableItemId][0].push({
-                    count: count,
-                    _tpl: itemTpl
-                })
-            }
-            
         }
-
         return this;
     }
 
-    /**
-     * Reset objet ready for reuse
-     * @returns 
-     */
-    public export(data: ITrader): FluentAssortConstructor
-    {
-        const itemBeingSoldId = this.itemsToSell[0]._id;
-        if (data.assort.items.find(x => x._id === itemBeingSoldId))
-        {
-            this.logger.error(`Unable to add complex item with item key ${this.itemsToSell[0]._id}, key already used`);
+    public export(data: ITrader): FluentAssortConstructor {
+        for (const item of this.itemsToSell) {
+            if (data.assort.items.some(i => i._id === item._id)) {
+                this.logger.error(`Item with ID ${item._id} already exists in the assortment.`);
+                return;
+            }
+            this.logger.info(`Adding item with ID ${item._id} to the assortment.`)
+            this.logger.info(item);
 
-            return;
-        }
+            data.assort.items.push(item);
+            if (this.barterScheme[item._id]) {
+                data.assort.barter_scheme[item._id] = this.barterScheme[item._id];
+            }
+            if (this.loyaltyLevels[item._id]) {
+                data.assort.loyal_level_items[item._id] = this.loyaltyLevels[item._id];
+            }
+        });
 
-        data.assort.items.push(...this.itemsToSell);
-        data.assort.barter_scheme[itemBeingSoldId] = this.barterScheme[itemBeingSoldId];
-        data.assort.loyal_level_items[itemBeingSoldId] = this.loyaltyLevel[itemBeingSoldId];
-
+        // Reset internal state
         this.itemsToSell = [];
         this.barterScheme = {};
-        this.loyaltyLevel = {};
+        this.loyaltyLevels = {};
 
         return this;
     }
