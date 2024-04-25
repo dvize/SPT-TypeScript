@@ -1,6 +1,6 @@
 {
     "name": "Props Automated Selling",
-    "version": "1.5.0",
+    "version": "1.5.1",
     "main": "src/PAutoSell.js",
     "license": "MIT",
     "author": "Props",
