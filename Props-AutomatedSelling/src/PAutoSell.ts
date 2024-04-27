@@ -373,22 +373,33 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
     }
 
     private updateTraderSalesSum(traderId: string, amount: number, sessionId: string): void {
-        const pmcData = this.profileHelper.getPmcProfile(sessionId);
-        if (!pmcData.TradersInfo[traderId]) {
-            pmcData.TradersInfo[traderId] = {
-                salesSum: 0,
-                standing: 1,
-                unlocked: true,
-                disabled: false,
-                loyaltyLevel: 1,
-                nextResupply: 0
-            };
-        }
+		//Amount is in roubles; Need to get currency from trader and apply exchange rate
+		const trader = this.databaseServer.getTables().traders[traderId].base;
+		const currency = trader.currency; // "RUB", "USD", "EUR"
+		const exchangeRate = this.getCurrencyExchangeRate(currency);
+		let adjustedAmount = Math.floor(amount / exchangeRate);
 
-        pmcData.TradersInfo[traderId].salesSum += amount;
-        this.logger.info(`Updated sales sum for trader ${this.getTraderNickName(traderId)}: ${pmcData.TradersInfo[traderId].salesSum}`);
-        this.traderHelper.lvlUp(traderId, pmcData);  
-    }
+		//Weird case; if the adjusted amount is less than 0 after conversion, give at least 1 of that currency
+		if (amount >= 0 && adjustedAmount <= 0) {
+			adjustedAmount = 1; 
+		}
+
+		const pmcData = this.profileHelper.getPmcProfile(sessionId);
+		if (!pmcData.TradersInfo[traderId]) {
+			pmcData.TradersInfo[traderId] = {
+				salesSum: 0,
+				standing: 1,
+				unlocked: true,
+				disabled: false,
+				loyaltyLevel: 1,
+				nextResupply: 0
+			};
+		}
+	
+		pmcData.TradersInfo[traderId].salesSum += adjustedAmount;
+		this.logger.info(`Updated sales sum for trader ${this.getTraderNickName(traderId)}: ${pmcData.TradersInfo[traderId].salesSum} ${currency}`);
+		this.traderHelper.lvlUp(traderId, pmcData);  
+	}
 
 	private getItemName(itemtpl: string) 
 	{
