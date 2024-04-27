@@ -222,6 +222,11 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 
 		//log total roubles earned
 		this.logger.info(`PAutoSell: Total Roubles earned: ${currencyAmount} and sent to stash`);
+
+		//don't create roubles stack if total is 0 or invalid
+		if (currencyAmount <= 0) {
+			return;
+		}
 		
 		//generate a new item with the currency
 		const playerMoney: Item = {
