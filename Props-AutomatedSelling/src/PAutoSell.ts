@@ -322,10 +322,16 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 		}
 		
 		const trader = this.databaseServer.getTables().traders[traderId].base;
-		const price = this.traderHelper.getHighestSellToTraderPrice(item._tpl) * this.modConfig.PriceMultiplier; //apparently price already includes currency conversion to rubles
-		const itemName = this.getItemName(item._tpl);
 
-		this.logger.info(`Selling item ${itemName} to trader ${trader.nickname} for ${price} RUB`);
+		//apparently price already includes currency conversion to rubles; rounding due to multiplication and decimals
+		const priceItem = Math.floor(this.traderHelper.getHighestSellToTraderPrice(item._tpl) * this.modConfig.PriceMultiplier); 
+
+		//item can be stackable (bullets, etc) so we need to multiply by the number in the stack
+		const stackObjectCount =  item.upd?.StackObjectsCount ?? 1;
+		const price = priceItem * stackObjectCount;
+
+		const itemName = this.getItemName(item._tpl);
+		this.logger.info(`Selling item ${itemName} to trader ${trader.nickname} for ${priceItem} RUB (${price} RUB total)`);
 
 		// Update the sales sum for the trader
 		this.updateTraderSalesSum(traderId, price, sessionId);
