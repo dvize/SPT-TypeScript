@@ -40,6 +40,7 @@ interface ContainersConfig {
     Labels: string[];
 }
 
+
 class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
     private vfs: VFS;
     private logger: AbstractWinstonLogger;
@@ -60,6 +61,12 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
     private itemsDatabase: Record<string, ITemplateItem>;
 	private totalRoubles: number; //used to keep track of total roubles earned from selling items after currency conversion
 	private itemsToRemove: Item[] = []; //used to keep track of items to remove from inventory
+
+	private validContainerTypesList = [
+		"5795f317245977243854e041", // Common Container
+		"5448bf274bdc2dfc2f8b456a", // Portable Container
+		"5448e53e4bdc2d60728b4567"  // Backpack
+	];
 
     preAkiLoad(container: DependencyContainer): void {
 		this.setupRouterServices(container);
@@ -128,15 +135,9 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 		if (!this.modConfig.RemoveContainerRestriction) {
 			return;
 		}
-	
-		const validContainerTypesList = [
-			"5795f317245977243854e041", //Common Container
-			"5448bf274bdc2dfc2f8b456a", //Portable Container
-			"5448e53e4bdc2d60728b4567" //Backpack
-		];
 		
 		const filteredItems: ITemplateItem[] = Object.values(this.itemsDatabase).filter((itemtemp: ITemplateItem) =>
-			validContainerTypesList.includes(itemtemp._parent)
+			this.validContainerTypesList.includes(itemtemp._parent)
 		);
 
 		if (this.modConfig.RemoveContainerRestriction) {
@@ -265,12 +266,41 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
         
     }
 
-	private getAllItemsInContainer(container: Item, items: Item[]) {
-		//if the item parent id is equal to the container id, then it is in the container
-		const containerItems = items.filter(item => item.parentId === container._id);
+	private getAllItemsInContainer(container: Item, allItems: Item[]): Item[] {
+		// Process items for containers containing other items as well as just items
+		const itemsToProcess: Item[] = [container];
+		const containerItems: Item[] = [];
+		let isFirstContainer = true; // Flag to check if the current container is the first one processed
+	
+		while (itemsToProcess.length > 0) {
+			
+			// biome-ignore lint/style/noNonNullAssertion: <explanation>
+						const currentContainer = itemsToProcess.pop()!;
+			
+			// Only add the container to the list if it is not the first container processed
+			if (!isFirstContainer) {
+				containerItems.push(currentContainer);
+			}
+
+			isFirstContainer = false;
+	
+			for (const item of allItems) {
+				if (item.parentId === currentContainer._id) {
+					
+					// Check if this item is a container by examining if it has any grids defined
+					const itemTemplate = this.itemsDatabase[item._tpl];
+					const isContainer = itemTemplate?._props?.Grids && itemTemplate._props.Grids.length > 0;
+					if (isContainer) {
+						itemsToProcess.push(item); // Add to stack to process later
+					} else {
+						containerItems.push(item); // Add non-container items to the list to be sold.
+					}
+				}
+			}
+		}
+	
 		return containerItems;
 	}
-
 
     private shouldItemBeSold(item: Item): boolean {
         return !this.modConfig.IgnoreFollowingItemTPLInContainers.includes(item._tpl.toLowerCase());
