@@ -10,6 +10,7 @@ import type { RagfairPriceService } from "@spt-aki/services/RagfairPriceService"
 import type { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
 import type { Item, Location, Upd } from '@spt-aki/models/eft/common/tables/IItem';
 import type { SaveServer } from '@spt-aki/servers/SaveServer';
+import { BaseClasses } from "@spt-aki/models/enums/BaseClasses";
 import type { ItemHelper } from "@spt-aki/helpers/ItemHelper";
 import type { ITemplateItem } from '@spt-aki/models/eft/common/tables/ITemplateItem';
 import type { LocaleService } from "@spt-aki/services/LocaleService";
@@ -197,13 +198,8 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 						this.sellItem(item, traderId, sessionID, allPlayerItems);
 					}
 					else {
-						if (!this.modConfig.KeepUnsoldItems) {
-							this.logger.info(`PAutoSell: No trader found for item: ${this.getItemName(item._tpl)}, Selling for handbook value`);
-							this.sellItemForHandbookValue(item, allPlayerItems);
-						}
-						else {
-							this.logger.info(`PAutoSell: Keeping unsold item: ${this.getItemName(item._tpl)}`);
-						}
+						this.logger.info(`PAutoSell: No trader found for item: ${this.getItemName(item._tpl)}, Selling for handbook value`);
+						this.sellItemForHandbookValue(item, allPlayerItems);
 					}
 				}
 			});
@@ -213,7 +209,11 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 		// biome-ignore lint/complexity/noForEach: <explanation>
 		this.itemsToRemove.forEach(item => {
 			const IItemEventRouterResponse: IItemEventRouterResponse = null;
-			this.inventoryHelper.removeItem(pmcData, item._id, sessionID, IItemEventRouterResponse);
+			
+			//check if item is in pmcData before trying to remove
+			if (pmcData.Inventory.items.find(x => x._id === item._id)) {
+				this.inventoryHelper.removeItem(pmcData, item._id, sessionID, IItemEventRouterResponse);
+			}
 		}
 		);
 
@@ -260,42 +260,51 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 		};
 		
 		this.inventoryHelper.addItemToStash(sessionID, request, pmcData, output2);
-
-		//save changes to profile.. probably don't need to do this here anymore
-        //this.saveServer.saveProfile(sessionID);
         
     }
 
 	private getAllItemsInContainer(container: Item, allItems: Item[]): Item[] {
-		// Process items for containers containing other items as well as just items
 		const itemsToProcess: Item[] = [container];
 		const containerItems: Item[] = [];
-		let isFirstContainer = true; // Flag to check if the current container is the first one processed
 	
 		while (itemsToProcess.length > 0) {
-			
-			// biome-ignore lint/style/noNonNullAssertion: <explanation>
-						const currentContainer = itemsToProcess.pop()!;
-			
-			// Only add the container to the list if it is not the first container processed
-			if (!isFirstContainer) {
-				containerItems.push(currentContainer);
-			}
-
-			isFirstContainer = false;
+			const currentContainer = itemsToProcess.pop();
+	
+			// Capture child items to add them before the container for clean deletion later
+			const childItems: Item[] = [];
 	
 			for (const item of allItems) {
 				if (item.parentId === currentContainer._id) {
-					
-					// Check if this item is a container by examining if it has any grids defined
+
+					// Check if this item is a container
 					const itemTemplate = this.itemsDatabase[item._tpl];
 					const isContainer = itemTemplate?._props?.Grids && itemTemplate._props.Grids.length > 0;
+					
 					if (isContainer) {
-						itemsToProcess.push(item); // Add to stack to process later
+						itemsToProcess.push(item); // Continue to process this container
 					} else {
-						containerItems.push(item); // Add non-container items to the list to be sold.
+
+						// Grab the parent and all children items
+						const parentAndChildrenItems = this.itemHelper.findAndReturnChildrenAsItems(allItems, item._id);
+	
+						// Rearrange so parent item is handled first, and children are added after
+
+						const parentItem = parentAndChildrenItems.shift();
+
+						if (parentItem) {
+							childItems.push(...parentAndChildrenItems); // Add all children first
+							childItems.push(parentItem); // Add the parent item last
+						}
 					}
 				}
+			}
+	
+			// Add child items before the container to ensure they are removed first
+			containerItems.push(...childItems);
+
+			// Avoid adding the top-level container as an item to remove
+			if (currentContainer !== container) { 
+				containerItems.push(currentContainer);
 			}
 		}
 	
@@ -361,7 +370,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 		const price = priceItem * stackObjectCount;
 
 		const itemName = this.getItemName(item._tpl);
-		this.logger.info(`Selling item ${itemName} to trader ${trader.nickname} for ${priceItem} RUB (${price} RUB total)`);
+		this.logger.info(`Selling item ${itemName} of stack count ${stackObjectCount} to trader ${trader.nickname} for ${price} RUB (${priceItem} RUB per each)`);
 
 		// Update the sales sum for the trader
 		this.updateTraderSalesSum(traderId, price, sessionId);
@@ -376,7 +385,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 
 	private sellItemForHandbookValue(item: Item, itemsModList: Item[]): void {
         const handbookPrice = this.handbookHelper.getTemplatePrice(item._tpl);
-        this.logger.info(`Selling unsold item ${this.getItemName(item._tpl)} for handbook value ${handbookPrice}`);
+        this.logger.info(`Selling unsold item ${this.getItemName(item._tpl)} for handbook value ${handbookPrice}\n`);
         
 		//add to total roubles instead
 		this.totalRoubles += handbookPrice;
@@ -433,7 +442,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 		}
 	
 		pmcData.TradersInfo[traderId].salesSum += adjustedAmount;
-		this.logger.info(`Updated sales sum for trader ${this.getTraderNickName(traderId)}: ${pmcData.TradersInfo[traderId].salesSum} ${currency}`);
+		this.logger.info(`Updated sales sum for trader ${this.getTraderNickName(traderId)}: ${pmcData.TradersInfo[traderId].salesSum} ${currency}\n`);
 		this.traderHelper.lvlUp(traderId, pmcData);  
 	}
 
