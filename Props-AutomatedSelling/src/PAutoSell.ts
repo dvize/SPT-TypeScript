@@ -34,6 +34,7 @@ interface Config {
     PriceMultiplier: number;
     Containers: ContainersConfig;
     RemoveContainerRestriction: boolean;
+	RemoveContainerRestrictionsList: string[];
     IgnoreFollowingItemTPLInContainers: string[];
 }
 
@@ -62,12 +63,6 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
     private itemsDatabase: Record<string, ITemplateItem>;
 	private totalRoubles: number; //used to keep track of total roubles earned from selling items after currency conversion
 	private itemsToRemove: Item[] = []; //used to keep track of items to remove from inventory
-
-	private validContainerTypesList = [
-		"5795f317245977243854e041", // Common Container
-		"5448bf274bdc2dfc2f8b456a", // Portable Container
-		"5448e53e4bdc2d60728b4567"  // Backpack
-	];
 
     preAkiLoad(container: DependencyContainer): void {
 		this.setupRouterServices(container);
@@ -138,16 +133,14 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 		}
 		
 		const filteredItems: ITemplateItem[] = Object.values(this.itemsDatabase).filter((itemtemp: ITemplateItem) =>
-			this.validContainerTypesList.includes(itemtemp._parent)
+			this.modConfig.RemoveContainerRestrictionsList.includes(itemtemp._id)
 		);
 
-		if (this.modConfig.RemoveContainerRestriction) {
-			for (const myItem of filteredItems) {
-				myItem._props.Grids[0]._props.filters = [];
-				this.logger.info(`PAutoSell: Removing Container Restriction from ${myItem._id} (${myItem._name})`);
-			}
+		for (const myItem of filteredItems) {
+			myItem._props.Grids[0]._props.filters = [];
+			this.logger.info(`PAutoSell: Removing Container Restriction from ${myItem._id} (${myItem._name})`);
 		}
-	  
+		
 	}
 
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>

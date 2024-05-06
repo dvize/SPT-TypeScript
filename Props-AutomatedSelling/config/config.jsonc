@@ -5,13 +5,29 @@
     "Containers": {
       //Name these labels to what your tagged containers in-game are. The first custom label (junk items) means we will consider an item with the tag "junk items" as a container.
       //Change this as needed to match your containers.  You can add as many as you want.
-      "Labels": ["junk items", "dog tags", "shit ammo"]
-
+      "Labels": [
+        "junk items", 
+        "dog tags", 
+        "shit ammo"
+      ]
     },
   
     //True if you don't want regular container restrictions",
     "RemoveContainerRestriction": true,
-  
+    
+    //Put the item ids below of containers (backpacks, dogtag cases, ammo cases, etc) you want to specifically remove restrictions on
+    //this is to try and keep some compatibility with Inventory Organizing Mod
+    //Basically, only put items that you are specifically going to label or stuff everything in
+
+    //"5909d4c186f7746ad34e805a" //med case
+    // "59fb016586f7746d0d4b423a" //money case
+    // "590c60fc86f77412b13fddcf" //docs case
+
+    //Last item in list will not have comma while everything otherwise will have comma.  See the IgnoreFollowingItemTPPLInContainers example
+    "RemoveContainerRestrictionsList": [
+      "5c093e3486f77430cb02e593" //dog tag case from the website https://db.sp-tarkov.com/search/
+    ],
+
     //You can add item ids here from the website https://db.sp-tarkov.com/search/ if you want to ignore selling them.
     "IgnoreFollowingItemTPLInContainers": [
       "5449016a4bdc2d6f028b456f", //roubles, so it doesn't sell your money again duh

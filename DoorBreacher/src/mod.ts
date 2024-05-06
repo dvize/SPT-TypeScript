@@ -126,9 +126,30 @@ function setupItems(itemsjson: ItemsJson, CustomItem: CustomItemService) {
     locales: DoorBreacherBoxLocale,
   };
 
+   //make locale for DoorBreacher
+   const C4ExplosiveLocale: Record<string, LocaleDetails> = {
+    en: {
+      name: "C4 Explosive",
+      shortName: "C4",
+      description:
+        "This C4 Explosive is used for breaching reinforced doors. It is a powerful explosive that is used in the military and law enforcement. It is a plastic explosive that is stable and safe to handle and triggered after a set timer.",
+    },
+  };
+
+  //add new custom item
+  const C4Explosive: NewItemDetails = {
+    newItem: itemsjson.C4Explosive,
+    fleaPriceRoubles: 25000,
+    handbookPriceRoubles: 30000,
+    handbookParentId: "5b47574386f77428ca22b2f2",
+    locales: C4ExplosiveLocale,
+  };
+
+
   //create the items
   CustomItem.createItem(DoorBreacher);
   CustomItem.createItem(DoorBreacherBox);
+  CustomItem.createItem(C4Explosive);
 }
 
 function ModifyAmmoPropForWeapons(db: DatabaseServer, itemsJson: ItemsJson) {

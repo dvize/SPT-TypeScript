@@ -90,8 +90,8 @@ export class FluentAssortConstructor {
                 this.logger.error(`Item with ID ${item._id} already exists in the assortment.`);
                 return;
             }
-            this.logger.info(`Adding item with ID ${item._id} to the assortment.`)
-            this.logger.info(item);
+            //this.logger.info(`Adding item with ID ${item._id} to the assortment.`)
+            //this.logger.info(item);
 
             data.assort.items.push(item);
             if (this.barterScheme[item._id]) {

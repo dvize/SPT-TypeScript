@@ -218,6 +218,73 @@
         }
       ]
     }
-  }
+  },
 
+  "C4Explosive":{
+      "_id": "6636606320e842b50084e51a", //unique mongo id for c4explosive
+      "_name": "C4Explosive",
+      "_parent": "57864e4c24597754843f8723", //lubricant
+      "_type": "Item",
+      "_props": {
+        "Name": "C4 Explosive",
+        "ShortName": "C4 Explosive",
+        "Description": "C4 Explosive",
+        "Weight": 0.6,
+        "BackgroundColor": "blue",
+        "Width": 2,
+        "Height": 1,
+        "StackMaxSize": 1,
+        "ItemSound": "generic",
+        "Prefab": {
+          "path": "C4Explosive.bundle",
+          "rcid": ""
+        },
+        "UsePrefab": {
+          "path": "",
+          "rcid": ""
+        },
+        "StackObjectsCount": 1,
+        "NotShownInSlot": false,
+        "ExaminedByDefault": true,
+        "ExamineTime": 1,
+        "IsUndiscardable": false,
+        "IsUnsaleable": false,
+        "IsUnbuyable": false,
+        "IsUngivable": false,
+        "IsLockedafterEquip": false,
+        "QuestItem": false,
+        "LootExperience": 20,
+        "ExamineExperience": 10,
+        "HideEntrails": false,
+        "RepairCost": 0,
+        "RepairSpeed": 0,
+        "ExtraSizeLeft": 0,
+        "ExtraSizeRight": 0,
+        "ExtraSizeUp": 0,
+        "ExtraSizeDown": 0,
+        "ExtraSizeForceAdd": false,
+        "MergesWithChildren": false,
+        "CanSellOnRagfair": true,
+        "CanRequireOnRagfair": false,
+        "ConflictingItems": [],
+        "Unlootable": false,
+        "UnlootableFromSlot": "FirstPrimaryWeapon",
+        "UnlootableFromSide": [],
+        "AnimationVariantsNumber": 0,
+        "DiscardingBlock": false,
+        "RagFairCommissionModifier": 1,
+        "IsAlwaysAvailableForInsurance": false,
+        "DiscardLimit": 0,
+        "DropSoundType": "None",
+        "InsuranceDisabled": false,
+        "QuestStashMaxCount": 0,
+        "IsSpecialSlotOnly": false,
+        "IsUnremovable": false,
+        "MaxResource": 0,
+        "Resource": 0
+      },
+      "_proto": "590a373286f774287540368b"
+    }
+  
 }
+

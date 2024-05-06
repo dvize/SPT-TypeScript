@@ -1,6 +1,6 @@
 {
   "name": "DoorBreacher",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "main": "src/mod.js",
   "isBundleMod": true,
   "license": "CC BY-NC-SA 4.0",
