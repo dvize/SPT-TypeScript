@@ -11,6 +11,7 @@
 	{
 		"OnGameStart": true,
 		"OnRaidStart": true,
-		"OnRaidEnd": true
+		"OnRaidEnd": true,
+		"OnLogout": true
 	}
 }

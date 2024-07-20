@@ -1,33 +1,33 @@
 import fs from "node:fs";
 import type { DependencyContainer } from "tsyringe";
-import type { IPreAkiLoadMod } from "@spt-aki/models/external/IPreAkiLoadMod";
-import type { IPostDBLoadMod } from "@spt-aki/models/external/IPostDBLoadMod";
-import type { IPostAkiLoadMod } from "@spt-aki/models/external/IPostAkiLoadMod";
-import type { SaveServer } from "@spt-aki/servers/SaveServer";
-import type { ILogger } from "@spt-aki/models/spt/utils/ILogger";
-import { LogBackgroundColor } from "@spt-aki/models/spt/logging/LogBackgroundColor";
-import { LogTextColor } from "@spt-aki/models/spt/logging/LogTextColor";
-import type { StaticRouterModService } from "@spt-aki/services/mod/staticRouter/StaticRouterModService";
-import type { VFS } from "@spt-aki/utils/VFS";
-import type { modConfig, AutoBackup } from "./interface";
+import type { IPreSptLoadMod } from "@spt/models/external/IPreSptLoadMod";
+import type { IPostDBLoadMod } from "@spt/models/external/IPostDBLoadMod";
+import type { IPostSptLoadMod } from "@spt/models/external/IPostSptLoadMod";
+import type { SaveServer } from "@spt/servers/SaveServer";
+import type { ILogger } from "@spt/models/spt/utils/ILogger";
+import { LogBackgroundColor } from "@spt/models/spt/logging/LogBackgroundColor";
+import { LogTextColor } from "@spt/models/spt/logging/LogTextColor";
+import type { StaticRouterModService } from "@spt/services/mod/staticRouter/StaticRouterModService";
+import type { VFS } from "@spt/utils/VFS";
+import type { ModConfig } from "./interface";
 
 import { jsonc } from "jsonc";
 
 import path from "node:path";
-import type { Watermark } from "@spt-aki/utils/Watermark";
+import type { Watermark } from "@spt/utils/Watermark";
 
 import pkg from "../package.json";
 
-class Mod implements IPreAkiLoadMod, IPostDBLoadMod, IPostAkiLoadMod 
+export class Mod implements IPreSptLoadMod, IPostDBLoadMod, IPostSptLoadMod 
 {
     readonly modName = `${pkg.author}-${pkg.name}`;
-    private modConfig: modConfig;
+    private modConfig: ModConfig;
     private logger: ILogger;
     private vfs: VFS;
     protected profilePath: string;
-    protected akiVersion: string;
+    protected sptVersion: string;
 
-    public preAkiLoad(container: DependencyContainer): void 
+    public preSptLoad(container: DependencyContainer) : void 
     {
         const staticRouterModService: StaticRouterModService =
       container.resolve<StaticRouterModService>("StaticRouterModService");
@@ -48,19 +48,14 @@ class Mod implements IPreAkiLoadMod, IPostDBLoadMod, IPostAkiLoadMod
                 [
                     {
                         url: "/client/game/start",
-                        action: (
-                            url: string,
-                            info: string,
-                            sessionID: string,
-                            output: string
-                        ): string => 
+                        action: async (url, info, sessionId, output) : Promise<string> =>
                         {
-                            this.onEvent("onGameStart", sessionID);
+                            this.onEvent("onGameStart", sessionId);
                             return output;
                         }
                     }
                 ],
-                "aki"
+                "spt"
             );
         }
 
@@ -71,19 +66,14 @@ class Mod implements IPreAkiLoadMod, IPostDBLoadMod, IPostAkiLoadMod
                 [
                     {
                         url: "/client/raid/configuration",
-                        action: (
-                            url: string,
-                            info: string,
-                            sessionID: string,
-                            output: string
-                        ): string => 
+                        action: async (url, info, sessionId, output) : Promise<string> =>
                         {
-                            this.onEvent("onRaidStart", sessionID);
+                            this.onEvent("onRaidStart", sessionId);
                             return output;
                         }
                     }
                 ],
-                "aki"
+                "spt"
             );
         }
 
@@ -94,24 +84,37 @@ class Mod implements IPreAkiLoadMod, IPostDBLoadMod, IPostAkiLoadMod
                 [
                     {
                         url: "/raid/profile/save",
-                        action: (
-                            url: string,
-                            info: string,
-                            sessionID: string,
-                            output: string
-                        ): string => 
+                        action: async (url, info, sessionId, output) : Promise<string> =>
                         {
-                            this.onEvent("onRaidEnd", sessionID);
+                            this.onEvent("onRaidEnd", sessionId);
                             return output;
                         }
                     }
                 ],
-                "aki"
+                "spt"
+            );
+        }
+
+        if (this.modConfig?.AutoBackup?.OnLogout) 
+        {
+            staticRouterModService.registerStaticRouter(
+                `${this.modName}-/client/game/logout`,
+                [
+                    {
+                        url: "/client/game/logout",
+                        action: async (url, info, sessionId, output) : Promise<string> =>
+                        {
+                            this.onEvent("onLogout", sessionId);
+                            return output;
+                        }
+                    }
+                ],
+                "spt"
             );
         }
     }
 
-    public postAkiLoad(container: DependencyContainer): void 
+    public postSptLoad(container: DependencyContainer): void 
     {
         const saveServer = container.resolve<SaveServer>("SaveServer");
         for (const profileKey in saveServer.getProfiles()) 
@@ -151,12 +154,12 @@ class Mod implements IPreAkiLoadMod, IPostDBLoadMod, IPostAkiLoadMod
         const dirArray = __dirname.split("\\");
         this.profilePath = `${dirArray[dirArray.length - 4]}/profiles`; // Pon, Pin, Fon, Fin
         this.vfs = container.resolve<VFS>("VFS");
-        this.akiVersion = container.resolve<Watermark>("Watermark").getVersionTag();
+        this.sptVersion = container.resolve<Watermark>("Watermark").getVersionTag();
     }
 
-    public onEvent(event: string, sessionID: string) 
+    public onEvent(event: string, sessionID: string) : void
     {
-        const sessionPath = `${this.profilePath}/AutoBackup/${this.akiVersion}/${sessionID}/`;
+        const sessionPath = `${this.profilePath}/AutoBackup/${this.sptVersion}/${sessionID}/`;
 
         if (!this.vfs.exists(sessionPath)) 
         {
