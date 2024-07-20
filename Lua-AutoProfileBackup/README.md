@@ -1,6 +1,45 @@
-# Welcome to the SPT-AKI Modding Project
+# Welcome to Lua-AutoProfileBackup
+No more worries to backup your profile. A minor update to Lua's mod so all options work.
 
-This project is designed to streamline the initial setup process for building and creating mods in the SPT-AKI environment. Follow this guide to set up your environment efficiently.
+## **Configuration**
+`%SPT%/user\mods\lua-autoprofilebackup-%version%\config\config.jsonc`
+
+Auto Profile Backup (Configurable):
+ - On Game Start
+ - On Raid Start
+ - On Raid End
+ - On Logout
+
+```JSONC
+"AutoBackup":
+	{
+		"OnGameStart": true,
+		"OnRaidStart": true,
+		"OnRaidEnd": true,
+		"OnLogout": true
+	}
+```
+
+Maximum Backup Per Profile (Configurable):
+
+```JSONC
+"MaximumBackupDeleteLog": true,
+"MaximumBackupPerProfile": 50,
+```
+
+## **Backup files**
+ - Auto-Backup path: `%SPT%/user/profiles/Autobackup/`
+ - Backup file format: `%Event%-%ISO Timeformat%.json`
+   - Example: `onRaidStart-2022-08-30T161622490Z.json`
+
+## **Restore**
+ - Prevent profile's filename error by auto rename
+ - You don't have to rename the backup file
+ - select backup file then drop into /user/profiles folder
+
+# Build & Environment
+This project is based of the [SPT Mod Examples](https://dev.sp-tarkov.com/chomp/ModExamples) repository.
+This project is designed to streamline the initial setup process for building and creating mods in the SPT environment. Follow this guide to set up your environment efficiently.
 
 ## **Table of Contents**
 - [NodeJS Setup](#nodejs-setup)
@@ -13,7 +52,7 @@ This project is designed to streamline the initial setup process for building an
 
 ## **NodeJS Setup**
 
-Before you begin, ensure to install NodeJS version `v18.15.0`, which has been tested thoroughly with our mod templates and build scripts. Download it from the [official NodeJS website](https://nodejs.org/).
+Before you begin, ensure to install NodeJS version `v20.11.1`, which has been tested thoroughly with our mod templates and build scripts. Download it from the [official NodeJS website](https://nodejs.org/).
 
 After installation, it's advised to reboot your system.
 
@@ -39,7 +78,7 @@ Note: Preserve the `node_modules` folder as it contains necessary dependencies f
 
 ## **Essential Concepts**
 
-Prioritize understanding Dependency Injection and Inversion of Control, the architectural principles SPT-AKI adopts. Comprehensive guidelines will be available on the hub upon release.
+Prioritize understanding Dependency Injection and Inversion of Control, the architectural principles SPT adopts. Comprehensive guidelines will be available on the hub upon release.
 
 Some resources to get you started:
  - [A quick intro to Dependency Injection](https://www.freecodecamp.org/news/a-quick-intro-to-dependency-injection-what-it-is-and-when-to-use-it-7578c84fa88f/)
@@ -47,13 +86,13 @@ Some resources to get you started:
 
 ## **Coding Guidelines**
 
-Focus your mod development around the `mod.ts` file. In the `package.json` file, only alter these properties: `"name"`, `"version"`, `"license"`, `"author"`, and `"akiVersion"`. 
+Focus your mod development around the `mod.ts` file. In the `package.json` file, only alter these properties: `"name"`, `"version"`, `"sptVersion"`, `"loadBefore"`, `"loadAfter"`, `"incompatibilities"`, `"isBundleMod"`, `"author"`, and `"license"`.
 
 New to Typescript? Find comprehensive documentation on the [official website](https://www.typescriptlang.org/docs/).
 
 ## **Distribution Guidelines**
 
-Automated tasks are set up to bundle all necessary files for your mod to function in SPT-AKI:
+Automated tasks are set up to bundle all necessary files for your mod to function in SPT:
 
 > Terminal -> Run Task... -> Show All Tasks... -> npm: build
 
@@ -61,6 +100,6 @@ The ZIP output, located in the `dist` directory, contains all required files. En
 
 ## **Conclusion**
 
-With this setup, you're ready to begin modding with SPT-AKI. If you run into any trouble be sure to check out the [modding documentation on the hub](https://hub.sp-tarkov.com/doc/lexicon/66-modding/). If you really get stuck feel free to join us in the [#mods-development](https://discord.com/channels/875684761291599922/875803116409323562) official Discord channel.
+With this setup, you're ready to begin modding with SPT. If you run into any trouble be sure to check out the [modding documentation on the hub](https://hub.sp-tarkov.com/doc/lexicon/66-modding/). If you really get stuck feel free to join us in the [#mods-development](https://discord.com/channels/875684761291599922/875803116409323562) official Discord channel.
 
 Build something awesome!
