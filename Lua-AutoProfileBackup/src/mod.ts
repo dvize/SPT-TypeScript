@@ -41,6 +41,11 @@ export class Mod implements IPreSptLoadMod, IPostDBLoadMod, IPostSptLoadMod
         // Read in the json c config content and parse it into json
         this.modConfig = jsonc.parse(this.vfs.readFile(path.resolve(__dirname, "../config/config.jsonc")));
 
+        if (!this.modConfig.Enabled) 
+        {
+            return;
+        }
+
         if (this.modConfig?.AutoBackup?.OnGameStart) 
         {
             staticRouterModService.registerStaticRouter(
@@ -116,6 +121,11 @@ export class Mod implements IPreSptLoadMod, IPostDBLoadMod, IPostSptLoadMod
 
     public postSptLoad(container: DependencyContainer): void 
     {
+        if (!this.modConfig.Enabled) 
+        {
+            return;
+        }
+
         const saveServer = container.resolve<SaveServer>("SaveServer");
         for (const profileKey in saveServer.getProfiles()) 
         {
