@@ -73,7 +73,7 @@ class PAutoSell implements IPreSptLoadMod, IPostSptLoadMod {
     postSptLoad(container: DependencyContainer): void {
 		this.itemsDatabase = this.databaseServer.getTables().templates.items;
 		this.checkContainerRestrictions();
-        this.logger.info('PAutoSell: Post Aki Load Setup Complete');
+        this.logger.info('PAutoSell: Post Spt Load Setup Complete');
     }
 
 	private setupRouterServices(container: DependencyContainer): void {
@@ -96,7 +96,7 @@ class PAutoSell implements IPreSptLoadMod, IPostSptLoadMod {
 				this.exchangeItems(url, info, sessionID, output);
 				return output;
 			}
-		}], "aki"); 
+		}], "spt"); 
 	}
 
     private setupServices(container: DependencyContainer): void {
