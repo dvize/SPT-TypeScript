@@ -1,32 +1,32 @@
-import type { IPreAkiLoadMod } from "@spt-aki/models/external/IPreAkiLoadMod";
-import type { IPostAkiLoadMod } from "@spt-aki/models/external/IPostAkiLoadMod";
+import type { IPreSptLoadMod } from "@spt/models/external/IPreSPTLoadMod";
+import type { IPostSptLoadMod } from "@spt/models/external/IPostSPTLoadMod";
 import type { DependencyContainer } from 'tsyringe';
-import type { DynamicRouterModService } from "@spt-aki/services/mod/dynamicRouter/DynamicRouterModService";
-import type { StaticRouterModService } from "@spt-aki/services/mod/staticRouter/StaticRouterModService";
-import type { ProfileHelper } from "@spt-aki/helpers/ProfileHelper";
-import type { IPmcData } from "@spt-aki/models/eft/common/IPmcData";
-import type { HashUtil } from "@spt-aki/utils/HashUtil";
-import type { RagfairPriceService } from "@spt-aki/services/RagfairPriceService";
-import type { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
-import type { Item, Location, Upd } from '@spt-aki/models/eft/common/tables/IItem';
-import type { SaveServer } from '@spt-aki/servers/SaveServer';
-import { BaseClasses } from "@spt-aki/models/enums/BaseClasses";
-import type { ItemHelper } from "@spt-aki/helpers/ItemHelper";
-import type { ITemplateItem } from '@spt-aki/models/eft/common/tables/ITemplateItem';
-import type { LocaleService } from "@spt-aki/services/LocaleService";
-import type { TradeHelper } from '@spt-aki/helpers/TradeHelper';
-import type { TraderHelper} from '@spt-aki/helpers/TraderHelper';
-import type { JsonUtil } from "@spt-aki/utils/JsonUtil";
-import type { RandomUtil } from "@spt-aki/utils/RandomUtil";
-import type { AbstractWinstonLogger } from '@spt-aki/utils/logging/AbstractWinstonLogger';
-import type { InventoryHelper } from "@spt-aki/helpers/InventoryHelper";
-import type { IItemEventRouterResponse } from "@spt-aki/models/eft/itemEvent/IItemEventRouterResponse";
-import type { HandbookHelper } from "@spt-aki/helpers/HandbookHelper";
-import type { IAddItemDirectRequest } from "@spt-aki/models/eft/inventory/IAddItemDirectRequest";
-import type { VFS } from "@spt-aki/utils/VFS";
+import type { DynamicRouterModService } from "@spt/services/mod/dynamicRouter/DynamicRouterModService";
+import type { StaticRouterModService } from "@spt/services/mod/staticRouter/StaticRouterModService";
+import type { ProfileHelper } from "@spt/helpers/ProfileHelper";
+import type { IPmcData } from "@spt/models/eft/common/IPmcData";
+import type { HashUtil } from "@spt/utils/HashUtil";
+import type { RagfairPriceService } from "@spt/services/RagfairPriceService";
+import type { DatabaseServer } from "@spt/servers/DatabaseServer";
+import type { Item, Location, Upd } from '@spt/models/eft/common/tables/IItem';
+import type { SaveServer } from '@spt/servers/SaveServer';
+import { BaseClasses } from "@spt/models/enums/BaseClasses";
+import type { ItemHelper } from "@spt/helpers/ItemHelper";
+import type { ITemplateItem } from '@spt/models/eft/common/tables/ITemplateItem';
+import type { LocaleService } from "@spt/services/LocaleService";
+import type { TradeHelper } from '@spt/helpers/TradeHelper';
+import type { TraderHelper} from '@spt/helpers/TraderHelper';
+import type { JsonUtil } from "@spt/utils/JsonUtil";
+import type { RandomUtil } from "@spt/utils/RandomUtil";
+import type { AbstractWinstonLogger } from '@spt/utils/logging/AbstractWinstonLogger';
+import type { InventoryHelper } from "@spt/helpers/InventoryHelper";
+import type { IItemEventRouterResponse } from "@spt/models/eft/itemEvent/IItemEventRouterResponse";
+import type { HandbookHelper } from "@spt/helpers/HandbookHelper";
+import type { IAddItemDirectRequest } from "@spt/models/eft/inventory/IAddItemDirectRequest";
+import type { VFS } from "@spt/utils/VFS";
 import { jsonc } from "jsonc";
 import path from "node:path";
-import type { TProfileChanges } from "@spt-aki/models/eft/itemEvent/IItemEventRouterBase";
+import type { TProfileChanges } from "@spt/models/eft/itemEvent/IItemEventRouterBase";
 
 
 interface Config {
@@ -43,7 +43,7 @@ interface ContainersConfig {
 }
 
 
-class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
+class PAutoSell implements IPreSptLoadMod, IPostSptLoadMod {
     private vfs: VFS;
     private logger: AbstractWinstonLogger;
     private profileHelper: ProfileHelper;
@@ -64,13 +64,13 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 	private totalRoubles: number; //used to keep track of total roubles earned from selling items after currency conversion
 	private itemsToRemove: Item[] = []; //used to keep track of items to remove from inventory
 
-    preAkiLoad(container: DependencyContainer): void {
+    preSptLoad(container: DependencyContainer): void {
 		this.setupRouterServices(container);
         this.setupServices(container);
 		this.modConfig = this.loadConfig();
     }
 
-    postAkiLoad(container: DependencyContainer): void {
+    postSptLoad(container: DependencyContainer): void {
 		this.itemsDatabase = this.databaseServer.getTables().templates.items;
 		this.checkContainerRestrictions();
         this.logger.info('PAutoSell: Post Aki Load Setup Complete');
@@ -92,7 +92,7 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 		//Raid Saving (End of raid)
 		staticRouterModService.registerStaticRouter("StaticAkiRaidSave PAutoSell", [{
 			url: "/raid/profile/save",
-			action: (url, info, sessionID, output) => {
+			action: async (url, info, sessionID, output) => {
 				this.exchangeItems(url, info, sessionID, output);
 				return output;
 			}
@@ -168,10 +168,10 @@ class PAutoSell implements IPreAkiLoadMod, IPostAkiLoadMod {
 			if (!tags) {
 				return false;
 			}
-			const containerTags = this.modConfig.Containers.Labels;
-			return containerTags.some(tag => tags.includes(tag));
-		}
-		);
+			const containerTags = this.modConfig.Containers.Labels.map(label => label.toLowerCase());
+			const lowerCaseTags = tags.toLowerCase();
+			return containerTags.some(tag => lowerCaseTags.includes(tag));
+		});
 
 		//log which containers were found with tag label
 		// biome-ignore lint/complexity/noForEach: <explanation>

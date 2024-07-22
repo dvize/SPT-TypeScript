@@ -1,10 +1,10 @@
 {
     "name": "Props Automated Selling",
-    "version": "1.5.5",
+    "version": "1.6.0",
     "main": "src/PAutoSell.js",
     "license": "MIT",
     "author": "Props",
-    "akiVersion": "3.8.*",
+    "sptVersion": "3.9.*",
     "scripts": {
         "setup": "npm i",
         "build": "node ./build.mjs",
