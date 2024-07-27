@@ -3,13 +3,13 @@
 // authors: Fin, Props (updated)
 
 import { inject, type DependencyContainer } from "tsyringe";
-import type { IPostDBLoadMod } from "@spt-aki/models/external/IPostDBLoadMod";
-import type { AbstractWinstonLogger } from '@spt-aki/utils/logging/AbstractWinstonLogger';
-import type { DatabaseServer } from "@spt-aki/servers/DatabaseServer";
-import type { VFS } from "@spt-aki/utils/VFS";
+import type { IPostDBLoadMod } from "@spt/models/external/IPostDBLoadMod";
+import type { AbstractWinstonLogger } from '@spt/utils/logging/AbstractWinstonLogger';
+import type { DatabaseServer } from "@spt/servers/DatabaseServer";
+import type { VFS } from "@spt/utils/VFS";
 import { jsonc } from "jsonc";
 import path from "node:path";
-import type { ITemplateItem } from "@spt-aki/models/eft/common/tables/ITemplateItem";
+import type { ITemplateItem } from "@spt/models/eft/common/tables/ITemplateItem";
 
 interface ModConfig {
   distortion_Multiplier: number;

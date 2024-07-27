@@ -1,10 +1,10 @@
 {
     "name": "Fins Eerie Silence",
-    "version": "1.5.0",
+    "version": "1.6.0",
     "main": "src/mod.js",
     "license": "See License file",
     "author": "Fin, Props",
-	"akiVersion": "3.8.*",
+	"sptVersion": "3.9.*",
     "scripts": {
         "setup": "npm i",
         "build": "node ./build.mjs",
